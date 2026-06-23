@@ -1,0 +1,66 @@
+---
+import siteConfig from '../data/site-config';
+import UiIcon from './UiIcon.astro';
+
+const pathname = Astro.url.pathname;
+const showStartOver = pathname.startsWith('/interview') || pathname.startsWith('/prompt');
+---
+
+<aside id="site-sidebar" class="sidebar">
+    <a class="sidebar__title" href="/" aria-label={siteConfig.title}>
+        <span class="sidebar__title-text">{siteConfig.title}</span>
+    </a>
+
+    <div class="sidebar__quote">
+        <span data-locale="en">
+            Four questions.<br />One paragraph.<br />Paste into Spotify.
+        </span>
+        <span data-locale="zh" hidden>
+            四个问题。<br />一段话。<br />粘贴到 Spotify。
+        </span>
+    </div>
+
+    <ul class="app-toolbar" aria-label="App actions">
+        <li class="app-toolbar__item">
+            <button type="button" class="app-toolbar__btn app-toolbar__btn--ghost" data-locale-btn="en" aria-pressed="false">
+                EN
+            </button>
+        </li>
+        <li class="app-toolbar__item">
+            <button type="button" class="app-toolbar__btn app-toolbar__btn--ghost" data-locale-btn="zh" aria-pressed="false">
+                中文
+            </button>
+        </li>
+        {
+            showStartOver && (
+                <li class="app-toolbar__item">
+                    <button type="button" class="app-toolbar__btn" id="start-over-btn" data-start-over>
+                        <span data-locale="en">Start over</span>
+                        <span data-locale="zh" hidden>重新开始</span>
+                    </button>
+                </li>
+            )
+        }
+        <li class="app-toolbar__item">
+            <a class="app-toolbar__btn" href="/prompt">
+                <span data-locale="en">Last prompt</span>
+                <span data-locale="zh" hidden>上次提示</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-actions">
+        <button
+            id="theme-toggle"
+            class="icon-button theme-toggle"
+            type="button"
+            aria-label="Theme"
+            data-tooltip-en="Theme"
+            data-tooltip-zh="主题"
+        >
+            <UiIcon name="sun-moon" class="icon-system" />
+            <UiIcon name="moon" class="icon-moon" />
+            <UiIcon name="sun" class="icon-sun" />
+        </button>
+    </div>
+</aside>

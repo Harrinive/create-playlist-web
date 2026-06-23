@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Build on Spotify">
+    <p class="page-kicker">
+        <span data-locale="en">Coming soon</span>
+        <span data-locale="zh" hidden>即将推出</span>
+    </p>
+    <h1 class="page-title">
+        <span data-locale="en">Build on Spotify</span>
+        <span data-locale="zh" hidden>在 Spotify 上创建</span>
+    </h1>
+    <p class="intro-lead">
+        <span data-locale="en">
+            Phase 2 will connect your Spotify account, curate ~20 tracks, verify them, and publish a playlist. For now,
+            use the prompt path.
+        </span>
+        <span data-locale="zh" hidden>
+            第二阶段将连接 Spotify 账号、策展约 20 首歌、验证并发布歌单。现在请使用提示词路径。
+        </span>
+    </p>
+    <div class="actions-row">
+        <a class="text-link-button text-link-button--primary" href="/interview">
+            <span data-locale="en">Get a prompt instead</span>
+            <span data-locale="zh" hidden>改为获取提示词</span>
+        </a>
+        <a class="text-link-button" href="/">
+            <span data-locale="en">Home</span>
+            <span data-locale="zh" hidden>首页</span>
+        </a>
+    </div>
+</BaseLayout>

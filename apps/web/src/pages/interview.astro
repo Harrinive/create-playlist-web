@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { INTERVIEW_BY_LOCALE } from '../lib/interview-questions';
+---
+
+<BaseLayout title="Interview">
+    <section id="interview-wizard">
+        <div class="steps-row">
+            <p id="step-dimension" class="step-label"></p>
+            <div id="step-dots" class="step-dots" aria-hidden="true"></div>
+        </div>
+
+        <h1 id="step-stem" class="page-title"></h1>
+        <p id="step-hint" class="help-line" hidden></p>
+
+        <div id="step-options" class="chip-grid" role="group"></div>
+
+        <div class="actions-row">
+            <button id="step-back" type="button" class="text-link-button" disabled>Back</button>
+            <button id="step-next" type="button" class="text-link-button text-link-button--primary" disabled>
+                Continue
+            </button>
+        </div>
+    </section>
+</BaseLayout>
+
+<script>
+    import { INTERVIEW_BY_LOCALE } from '../lib/interview-questions';
+    import { initInterviewWizard } from '../scripts/interview-wizard.ts';
+
+    function bootInterview() {
+        initInterviewWizard(INTERVIEW_BY_LOCALE);
+    }
+
+    bootInterview();
+    document.addEventListener('astro:page-load', bootInterview);
+</script>

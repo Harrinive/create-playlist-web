@@ -1,0 +1,26 @@
+---
+import Moon from '@lucide/astro/icons/moon';
+import RotateCcw from '@lucide/astro/icons/rotate-ccw';
+import Sun from '@lucide/astro/icons/sun';
+import SunMoon from '@lucide/astro/icons/sun-moon';
+
+type UiIconName = 'moon' | 'sun' | 'sun-moon' | 'rotate-ccw';
+
+interface Props {
+    name: UiIconName;
+    class?: string;
+}
+
+const { name, class: className = '' } = Astro.props;
+
+const icons = {
+    moon: Moon,
+    sun: Sun,
+    'sun-moon': SunMoon,
+    'rotate-ccw': RotateCcw
+} as const;
+
+const Icon = icons[name];
+---
+
+<Icon class:list={['icon', className]} size={18} stroke-width={2} aria-hidden="true" focusable="false" />

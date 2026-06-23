@@ -1,0 +1,64 @@
+---
+import siteConfig from '../data/site-config';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout>
+    <p class="page-kicker">Mood → music</p>
+    <h1 class="page-title">
+        <span data-locale="en">{siteConfig.tagline.en}</span>
+        <span data-locale="zh" hidden>{siteConfig.tagline.zh}</span>
+    </h1>
+    <p class="intro-lead">
+        <span data-locale="en">{siteConfig.description.en}</span>
+        <span data-locale="zh" hidden>{siteConfig.description.zh}</span>
+    </p>
+
+    <div class="actions-row">
+        <a class="text-link-button text-link-button--primary" href="/interview">
+            <span data-locale="en">Start interview</span>
+            <span data-locale="zh" hidden>开始访谈</span>
+        </a>
+        <a class="text-link-button" href="/prompt">
+            <span data-locale="en">View last prompt</span>
+            <span data-locale="zh" hidden>查看上次提示</span>
+        </a>
+    </div>
+
+    <h2 class="section-title">
+        <span data-locale="en">How it works</span>
+        <span data-locale="zh" hidden>如何使用</span>
+    </h2>
+    <div class="how-steps">
+        <div>
+            <p class="how-step__label">
+                <span data-locale="en">Step 1</span>
+                <span data-locale="zh" hidden>步骤 1</span>
+            </p>
+            <p class="how-step__text">
+                <span data-locale="en">Scene, emotion, energy, texture, and avoids — five quick picks.</span>
+                <span data-locale="zh" hidden>场景、情绪、能量、质感与避开项 — 五个快速选择。</span>
+            </p>
+        </div>
+        <div>
+            <p class="how-step__label">
+                <span data-locale="en">Step 2</span>
+                <span data-locale="zh" hidden>步骤 2</span>
+            </p>
+            <p class="how-step__text">
+                <span data-locale="en">We compose one natural-language paragraph from your picks.</span>
+                <span data-locale="zh" hidden>根据你的选择生成一段自然语言描述。</span>
+            </p>
+        </div>
+        <div>
+            <p class="how-step__label">
+                <span data-locale="en">Step 3</span>
+                <span data-locale="zh" hidden>步骤 3</span>
+            </p>
+            <p class="how-step__text">
+                <span data-locale="en">Copy and paste into Spotify → Library → Create → Prompted Playlist.</span>
+                <span data-locale="zh" hidden>复制并粘贴到 Spotify → 资料库 → 创建 → 提示歌单。</span>
+            </p>
+        </div>
+    </div>
+</BaseLayout>
