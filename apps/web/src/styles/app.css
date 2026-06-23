@@ -33,6 +33,24 @@
     color: var(--faint);
 }
 
+.chip-option--delivery {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.chip-option__label {
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.chip-option__sublabel {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--faint);
+    font-family: var(--font-copy);
+}
+
 .prompt-block {
     margin: 20px 0 24px;
     padding: 16px 18px;

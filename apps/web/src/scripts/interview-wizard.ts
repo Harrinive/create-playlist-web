@@ -74,7 +74,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
 
             sessionStorage.setItem(SESSION_KEY, JSON.stringify(answers));
             clearDraft();
-            window.location.assign('/prompt');
+            window.location.assign('/delivery');
         });
 
         document.addEventListener('locale-changed', (event) => {
@@ -109,7 +109,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
         const step = steps[stepIndex];
         const labels = WIZARD_LABELS[locale];
         nextBtn.disabled = !isStepComplete(step);
-        nextBtn.textContent = stepIndex === steps.length - 1 ? labels.getPrompt : labels.continue;
+        nextBtn.textContent = stepIndex === steps.length - 1 ? labels.chooseDelivery : labels.continue;
         backBtn.textContent = labels.back;
     }
 

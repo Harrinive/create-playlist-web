@@ -168,18 +168,18 @@ export const INTERVIEW_BY_LOCALE = STEPS;
 
 export const WIZARD_LABELS: Record<
     Locale,
-    { back: string; continue: string; getPrompt: string; question: (n: number, dim: string) => string }
+    { back: string; continue: string; chooseDelivery: string; question: (n: number, dim: string) => string }
 > = {
     en: {
         back: 'Back',
         continue: 'Continue',
-        getPrompt: 'Get prompt',
+        chooseDelivery: 'Choose delivery',
         question: (n, dim) => `Question ${n} · ${dim}`
     },
     zh: {
         back: '上一步',
         continue: '继续',
-        getPrompt: '生成提示',
+        chooseDelivery: '选择交付方式',
         question: (n, dim) => `第 ${n} 题 · ${dim}`
     }
 };

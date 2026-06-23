@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Choose delivery">
+    <section id="delivery-page">
+        <div id="delivery-missing" hidden>
+            <h1 class="page-title">
+                <span data-locale="en">No interview yet</span>
+                <span data-locale="zh" hidden>还没有访谈</span>
+            </h1>
+            <p class="intro-lead">
+                <span data-locale="en">Complete the interview first — we'll remember your answers for this browser session.</span>
+                <span data-locale="zh" hidden>请先完成访谈 — 答案会保存在当前浏览器会话中。</span>
+            </p>
+            <div class="actions-row">
+                <a class="text-link-button text-link-button--primary" href="/interview">
+                    <span data-locale="en">Start interview</span>
+                    <span data-locale="zh" hidden>开始访谈</span>
+                </a>
+            </div>
+        </div>
+
+        <div id="delivery-content" hidden>
+            <p class="page-kicker">
+                <span data-locale="en">Step 2</span>
+                <span data-locale="zh" hidden>步骤 2</span>
+            </p>
+            <h1 class="page-title">
+                <span data-locale="en">What should we deliver?</span>
+                <span data-locale="zh" hidden>你想怎么交付？</span>
+            </h1>
+
+            <div id="delivery-options" class="chip-grid" role="group">
+                <button type="button" class="chip-option chip-option--delivery" data-delivery="prompt">
+                    <span class="chip-option__label">
+                        <span data-locale="en">Prompt for Spotify Prompted Playlist</span>
+                        <span data-locale="zh" hidden>Spotify 提示歌单段落 (Prompt for Spotify Prompted Playlist)</span>
+                    </span>
+                    <span class="chip-option__sublabel">
+                        <span data-locale="en">Paste in the Spotify app</span>
+                        <span data-locale="zh" hidden>在 Spotify 应用中粘贴</span>
+                    </span>
+                </button>
+                <button type="button" class="chip-option chip-option--delivery" data-delivery="build">
+                    <span class="chip-option__label">
+                        <span data-locale="en">Build on Spotify</span>
+                        <span data-locale="zh" hidden>在 Spotify 上创建 (Build on Spotify)</span>
+                    </span>
+                    <span class="chip-option__sublabel">
+                        <span data-locale="en">~20 verified tracks — coming soon</span>
+                        <span data-locale="zh" hidden>约 20 首验证曲目 — 即将推出</span>
+                    </span>
+                </button>
+            </div>
+
+            <div class="actions-row">
+                <a class="text-link-button" href="/interview">
+                    <span data-locale="en">Back to interview</span>
+                    <span data-locale="zh" hidden>返回访谈</span>
+                </a>
+            </div>
+        </div>
+    </section>
+</BaseLayout>
+
+<script>
+    import { initDeliveryPage } from '../scripts/delivery-page.ts';
+
+    function bootDelivery() {
+        initDeliveryPage();
+    }
+
+    bootDelivery();
+    document.addEventListener('astro:page-load', bootDelivery);
+</script>
