@@ -1,6 +1,6 @@
 # Progress log — create-playlist-web
 
-Chronological record of what shipped through **Phase 2 production** (June 2026).
+Chronological record through **Phase 3 in progress** (June 2026).
 
 ---
 
@@ -72,6 +72,63 @@ Chronological record of what shipped through **Phase 2 production** (June 2026).
 
 ---
 
+## Phase 3 — Curate + verify + publish (in progress)
+
+### Backend (`apps/api/`)
+
+| Item | Detail |
+|------|--------|
+| `POST /api/curate` | OpenAI / Anthropic chat for Step 2.2.3 (~26 proposed lines); `CURATE_LLM_MODEL` default |
+| `GET /api/curate/models` | Lists models available from configured API keys |
+| `POST /api/verify` | Batched Spotify search, match rules, cooldown, trim to ~20 (preserve order) |
+| `POST /api/publish` | Private playlist create + add tracks; per-user playlist memory (Postgres / in-memory dev) |
+| LLM client | Hand-rolled fetch in `apps/api/src/llm/` — not llm-router or Cursor yet |
+| Model catalog | `apps/api/src/llm/models.ts` — GPT-4o, GPT-4o mini, Claude Sonnet (filtered by keys) |
+
+### Frontend (`apps/web/`)
+
+| Item | Detail |
+|------|--------|
+| `/build` | Full flow: curate → verify → publish; results table; &lt;50% verify → prompt fallback |
+| `/delivery` | Dynamic model picker — prompt + one button per available curation model |
+| Model session | `sessionStorage` key `create-playlist-curate-model`; passed to `/api/curate` |
+| Dev preview | `DEV_PREVIEW_CURATE_MODELS` in `astro dev` when API has no LLM keys (layout only) |
+| Copy / footer | Home Step 2–3 updated; footer *Vibelist — mood interview → Spotify* |
+
+### Bugs fixed during Phase 3
+
+| Bug | Cause | Fix |
+|-----|-------|-----|
+| Theme missing in `astro dev` | `global.css?url` + manual `<link>` — Vite serves path as JS in dev | Import `../styles/global.css` in `BaseHead.astro` (commit `fa42168`) |
+
+### Commits (Phase 3)
+
+| Commit | Summary |
+|--------|---------|
+| `e34bf77` | Phase 3 API routes + build UI (curate / verify / publish) |
+| `fa42168` | Fix theme CSS in Astro dev |
+| `124086b` | Delivery model picker + `CURATE_LLM_MODEL` + dev preview models |
+
+### Local dev (Phase 3)
+
+| Step | Detail |
+|------|--------|
+| Web | `http://127.0.0.1:4321` — `PUBLIC_API_URL=http://127.0.0.1:3001` in `apps/web/.env` |
+| API | `http://127.0.0.1:3001` — add `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` for real curate |
+| UI-only preview | No LLM keys needed — delivery shows dev preview model buttons |
+| Full build | Spotify OAuth + at least one LLM key on API; user on Spotify app allowlist |
+
+### Production ops (Phase 3)
+
+| Step | Status |
+|------|--------|
+| Fly LLM secrets (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`, `CURATE_LLM_MODEL`) | User set — **E2E build not yet logged in PROGRESS** |
+| Web + API deploy from `main` | Auto via CF Pages Git + `deploy-api.yml` |
+
+**Phase 3 exit criteria:** not yet met — need production E2E curate → verify → publish on allowlisted user; **Cursor provider** still open (see [PLAN.md](../PLAN.md)).
+
+---
+
 ## CI / deploy model (current)
 
 | Path | Trigger | Notes |
@@ -82,13 +139,13 @@ Chronological record of what shipped through **Phase 2 production** (June 2026).
 
 ---
 
-## Not done yet — Phase 3+
+## Not done yet — Phase 3 remainder + Phase 4
 
 | Phase | Work |
 |-------|------|
-| **Phase 3** | `POST /api/curate` (llm-router), verify loop, publish ~20-track playlist, results UI |
-| **Phase 4** | LLM interview questions, skill memory, dychen.net nav link, Spotify app review for public users |
-| **Ops optional** | Migrate `DATABASE_URL` from Fly Managed Postgres to Supabase/Neon (Cycloud pattern); narrow CF build watch paths to `apps/web/**` |
+| **Phase 3** | Production E2E verify; **Cursor provider** (`cursor:` + `CURSOR_API_KEY`); optional llm-router unification |
+| **Phase 4** | LLM interview questions (`INTERVIEW_LLM_MODEL`), dychen.net nav link, Spotify app review for public users |
+| **Ops optional** | Migrate `DATABASE_URL` to Supabase/Neon; narrow CF build watch paths to `apps/web/**` |
 
 ---
 
@@ -98,6 +155,8 @@ Chronological record of what shipped through **Phase 2 production** (June 2026).
 2. **Astro env vars are build-time** — changing `PUBLIC_API_URL` in CF requires a new Pages build.
 3. **Spotify redirect URI must exactly match** the API callback URL including host (`127.0.0.1` vs `localhost` matters).
 4. **CF Pages “Retry deployment”** — row menu (⋮) or deployment Details; push to `main` also triggers auto deploy.
+5. **Astro CSS in dev** — import styles in layout/frontmatter; do not use `?url` + `<link rel="stylesheet">` for global theme.
+6. **LLM keys on Fly** — at least one of `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` for `/api/curate`; set `CURATE_LLM_MODEL` to match provider.
 
 ---
 

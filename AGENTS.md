@@ -16,17 +16,17 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 
 ---
 
-## Current status (2026-06-23)
+## Current status (2026-06-24)
 
 | Item | State |
 |------|-------|
 | Repo / git | **Public** — `Harrinive/create-playlist-web`, `main` |
-| Phase | **Phase 2 complete** — OAuth + search live in production |
+| Phase | **Phase 3 in progress** — curate / verify / publish shipped in code |
 | Frontend | `apps/web/` — Astro 6, Whono-style UI |
-| Interview | Static 5-step wizard (M1–M5), EN + 中文; Continue-button fix shipped |
-| Delivery | `/delivery` — Prompt vs Build |
+| Interview | Static 5-step wizard (M1–M5), EN + 中文 |
+| Delivery | `/delivery` — Prompt + per-model tracklist options (Step 2.2.3) |
 | Prompt | Client-side Step 2.1 (`build-prompt.ts`) |
-| Build path | `/build` — Connect Spotify + test search |
+| Build path | `/build` — OAuth + curate → verify → publish UI |
 | API | `apps/api/` on Fly — `api.vibelist.dychen.net` |
 | Live web | **https://vibelist.dychen.net** |
 | Ops docs | [docs/PROGRESS.md](./docs/PROGRESS.md), [docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md) |
@@ -56,11 +56,26 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 
 **Phase 2 exit criteria:** met — connect Spotify → search tracks (production verified).
 
+### Phase 3 (in progress — code shipped)
+
+| Item | Status |
+|------|--------|
+| `POST /api/curate`, `/api/verify`, `/api/publish` | Done |
+| `GET /api/curate/models` + delivery model picker | Done |
+| `CURATE_LLM_MODEL` + OpenAI/Anthropic client | Done |
+| Per-user playlist memory (Postgres) | Done |
+| `/build` end-to-end UI + results table | Done |
+| CSS dev fix (`BaseHead` import) | Done |
+| Cursor provider / llm-router | **Not done** |
+| Production E2E curate → publish | **Not verified in docs** |
+
+**Phase 3 exit criteria:** production build on allowlisted Spotify user + delivery model choice — **pending E2E verify**.
+
 ### Next recommended work
 
-1. **Phase 3:** `POST /api/curate`, verify loop, publish ~20-track playlist
-2. Optional: migrate `DATABASE_URL` to Supabase (Cycloud pattern); destroy Fly MPG if unused
-3. Optional: Spotify app review for non-allowlisted users
+1. **Production smoke test:** interview → delivery (pick model) → build → playlist URL
+2. **Cursor provider** for `cursor:` curation slugs
+3. Optional: migrate `DATABASE_URL` to Supabase; Spotify app review for public users
 
 ---
 
@@ -98,9 +113,9 @@ MCP is **not** used in production. Port `createSpotifyApi` / `spotifyFetch` from
 | Skill | Web | Status |
 |-------|-----|--------|
 | Step 1 interview | `/interview` — chip wizard | Done (static bank) |
-| Step 2 delivery choice | `/delivery` — Prompt vs Build | Done |
+| Step 2 delivery choice | `/delivery` — Prompt + model picker | Done |
 | Step 2.1 | `/prompt` — copyable paragraph | Done |
-| Step 2.2 build | `/build` + API | OAuth + search done; curate/publish Phase 3 |
+| Step 2.2 build | `/build` + API | Curate / verify / publish shipped; Cursor provider open |
 
 **Hard rules from skill:** verify/publish must not re-curate or reorder from scratch; trim preserves propose order; offer prompt fallback if verify &lt;50% ok.
 
@@ -110,7 +125,7 @@ MCP is **not** used in production. Port `createSpotifyApi` / `spotifyFetch` from
 
 ```text
 apps/web/          # Astro — interview, delivery, prompt, build UI
-apps/api/          # Fastify — OAuth, /api/me, /api/search (see apps/api/README.md)
+apps/api/          # Fastify — OAuth, curate, verify, publish (see apps/api/README.md)
 ```
 
 ---

@@ -274,13 +274,14 @@ Alternative: two repos (`create-playlist-web` + `create-playlist-api`) — defer
 - [x] `POST /api/verify` — batched Spotify search, match rules, cooldown, trim to ~20 (preserve order)
 - [x] `POST /api/publish` — create private playlist, add tracks, per-user playlist memory (Postgres)
 - [x] `/build` UI — curate → verify → publish + results table; prompt fallback if &lt;50% verify
+- [x] **Curation model picker at delivery** — `GET /api/curate/models`; pass slug to `/api/curate`
+- [x] **`CURATE_LLM_MODEL`** server default (with `LLM_MODEL` alias)
+- [x] Theme CSS fix for `astro dev` (`BaseHead.astro` import)
 
 **Remaining for Phase 3 exit:**
 
 - [ ] Production E2E on Fly with LLM secrets set (see [Environment variables](#environment-variables-api))
-- [ ] **Curation model picker at delivery** — skill [step-2-delivery.md](file://~/.cursor/skills/create-playlist/step-2-delivery.md) § Step 2 models: 2–3 *Generate tracklist by {model}* options; pass chosen slug to `/api/curate`
 - [ ] **Cursor provider** — support `cursor:` slugs (`composer-2.5`, etc.) via `CURSOR_API_KEY` + cursor-sdk or a Node port of toolbox `llm-router` Cursor path
-- [ ] **Separate curation default** — `CURATE_LLM_MODEL` env (server default) distinct from per-user delivery choice; drop single ambiguous `LLM_MODEL` once split is in place
 - [ ] Optional: unify all providers through toolbox `llm-router` instead of hand-rolled OpenAI/Anthropic fetch
 
 **Exit criteria:** End-to-end Step 2.2 parity with skill for an allowlisted Spotify test user, including user-visible model choice at delivery for Step 2.2.3.

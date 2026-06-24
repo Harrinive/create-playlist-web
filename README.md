@@ -5,7 +5,7 @@ Web app for mood-driven Spotify playlist creation — a browser version of the *
 **Repo:** https://github.com/Harrinive/create-playlist-web  
 **Live:** https://vibelist.dychen.net  
 **API:** https://api.vibelist.dychen.net  
-**Status:** Phase 1–2 complete (prompt path + Spotify OAuth + search in production).
+**Status:** Phase 3 in progress — curate / verify / publish + delivery model picker shipped in code; production E2E pending.
 
 | Doc | Purpose |
 |-----|---------|
@@ -25,7 +25,7 @@ Web app for mood-driven Spotify playlist creation — a browser version of the *
 |---------|-------|-------|
 | Landing | `/` | How-it-works, start interview |
 | Interview wizard | `/interview` | 5 steps → M1–M5 |
-| Delivery choice | `/delivery` | Prompt vs Build (skill Step 2) |
+| Delivery choice | `/delivery` | Prompt + per-model build options (Step 2.2.3) |
 | Spotify prompt | `/prompt` | Step 2.1 paragraph + copy |
 | EN / 中文 + theme | Sidebar | Bilingual interview; English prompt |
 | Deploy | CF Pages | `vibelist.dychen.net`, root `apps/web` |
@@ -40,10 +40,21 @@ Web app for mood-driven Spotify playlist creation — a browser version of the *
 | CF Pages env | `PUBLIC_API_URL`, `NODE_VERSION=22` |
 | Dev hosts | **127.0.0.1** (not `localhost`) for web + API cookies |
 
+### In progress (Phase 3)
+
+| Item | Notes |
+|------|-------|
+| `POST /api/curate`, `/api/verify`, `/api/publish` | OpenAI / Anthropic curation; Spotify verify + publish |
+| `GET /api/curate/models` | Delivery model picker |
+| `/build` full flow | Curate → verify → publish UI + results table |
+| Fly LLM secrets | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`, `CURATE_LLM_MODEL` |
+
 ### Not done yet
 
-- Phase 3: curate → verify → publish ~20 tracks
-- Optional: Supabase migration for `DATABASE_URL`; Spotify app review for public users
+- Phase 3 exit: production E2E build on allowlisted user
+- Cursor provider for curation (`cursor:` slugs)
+- Phase 4: LLM interview, dychen.net nav, Spotify app review
+- Optional: Supabase migration for `DATABASE_URL`
 
 ---
 
@@ -63,7 +74,7 @@ Open **http://127.0.0.1:4321** (not `localhost`).
 
 ```bash
 cd apps/api
-cp .env.example .env    # Spotify credentials + WEB_ORIGIN=http://127.0.0.1:4321
+cp .env.example .env    # Spotify + WEB_ORIGIN; add OPENAI_API_KEY or ANTHROPIC_API_KEY for curate
 npm install && npm run dev
 ```
 
