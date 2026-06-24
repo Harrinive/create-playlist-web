@@ -9,6 +9,7 @@ import {
     listInterviewModels,
     resolveInterviewDefaultModel
 } from '../llm/interview-models.js';
+import { resolveInterviewAlgorithmMode } from '../llm/interview.js';
 
 const interviewOptionSchema = z.object({
     id: z.string().min(1),
@@ -40,6 +41,7 @@ export async function registerInterviewRoutes(app: FastifyInstance, ctx: AppCont
         return {
             models,
             defaultModel: resolveInterviewDefaultModel(ctx.env),
+            defaultAlgorithmMode: resolveInterviewAlgorithmMode(ctx.env),
             llmConfigured: interviewLlmConfigured(ctx.env)
         };
     });
@@ -51,7 +53,8 @@ export async function registerInterviewRoutes(app: FastifyInstance, ctx: AppCont
                 priorAnswers: priorAnswersSchema,
                 rejectedStems: z.array(z.string()).optional().default([]),
                 refresh: z.boolean().optional().default(false),
-                model: z.string().optional()
+                model: z.string().optional(),
+                algorithmMode: z.enum(['fast', 'full']).optional()
             })
             .safeParse(request.body);
 
@@ -85,7 +88,8 @@ export async function registerInterviewRoutes(app: FastifyInstance, ctx: AppCont
                     stepIndex: body.data.stepIndex,
                     priorAnswers: body.data.priorAnswers,
                     rejectedStems: body.data.rejectedStems,
-                    refresh: body.data.refresh
+                    refresh: body.data.refresh,
+                    algorithmMode: body.data.algorithmMode
                 },
                 model
             );
@@ -93,7 +97,11 @@ export async function registerInterviewRoutes(app: FastifyInstance, ctx: AppCont
             return {
                 step,
                 model: model ?? null,
-                modelLabel: modelInfo?.labelEn ?? model ?? null
+                modelLabel: modelInfo?.labelEn ?? model ?? null,
+                algorithmMode: resolveInterviewAlgorithmMode(
+                    ctx.env,
+                    body.data.algorithmMode
+                )
             };
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Interview generation failed';

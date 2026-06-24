@@ -1,4 +1,5 @@
 import type { Env } from '../config.js';
+import { curationCatalogEntries } from '../model-catalog.js';
 import {
     anyLlmProviderConfigured,
     formatModel,
@@ -14,40 +15,19 @@ export type CurateModelOption = {
     provider: 'openai' | 'anthropic' | 'cursor';
 };
 
-/** Curated Step 2.2.3 roster — adjust when flagship models change. */
-const CURATE_MODEL_CATALOG: CurateModelOption[] = [
-    {
-        id: 'cursor:composer-2.5',
-        provider: 'cursor',
-        labelEn: 'Generate tracklist by Composer 2.5',
-        labelZh: '用 Composer 2.5 生成曲目列表'
-    },
-    {
-        id: 'openai:gpt-4o',
-        provider: 'openai',
-        labelEn: 'Generate tracklist by GPT-4o',
-        labelZh: '用 GPT-4o 生成曲目列表'
-    },
-    {
-        id: 'openai:gpt-4o-mini',
-        provider: 'openai',
-        labelEn: 'Generate tracklist by GPT-4o mini',
-        labelZh: '用 GPT-4o mini 生成曲目列表'
-    },
-    {
-        id: 'anthropic:claude-sonnet-4-6',
-        provider: 'anthropic',
-        labelEn: 'Generate tracklist by Claude Sonnet',
-        labelZh: '用 Claude Sonnet 生成曲目列表'
-    }
-];
-
 export function listCurateModels(env: Env): CurateModelOption[] {
-    return CURATE_MODEL_CATALOG.filter((option) => isProviderConfigured(env, option.provider));
+    return curationCatalogEntries()
+        .filter((entry) => isProviderConfigured(env, entry.provider))
+        .map((entry) => ({
+            id: entry.id,
+            labelEn: entry.curationLabelEn,
+            labelZh: entry.curationLabelZh,
+            provider: entry.provider
+        }));
 }
 
 export function resolveCurateDefaultModel(env: Env): string | null {
-    const preferred = env.CURATE_LLM_MODEL ?? env.LLM_MODEL;
+    const preferred = env.CURATE_LLM_MODEL;
     const available = listCurateModels(env);
     if (available.length === 0) return null;
 

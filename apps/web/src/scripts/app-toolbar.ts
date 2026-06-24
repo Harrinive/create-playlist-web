@@ -1,11 +1,19 @@
 import { applyLocaleToDocument, readLocale, writeLocale, type Locale } from '../lib/locale';
 import {
-    INTERVIEW_MODELS,
-    interviewModelDescription,
+    loadInterviewModels,
     interviewModelLabel,
     readInterviewModel,
-    saveInterviewModel
+    saveInterviewModel,
+    pickInterviewModelOption,
+    type InterviewModelOption
 } from '../lib/interview-model';
+import {
+    INTERVIEW_ALGORITHM_MODES,
+    algorithmModeDescription,
+    algorithmModeLabel,
+    readInterviewAlgorithmMode,
+    saveInterviewAlgorithmMode
+} from '../lib/interview-algorithm-mode';
 import { clearRejectedQuestions } from '../lib/interview-refresh';
 import { clearLlmSteps } from '../lib/interview-llm-cache';
 import { lastResultHref, readLastDelivery } from '../lib/last-delivery';
@@ -49,8 +57,10 @@ function setLocale(locale: Locale) {
     applyLocaleToDocument(locale);
     updateLocaleLabel();
     refreshLocaleMenuLabels();
-    updateInterviewModelLabel();
-    refreshInterviewModelMenuLabels();
+    updateInterviewModelLabel(interviewModelCatalog);
+    refreshInterviewModelMenuLabels(interviewModelCatalog);
+    updateInterviewAlgorithmLabel();
+    refreshInterviewAlgorithmMenuLabels();
     updateLastResultLink();
     closeMobileToolbar();
     document.dispatchEvent(new CustomEvent('locale-changed', { detail: { locale } }));
@@ -94,6 +104,7 @@ function toggleMobileToolbar() {
     if (open) {
         closeLocaleMenu();
         closeInterviewModelMenu();
+        closeInterviewAlgorithmMenu();
         panel.hidden = false;
         panel.classList.add('is-open');
         toggle.setAttribute('aria-expanded', 'true');
@@ -159,6 +170,7 @@ function closeLocaleMenu() {
 
 function openLocaleMenu() {
     closeInterviewModelMenu();
+    closeInterviewAlgorithmMenu();
     const menu = document.getElementById('locale-menu');
     const trigger = document.getElementById('locale-trigger');
     if (!menu || !trigger) return;
@@ -259,13 +271,13 @@ function bindStartOver() {
     });
 }
 
-function updateInterviewModelLabel() {
+function updateInterviewModelLabel(catalog: InterviewModelOption[]) {
     const labelEl = document.getElementById('interview-model-label');
     if (!labelEl) return;
     const locale = readLocale();
     const modelId = readInterviewModel();
-    const option = INTERVIEW_MODELS.find((m) => m.id === modelId) ?? INTERVIEW_MODELS[0];
-    labelEl.textContent = interviewModelLabel(option, locale);
+    const option = catalog.find((m) => m.id === modelId) ?? catalog[0];
+    labelEl.textContent = option ? interviewModelLabel(option, locale) : '—';
 }
 
 function closeInterviewModelMenu() {
@@ -278,6 +290,7 @@ function closeInterviewModelMenu() {
 
 function openInterviewModelMenu() {
     closeLocaleMenu();
+    closeInterviewAlgorithmMenu();
     const menu = document.getElementById('interview-model-menu');
     const trigger = document.getElementById('interview-model-trigger');
     if (!menu || !trigger) return;
@@ -292,29 +305,29 @@ function toggleInterviewModelMenu() {
     else closeInterviewModelMenu();
 }
 
-function refreshInterviewModelMenuLabels() {
+function refreshInterviewModelMenuLabels(catalog: InterviewModelOption[]) {
     const menu = document.getElementById('interview-model-menu');
     if (!menu) return;
     const locale = readLocale();
     menu.querySelectorAll<HTMLElement>('[data-model-id]').forEach((item) => {
-        const option = INTERVIEW_MODELS.find((m) => m.id === item.dataset.modelId);
+        const option = catalog.find((m) => m.id === item.dataset.modelId);
         if (!option) return;
         const label = item.querySelector('.toolbar-dropdown__option-label');
-        const desc = item.querySelector('.toolbar-dropdown__option-desc');
         if (label) label.textContent = interviewModelLabel(option, locale);
-        if (desc) desc.textContent = interviewModelDescription(option, locale);
     });
 }
 
-function renderInterviewModelMenu() {
+function renderInterviewModelMenu(catalog: InterviewModelOption[]) {
     const menu = document.getElementById('interview-model-menu');
-    if (!menu || menu.dataset.rendered === 'true') return;
+    if (!menu) return;
+
+    menu.innerHTML = '';
     menu.dataset.rendered = 'true';
 
     const locale = readLocale();
     const selectedId = readInterviewModel();
 
-    INTERVIEW_MODELS.forEach((option) => {
+    catalog.forEach((option) => {
         const item = document.createElement('li');
         item.setAttribute('role', 'option');
         item.dataset.modelId = option.id;
@@ -326,7 +339,6 @@ function renderInterviewModelMenu() {
 
         item.innerHTML = `
             <span class="toolbar-dropdown__option-label">${interviewModelLabel(option, locale)}</span>
-            <span class="toolbar-dropdown__option-desc">${interviewModelDescription(option, locale)}</span>
         `;
 
         item.addEventListener('click', () => {
@@ -341,7 +353,7 @@ function renderInterviewModelMenu() {
             });
             item.classList.add('is-selected');
             item.setAttribute('aria-selected', 'true');
-            updateInterviewModelLabel();
+            updateInterviewModelLabel(catalog);
             closeInterviewModelMenu();
             closeMobileToolbar();
             document.dispatchEvent(
@@ -353,14 +365,151 @@ function renderInterviewModelMenu() {
     });
 }
 
-function bindInterviewModelDropdown() {
+function updateInterviewAlgorithmLabel() {
+    const labelEl = document.getElementById('interview-algorithm-label');
+    if (!labelEl) return;
+    const locale = readLocale();
+    const modeId = readInterviewAlgorithmMode();
+    const option =
+        INTERVIEW_ALGORITHM_MODES.find((m) => m.id === modeId) ?? INTERVIEW_ALGORITHM_MODES[0];
+    labelEl.textContent = algorithmModeLabel(option, locale);
+}
+
+function closeInterviewAlgorithmMenu() {
+    const menu = document.getElementById('interview-algorithm-menu');
+    const trigger = document.getElementById('interview-algorithm-trigger');
+    if (!menu || !trigger) return;
+    menu.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+}
+
+function openInterviewAlgorithmMenu() {
+    closeLocaleMenu();
+    closeInterviewModelMenu();
+    const menu = document.getElementById('interview-algorithm-menu');
+    const trigger = document.getElementById('interview-algorithm-trigger');
+    if (!menu || !trigger) return;
+    menu.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+}
+
+function toggleInterviewAlgorithmMenu() {
+    const menu = document.getElementById('interview-algorithm-menu');
+    if (!menu) return;
+    if (menu.hidden) openInterviewAlgorithmMenu();
+    else closeInterviewAlgorithmMenu();
+}
+
+function refreshInterviewAlgorithmMenuLabels() {
+    const menu = document.getElementById('interview-algorithm-menu');
+    if (!menu) return;
+    const locale = readLocale();
+    menu.querySelectorAll<HTMLElement>('[data-algorithm-id]').forEach((item) => {
+        const option = INTERVIEW_ALGORITHM_MODES.find((m) => m.id === item.dataset.algorithmId);
+        if (!option) return;
+        const label = item.querySelector('.toolbar-dropdown__option-label');
+        const desc = item.querySelector('.toolbar-dropdown__option-desc');
+        if (label) label.textContent = algorithmModeLabel(option, locale);
+        if (desc) desc.textContent = algorithmModeDescription(option, locale);
+    });
+}
+
+function renderInterviewAlgorithmMenu() {
+    const menu = document.getElementById('interview-algorithm-menu');
+    if (!menu || menu.dataset.rendered === 'true') return;
+    menu.dataset.rendered = 'true';
+
+    const locale = readLocale();
+    const selectedId = readInterviewAlgorithmMode();
+
+    INTERVIEW_ALGORITHM_MODES.forEach((option) => {
+        const item = document.createElement('li');
+        item.setAttribute('role', 'option');
+        item.dataset.algorithmId = option.id;
+        item.className = 'toolbar-dropdown__option';
+        if (option.id === selectedId) {
+            item.setAttribute('aria-selected', 'true');
+            item.classList.add('is-selected');
+        }
+
+        item.innerHTML = `
+            <span class="toolbar-dropdown__option-label">${algorithmModeLabel(option, locale)}</span>
+            <span class="toolbar-dropdown__option-desc">${algorithmModeDescription(option, locale)}</span>
+        `;
+
+        item.addEventListener('click', () => {
+            if (option.id === readInterviewAlgorithmMode()) {
+                closeInterviewAlgorithmMenu();
+                return;
+            }
+            saveInterviewAlgorithmMode(option.id);
+            menu.querySelectorAll('[role="option"]').forEach((node) => {
+                node.classList.remove('is-selected');
+                node.setAttribute('aria-selected', 'false');
+            });
+            item.classList.add('is-selected');
+            item.setAttribute('aria-selected', 'true');
+            updateInterviewAlgorithmLabel();
+            closeInterviewAlgorithmMenu();
+            closeMobileToolbar();
+            document.dispatchEvent(
+                new CustomEvent('interview-algorithm-mode-changed', {
+                    detail: { mode: option.id }
+                })
+            );
+        });
+
+        menu.appendChild(item);
+    });
+}
+
+function bindInterviewAlgorithmDropdown() {
+    const dropdown = document.getElementById('interview-algorithm-dropdown');
+    const trigger = document.getElementById('interview-algorithm-trigger');
+    if (!dropdown || !trigger || dropdown.dataset.bound === 'true') return;
+    dropdown.dataset.bound = 'true';
+
+    renderInterviewAlgorithmMenu();
+    updateInterviewAlgorithmLabel();
+
+    trigger.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleInterviewAlgorithmMenu();
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!dropdown.contains(event.target as Node)) closeInterviewAlgorithmMenu();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeInterviewAlgorithmMenu();
+    });
+}
+
+let interviewModelCatalog: InterviewModelOption[] = [];
+
+async function bindInterviewModelDropdown() {
     const dropdown = document.getElementById('interview-model-dropdown');
     const trigger = document.getElementById('interview-model-trigger');
     if (!dropdown || !trigger || dropdown.dataset.bound === 'true') return;
     dropdown.dataset.bound = 'true';
 
-    renderInterviewModelMenu();
-    updateInterviewModelLabel();
+    const data = await loadInterviewModels();
+    const picked = pickInterviewModelOption(data, readInterviewModel());
+    if (picked) saveInterviewModel(picked.id);
+
+    interviewModelCatalog = data.models;
+    renderInterviewModelMenu(interviewModelCatalog);
+    updateInterviewModelLabel(interviewModelCatalog);
+
+    if (interviewModelCatalog.length === 0) {
+        trigger.disabled = true;
+        const labelEl = document.getElementById('interview-model-label');
+        if (labelEl) labelEl.textContent = '—';
+        return;
+    }
+
+    trigger.disabled = false;
 
     trigger.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -391,14 +540,15 @@ function updateLastResultLink() {
 
 let lastDeliveryListenerBound = false;
 
-export function initAppToolbar() {
+export async function initAppToolbar() {
     const locale = readLocale();
     applyLocaleToDocument(locale);
     bindLocaleDropdown();
     updateLocaleLabel();
     bindMobileToolbarMenu();
     bindStartOver();
-    bindInterviewModelDropdown();
+    await bindInterviewModelDropdown();
+    bindInterviewAlgorithmDropdown();
     updateLastResultLink();
     syncToolbarPanelVisibility();
     window.addEventListener('resize', syncToolbarPanelVisibility);
@@ -409,7 +559,9 @@ export function initAppToolbar() {
     }
 }
 
-initAppToolbar();
-document.addEventListener('astro:page-load', initAppToolbar);
+void initAppToolbar();
+document.addEventListener('astro:page-load', () => {
+    void initAppToolbar();
+});
 
 export {};

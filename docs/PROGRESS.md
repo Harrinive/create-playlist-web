@@ -1,6 +1,6 @@
 # Progress log — create-playlist-web
 
-Chronological record through **Phase 3 complete** (June 2026).
+Chronological record through **Phase 4 complete** (June 2026).
 
 ---
 
@@ -79,11 +79,11 @@ Chronological record through **Phase 3 complete** (June 2026).
 | Item | Detail |
 |------|--------|
 | `POST /api/curate` | Step 2.2.3 via Node `llm-router` — OpenAI, Anthropic, Cursor |
-| `GET /api/curate/models` | Lists models from configured API keys (incl. `cursor:composer-2.5`) |
+| `GET /api/curate/models` | Lists models from `model-catalog.ts` (incl. `cursor:composer-2.5`) |
 | `POST /api/verify` | Batched Spotify search, match rules, cooldown, trim to ~20 (preserve order) |
 | `POST /api/publish` | Private playlist create + add tracks; per-user playlist memory (Postgres / in-memory dev) |
 | `apps/api/src/llm-router/` | Extractable Node gateway; Python twin in toolbox `packages/llm-router/` |
-| Model catalog | `apps/api/src/llm/models.ts` — Composer 2.5, GPT-4o, GPT-4o mini, Claude Sonnet |
+| Model catalog | `apps/api/src/model-catalog.ts` — Composer 2.5 (curation only), GPT-5.4 mini, Claude Haiku 4.5, Claude Sonnet 4.6 |
 
 ### Frontend (`apps/web/`)
 
@@ -125,6 +125,65 @@ Chronological record through **Phase 3 complete** (June 2026).
 
 ---
 
+## Phase 4 — LLM interview (complete)
+
+### Backend (`apps/api/`)
+
+| Item | Detail |
+|------|--------|
+| `POST /api/interview/next` | Generate or refresh one interview step from prior answers + rejected stems |
+| `GET /api/interview/models` | Interview model roster (OpenAI + Anthropic; separate from curation catalog) |
+| `apps/api/src/llm/interview/` | Per-turn algorithm: plan → draft → verify (+ optional revise); `INTERVIEW_ALGORITHM_MODE=fast\|full` |
+| `INTERVIEW_LLM_MODEL` | Server default when client omits `model` on `/api/interview/next` |
+| `LLM_MODEL` removed | Use `CURATE_LLM_MODEL` and `INTERVIEW_LLM_MODEL` only |
+
+### Frontend (`apps/web/`)
+
+| Item | Detail |
+|------|--------|
+| Interview always via API | Static question bank removed (`interview-questions.ts` → `interview-meta.ts`) |
+| Sidebar model picker | Fetches `/api/interview/models`; stores slug in `sessionStorage` (like delivery curation) |
+| **New question** | `POST /api/interview/next` with `refresh: true` + rejected stems |
+| Bilingual UX | Chinese site copy; stems/options show Chinese + lighter English subline |
+| Chinese publish metadata | `buildPlaylistMetadata(answers, locale)` at publish |
+| Delivery locale fix | `applyLocaleToDocument()` after async model buttons append |
+
+### Bugs fixed during Phase 4
+
+| Bug | Cause | Fix |
+|-----|-------|-----|
+| Delivery buttons empty in 中文 | Dynamic buttons missed locale apply | `delivery-page.ts` + `locale-changed` listener |
+| **New question** dead until language switch | Double `bootInterview()` left stale DOM | Session guard + event delegation; single boot on `astro:page-load` |
+| Chip checkmark on new line | Flex layout on multi-line labels | CSS grid on `.chip-option` |
+| API crash loop on Fly | Invalid `CURSOR_CLOUD_REPO` secret | Set valid GitHub URL on Fly |
+
+### Production ops (Phase 4)
+
+| Step | Status |
+|------|--------|
+| `DATABASE_URL` → Supabase | Done |
+| `CURSOR_CLOUD_REPO` valid on Fly | Done |
+| `INTERVIEW_LLM_MODEL` on Fly (optional) | Recommended |
+| Unset legacy `LLM_MODEL` Fly secret | Recommended (`fly secrets unset LLM_MODEL -a create-playlist-api`) |
+| Production smoke: `/health`, interview models, AI interview, build | **Verified** |
+
+**Phase 4 exit criteria met:** LLM interview with model picker and refresh on production.
+
+### Model roster (June 2026)
+
+Central catalog: **`apps/api/src/model-catalog.ts`** — edit one file to change interview + curation pickers.
+
+| Slug | Interview | Curation |
+|------|-----------|----------|
+| `cursor:composer-2.5` | — | ✓ |
+| `openai:gpt-5.4-mini` | ✓ | ✓ |
+| `anthropic:claude-haiku-4-5` | ✓ | ✓ |
+| `anthropic:claude-sonnet-4-6` | ✓ | ✓ |
+
+Per-turn interview algorithm (`INTERVIEW_ALGORITHM_MODE=full`), sidebar algorithm toggle, and `LLM_MODEL` removal shipped in same release window.
+
+---
+
 ## Phase 3 — earlier notes (archive)
 
 ### Backend (`apps/api/`) — initial ship
@@ -161,12 +220,24 @@ Chronological record through **Phase 3 complete** (June 2026).
 
 ---
 
-## Not done yet — Phase 4+
+## Not done yet
 
-| Phase | Work |
-|-------|------|
-| **Phase 4** | LLM interview questions (`INTERVIEW_LLM_MODEL`); **refresh → regenerate** active question; dychen.net nav link; Spotify app review for public users |
-| **Ops optional** | Migrate `DATABASE_URL` to Supabase/Neon; narrow CF build watch paths to `apps/web/**`; extract Node `llm-router` to shared npm package |
+| Item | Notes |
+|------|-------|
+| dychen.net nav link | Deferred |
+| Spotify app review | Public users beyond Dev Mode allowlist |
+| Interview skill parity | **Partial** — `full` mode runs plan/draft/verify pipeline; not a Cursor agent |
+| Ops optional | Extract Node `llm-router` to toolbox npm; narrow CF build watch paths |
+
+### Interview generation vs skill
+
+The Cursor skill runs the full **per-turn algorithm** privately before each question. The web API **`full` mode** (`INTERVIEW_ALGORITHM_MODE=full`, default) approximates this with three chat calls per question:
+
+1. **Plan** — gap check, hypotheses, axis, scene beat, filter drops  
+2. **Draft** — bilingual stem + options JSON  
+3. **Verify** — consistency, Q1 coverage, partition, creativity; one revise if needed  
+
+`fast` mode keeps the original single-call path. Deterministic filter hints live in `interview/filter.ts`. This is still not a Cursor agent — latency stays suitable for the chip wizard (~5–15s per question on GPT/Claude).
 
 ---
 
@@ -177,28 +248,21 @@ Chronological record through **Phase 3 complete** (June 2026).
 3. **Spotify redirect URI must exactly match** the API callback URL including host (`127.0.0.1` vs `localhost` matters).
 4. **CF Pages “Retry deployment”** — row menu (⋮) or deployment Details; push to `main` also triggers auto deploy.
 5. **Astro CSS in dev** — import styles in layout/frontmatter; do not use `?url` + `<link rel="stylesheet">` for global theme.
-6. **LLM keys on Fly** — at least one of `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `CURSOR_API_KEY` for `/api/curate`; set `CURATE_LLM_MODEL` to match provider. Cursor on Fly needs `CURSOR_LLM_RUNTIME=cloud` + `CURSOR_CLOUD_REPO`.
+6. **LLM keys on Fly** — at least one of `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `CURSOR_API_KEY` for `/api/curate` and `/api/interview/next`; set `CURATE_LLM_MODEL` and optionally `INTERVIEW_LLM_MODEL` to match provider. Cursor on Fly needs `CURSOR_LLM_RUNTIME=cloud` + valid `CURSOR_CLOUD_REPO`.
 7. **Node vs Python llm-router** — Vibelist uses `apps/api/src/llm-router/`; Cycloud uses toolbox `packages/llm-router/`. Keep model slugs and env vars aligned; see README in each package.
 
 ---
 
-## Interview UX refresh (June 2026)
+## Interview UX (June 2026)
 
-### Shipped (web)
+### Shipped
 
 | Item | Detail |
 |------|--------|
-| Stacked interview | Questions appear below prior answers; scroll to review; retro-edit with confirm clears downstream |
-| Sidebar toolbar | Language + interview model dropdowns; mobile **Menu** panel; last prompt / last result link |
-| **New question** (refresh) | Button on the **active** (unanswered) step only — records rejected stem in `sessionStorage` (`create-playlist-interview-rejected`) |
-| Static v1 behavior | Refresh shows loading, then re-shows the same bank question (no LLM yet) |
-| Helpers | `apps/web/src/lib/interview-refresh.ts` — `recordRejectedQuestion`, `differentFromInstruction()` for Phase 4 prompt |
-
-### Phase 4 todo (not implemented)
-
-- `POST /api/interview/next` — LLM generates next/refreshed question from prior answers + rejected stems (`Be different from: …`)
-- Wire `refreshActiveStep()` in `interview-wizard.ts` to API when `INTERVIEW_LLM_MODEL` ≠ static
-- Optional: surface refresh history in dev tools or admin for debugging
+| Stacked interview | Questions appear below prior answers; retro-edit with confirm clears downstream |
+| Sidebar toolbar | Language + **interview model** dropdown (API roster); mobile **Menu** panel |
+| **New question** | Active step only — rejected stem in `sessionStorage`; LLM regen via API |
+| LLM step cache | `sessionStorage` `create-playlist-interview-llm-steps` for back-navigation |
 
 ---
 

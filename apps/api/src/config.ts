@@ -17,7 +17,7 @@ const envSchema = z.object({
     CURSOR_LOCAL_CWD: z.string().min(1).optional(),
     CURATE_LLM_MODEL: z.string().min(1).optional(),
     INTERVIEW_LLM_MODEL: z.string().min(1).optional(),
-    LLM_MODEL: z.string().min(1).optional(),
+    INTERVIEW_ALGORITHM_MODE: z.enum(['fast', 'full']).default('full'),
     PORT: z.coerce.number().int().positive().default(3001),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development')
 });

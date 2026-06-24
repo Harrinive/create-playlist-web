@@ -78,29 +78,54 @@ const showInterviewModel = pathname.startsWith('/interview');
 
             {
                 showInterviewModel && (
-                    <li class="app-toolbar__item app-toolbar__item--dropdown">
-                        <div class="toolbar-dropdown" id="interview-model-dropdown">
-                            <button
-                                type="button"
-                                class="app-toolbar__btn toolbar-dropdown__trigger"
-                                id="interview-model-trigger"
-                                aria-haspopup="listbox"
-                                aria-expanded="false"
-                                aria-controls="interview-model-menu"
-                            >
-                                <span class="toolbar-dropdown__prefix" data-locale="en">Interview</span>
-                                <span class="toolbar-dropdown__prefix" data-locale="zh" hidden>访谈</span>
-                                <span class="toolbar-dropdown__value" id="interview-model-label"></span>
-                                <span class="toolbar-dropdown__caret" aria-hidden="true">▾</span>
-                            </button>
-                            <ul
-                                class="toolbar-dropdown__menu"
-                                id="interview-model-menu"
-                                role="listbox"
-                                hidden
-                            />
-                        </div>
-                    </li>
+                    <>
+                        <li class="app-toolbar__item app-toolbar__item--dropdown">
+                            <div class="toolbar-dropdown" id="interview-model-dropdown">
+                                <button
+                                    type="button"
+                                    class="app-toolbar__btn toolbar-dropdown__trigger"
+                                    id="interview-model-trigger"
+                                    aria-haspopup="listbox"
+                                    aria-expanded="false"
+                                    aria-controls="interview-model-menu"
+                                >
+                                    <span class="toolbar-dropdown__prefix" data-locale="en">Interview</span>
+                                    <span class="toolbar-dropdown__prefix" data-locale="zh" hidden>访谈</span>
+                                    <span class="toolbar-dropdown__value" id="interview-model-label"></span>
+                                    <span class="toolbar-dropdown__caret" aria-hidden="true">▾</span>
+                                </button>
+                                <ul
+                                    class="toolbar-dropdown__menu"
+                                    id="interview-model-menu"
+                                    role="listbox"
+                                    hidden
+                                />
+                            </div>
+                        </li>
+                        <li class="app-toolbar__item app-toolbar__item--dropdown">
+                            <div class="toolbar-dropdown" id="interview-algorithm-dropdown">
+                                <button
+                                    type="button"
+                                    class="app-toolbar__btn toolbar-dropdown__trigger"
+                                    id="interview-algorithm-trigger"
+                                    aria-haspopup="listbox"
+                                    aria-expanded="false"
+                                    aria-controls="interview-algorithm-menu"
+                                >
+                                    <span class="toolbar-dropdown__prefix" data-locale="en">Algorithm</span>
+                                    <span class="toolbar-dropdown__prefix" data-locale="zh" hidden>算法</span>
+                                    <span class="toolbar-dropdown__value" id="interview-algorithm-label"></span>
+                                    <span class="toolbar-dropdown__caret" aria-hidden="true">▾</span>
+                                </button>
+                                <ul
+                                    class="toolbar-dropdown__menu"
+                                    id="interview-algorithm-menu"
+                                    role="listbox"
+                                    hidden
+                                />
+                            </div>
+                        </li>
+                    </>
                 )
             }
 

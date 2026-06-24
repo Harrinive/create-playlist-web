@@ -9,12 +9,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script>
-    import { INTERVIEW_BY_LOCALE } from '../lib/interview-questions';
     import { initInterviewWizard } from '../scripts/interview-wizard.ts';
 
-    function bootInterview() {
-        initInterviewWizard(INTERVIEW_BY_LOCALE);
-    }
-
-    document.addEventListener('astro:page-load', bootInterview);
+    document.addEventListener('astro:page-load', () => initInterviewWizard());
 </script>

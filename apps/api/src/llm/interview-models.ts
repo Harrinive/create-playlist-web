@@ -1,4 +1,5 @@
 import type { Env } from '../config.js';
+import { interviewCatalogEntries } from '../model-catalog.js';
 import {
     anyLlmProviderConfigured,
     isProviderConfigured,
@@ -13,34 +14,19 @@ export type InterviewModelOption = {
     provider: 'openai' | 'anthropic' | 'cursor';
 };
 
-/** Step 1 interview roster — separate from Step 2.2.3 curation models. */
-const INTERVIEW_MODEL_CATALOG: InterviewModelOption[] = [
-    {
-        id: 'openai:gpt-4o-mini',
-        provider: 'openai',
-        labelEn: 'GPT-4o mini',
-        labelZh: 'GPT-4o mini'
-    },
-    {
-        id: 'openai:gpt-4o',
-        provider: 'openai',
-        labelEn: 'GPT-4o',
-        labelZh: 'GPT-4o'
-    },
-    {
-        id: 'anthropic:claude-sonnet-4-6',
-        provider: 'anthropic',
-        labelEn: 'Claude Sonnet',
-        labelZh: 'Claude Sonnet'
-    }
-];
-
 export function listInterviewModels(env: Env): InterviewModelOption[] {
-    return INTERVIEW_MODEL_CATALOG.filter((option) => isProviderConfigured(env, option.provider));
+    return interviewCatalogEntries()
+        .filter((entry) => isProviderConfigured(env, entry.provider))
+        .map((entry) => ({
+            id: entry.id,
+            labelEn: entry.labelEn,
+            labelZh: entry.labelZh,
+            provider: entry.provider
+        }));
 }
 
 export function resolveInterviewDefaultModel(env: Env): string | null {
-    const preferred = env.INTERVIEW_LLM_MODEL ?? env.LLM_MODEL;
+    const preferred = env.INTERVIEW_LLM_MODEL;
     const available = listInterviewModels(env);
     if (available.length === 0) return null;
 

@@ -48,7 +48,7 @@ Web app for mood-driven Spotify playlist creation — a browser version of the *
 | `GET /api/curate/models` | Delivery model picker (OpenAI, Anthropic, Cursor) |
 | Node `llm-router` | `apps/api/src/llm-router/` — Python twin in toolbox |
 | `/build` full flow | Curate → verify → publish; model resolved from API at build time |
-| Fly LLM secrets | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CURSOR_API_KEY`, `CURATE_LLM_MODEL` |
+| Fly LLM secrets | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CURSOR_API_KEY`, `CURATE_LLM_MODEL`, `INTERVIEW_LLM_MODEL` |
 | Production E2E | Interview → delivery → build → playlist URL verified |
 
 ### Not done yet (Phase 4+)

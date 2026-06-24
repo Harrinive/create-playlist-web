@@ -2,15 +2,19 @@ import { getApiBaseUrl } from './api-config';
 import type { BilingualInterviewStep } from './interview-i18n';
 import type { InterviewAnswers } from './types';
 
+import type { InterviewAlgorithmMode } from './interview-algorithm-mode';
+
 export type InterviewNextResponse = {
     step: BilingualInterviewStep;
     model: string | null;
     modelLabel: string | null;
+    algorithmMode?: InterviewAlgorithmMode;
 };
 
 export type InterviewModelsResponse = {
     models: Array<{ id: string; labelEn: string; labelZh: string }>;
     defaultModel: string | null;
+    defaultAlgorithmMode?: InterviewAlgorithmMode;
     llmConfigured: boolean;
 };
 
@@ -33,6 +37,7 @@ export async function fetchInterviewNext(input: {
     rejectedStems: string[];
     refresh: boolean;
     model?: string;
+    algorithmMode?: InterviewAlgorithmMode;
 }): Promise<InterviewNextResponse> {
     const api = getApiBaseUrl();
     if (!api) {

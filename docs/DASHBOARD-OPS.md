@@ -132,7 +132,9 @@ Set via `fly secrets set -a create-playlist-api`. Values live only on Fly — **
 | `CURSOR_LLM_RUNTIME` | `cloud` on Fly; `local` for dev | Required with Cursor on production |
 | `CURSOR_CLOUD_REPO` | Git URL for Cursor cloud agents | e.g. `https://github.com/Harrinive/create-playlist-web` |
 | `CURSOR_CLOUD_REF` | Git ref for cloud repo | `main` |
-| `CURATE_LLM_MODEL` / `LLM_MODEL` | Default curation slug | e.g. `cursor:composer-2.5` or `openai:gpt-4o-mini` |
+| `CURATE_LLM_MODEL` | Default curation slug | e.g. `cursor:composer-2.5` or `openai:gpt-5.4-mini` |
+| `INTERVIEW_LLM_MODEL` | Default interview slug | e.g. `openai:gpt-5.4-mini` |
+| `INTERVIEW_ALGORITHM_MODE` | Interview generation pipeline | `full` (plan→draft→verify, default) or `fast` (single call) |
 
 List without values:
 
@@ -144,9 +146,8 @@ fly secrets list -a create-playlist-api
 
 | Item | Notes |
 |------|-------|
-| Provider | Fly Managed Postgres (attached to app) |
-| Connection | `DATABASE_URL` Fly secret |
-| Future | Optional migrate to Supabase free tier (Cycloud pattern) — update `DATABASE_URL` only |
+| Provider | **Supabase** Postgres |
+| Connection | `DATABASE_URL` Fly secret (Supabase connection string) |
 
 ### Deploy commands
 

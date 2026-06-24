@@ -275,7 +275,7 @@ Alternative: two repos (`create-playlist-web` + `create-playlist-api`) — defer
 - [x] `POST /api/publish` — create private playlist, add tracks, per-user playlist memory (Postgres)
 - [x] `/build` UI — curate → verify → publish + results table; prompt fallback if &lt;50% verify
 - [x] **Curation model picker at delivery** — `GET /api/curate/models`; pass slug to `/api/curate`
-- [x] **`CURATE_LLM_MODEL`** server default (with `LLM_MODEL` alias)
+- [x] **`CURATE_LLM_MODEL`** server default for curation
 - [x] **Cursor provider** — `cursor:composer-2.5` via `CURSOR_API_KEY` + `@cursor/sdk`
 - [x] Theme CSS fix for `astro dev` (`BaseHead.astro` import)
 - [x] Production E2E on Fly (interview → delivery → build → playlist)
@@ -286,21 +286,23 @@ Alternative: two repos (`create-playlist-web` + `create-playlist-api`) — defer
 
 | Role | Skill step | Uses LLM? | Planned config / UX |
 |------|------------|-----------|---------------------|
-| **Interview** | Step 1 | Optional (Phase 4) | `INTERVIEW_LLM_MODEL` — separate from curation |
+| **Interview** | Step 1 | **Yes** | User pick in sidebar → slug on `POST /api/interview/next`; server fallback `INTERVIEW_LLM_MODEL` |
 | **Curation** | Step 2.2.3 | **Yes** | User pick at `/delivery` → slug on `POST /api/curate`; server fallback `CURATE_LLM_MODEL` |
 | **Orchestration** | Steps 2.2.4–2.2.9 | **No** | Deterministic API (verify, trim, publish) — no model |
 
 Step 2.1 prompt today is client-side templates (no LLM). Orchestration must never re-curate or reorder from scratch regardless of model.
 
-### Phase 4 — Polish
+### Phase 4 — LLM interview (complete)
 
 - [x] Chinese interview mode toggle *(shipped in Phase 1)*
-- [ ] LLM-generated interview questions (skill parity) — uses `INTERVIEW_LLM_MODEL`, not the curation model
-- [ ] **New question** refresh on active step — `POST /api/interview/next` with prior answers + rejected stems (`Be different from: …`); UI + `interview-refresh.ts` shipped in static v1
+- [x] LLM-generated interview questions — `INTERVIEW_LLM_MODEL` + sidebar model picker
+- [x] **New question** refresh — `POST /api/interview/next` with rejected stems
 - [x] Per-user playlist memory in Postgres *(shipped in Phase 3)*
+- [x] `DATABASE_URL` on Supabase
 - [ ] Link from dychen.net nav
 - [ ] Spotify app review for public users
 - [ ] Extract `spotify-api` into toolbox (shared with MCP server)
+- [x] Per-turn interview algorithm (`INTERVIEW_ALGORITHM_MODE=full` — plan → draft → verify)
 
 ---
 
@@ -325,19 +327,18 @@ Step 2.1 prompt today is client-side templates (no LLM). Orchestration must neve
 | `SPOTIFY_CLIENT_SECRET` | yes | Token exchange |
 | `SPOTIFY_REDIRECT_URI` | yes | OAuth callback |
 | `SESSION_SECRET` | yes | Cookie signing |
-| `DATABASE_URL` | yes | Neon Postgres |
+| `DATABASE_URL` | yes | Supabase Postgres (or any Postgres) |
 | `WEB_ORIGIN` | yes | CORS — `https://vibelist.dychen.net` |
 | `OPENAI_API_KEY` | one of* | OpenAI curation (`openai:gpt-4o-mini`, etc.) |
 | `ANTHROPIC_API_KEY` | one of* | Anthropic curation (`anthropic:claude-sonnet-4-6`, etc.) |
 | `CURSOR_API_KEY` | one of* | Cursor curation (`cursor:composer-2.5`, etc.) via Node `llm-router` |
-| `LLM_MODEL` | no | **Current** server default for `/api/curate` when request omits `model` (e.g. `openai:gpt-4o-mini`) |
-| `CURATE_LLM_MODEL` | no | **Planned** rename/default for Step 2.2.3 only (replaces `LLM_MODEL`) |
-| `INTERVIEW_LLM_MODEL` | no | **Planned** Phase 4 — Step 1 question generation only |
+| `CURATE_LLM_MODEL` | no | Server default for `/api/curate` when request omits `model` |
+| `INTERVIEW_LLM_MODEL` | no | Server default for `/api/interview/next` when request omits `model` |
 | `CURSOR_LLM_RUNTIME` / `CURSOR_CLOUD_REPO` | no | Cursor provider only — see toolbox `llm-router` |
 
-\*At least **one** LLM key required for `/api/curate`. You do **not** need both OpenAI and Anthropic unless you want multiple model families on the delivery panel. Set `LLM_MODEL` (later `CURATE_LLM_MODEL`) to match the provider you configured.
+\*At least **one** LLM key required for `/api/curate` and `/api/interview/next`. Set `CURATE_LLM_MODEL` and `INTERVIEW_LLM_MODEL` to match the providers you configured.
 
-**Fly secrets (production):** add whichever keys you use, e.g. `fly secrets set OPENAI_API_KEY=... LLM_MODEL=openai:gpt-4o-mini -a create-playlist-api`. Add `ANTHROPIC_API_KEY` only if offering Claude tracklist options. Add `CURSOR_API_KEY` after Cursor provider ships.
+**Fly secrets (production):** e.g. `fly secrets set OPENAI_API_KEY=... CURATE_LLM_MODEL=openai:gpt-4o-mini INTERVIEW_LLM_MODEL=openai:gpt-4o-mini -a create-playlist-api`. Unset legacy `LLM_MODEL` if still present.
 
 ---
 
@@ -357,7 +358,7 @@ Step 2.1 prompt today is client-side templates (no LLM). Orchestration must neve
 
 1. ~~**Domain:**~~ **Resolved** — `vibelist.dychen.net` on Cloudflare Pages
 2. ~~**API language:**~~ **Resolved** — Node Fastify API; Node `llm-router` in `apps/api/src/llm-router/` (Python twin in toolbox)
-3. ~~**Interview v1:**~~ **Resolved** — static wizard for v1; LLM interview in Phase 4 with separate `INTERVIEW_LLM_MODEL`
+3. ~~**Interview v1:**~~ **Resolved** — LLM interview (Phase 4); static bank removed
 4. ~~**Curation providers:**~~ **Resolved** — Node `llm-router` (OpenAI, Anthropic, Cursor); extract to npm when reused
 5. **Repo name on GitHub:** `create-playlist-web` vs `teahouse-playlist`
 6. ~~**Public vs private repo:**~~ **Resolved** — public at [Harrinive/create-playlist-web](https://github.com/Harrinive/create-playlist-web)

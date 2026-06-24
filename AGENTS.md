@@ -21,13 +21,14 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 | Item | State |
 |------|-------|
 | Repo / git | **Public** — `Harrinive/create-playlist-web`, `main` |
-| Phase | **Phase 3 complete** — curate / verify / publish + Cursor curation |
+| Phase | **Phase 4 complete** — LLM interview + bilingual UX |
 | Frontend | `apps/web/` — Astro 6, Whono-style UI |
-| Interview | Stacked static wizard (M1–M5), EN + 中文; **New question** refresh on active step (LLM regen Phase 4) |
+| Interview | LLM-generated questions (sidebar model picker); EN + 中文; **New question** refresh via API |
 | Delivery | `/delivery` — Prompt + per-model tracklist options (Step 2.2.3) |
 | Prompt | Client-side Step 2.1 (`build-prompt.ts`) |
 | Build path | `/build` — OAuth + curate → verify → publish UI |
 | API | `apps/api/` on Fly — `api.vibelist.dychen.net` |
+| Database | **Supabase** Postgres (`DATABASE_URL` on Fly) |
 | Live web | **https://vibelist.dychen.net** |
 | Ops docs | [docs/PROGRESS.md](./docs/PROGRESS.md), [docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md) |
 
@@ -62,6 +63,7 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 |------|--------|
 | `POST /api/curate`, `/api/verify`, `/api/publish` | Done |
 | `GET /api/curate/models` + delivery model picker | Done |
+| Model catalog | `apps/api/src/model-catalog.ts` — single roster; interview vs curation via flags |
 | Node `llm-router` (`apps/api/src/llm-router/`) | Done — OpenAI, Anthropic, Cursor (`@cursor/sdk`) |
 | `CURSOR_API_KEY` + `cursor:composer-2.5` at delivery | Done — verified local + production |
 | Per-user playlist memory (Postgres) | Done |
@@ -71,12 +73,27 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 
 **Phase 3 exit criteria:** met — interview → delivery (model) → build → playlist on production.
 
+### Phase 4 (complete)
+
+| Item | Status |
+|------|--------|
+| `POST /api/interview/next`, `GET /api/interview/models` | Done |
+| `INTERVIEW_LLM_MODEL` server default (separate from `CURATE_LLM_MODEL`) | Done |
+| Sidebar interview **model picker** (GPT-4o mini, GPT-4o, Claude Sonnet) | Done — static question bank removed |
+| **New question** refresh → LLM regen with rejected stems | Done |
+| Bilingual interview (Chinese UI + EN/ZH stems) | Done |
+| Chinese playlist title/description at publish | Done |
+| Production smoke test (API health, interview, build path) | **Verified** |
+| `LLM_MODEL` env alias | **Removed** — use `CURATE_LLM_MODEL` / `INTERVIEW_LLM_MODEL` only |
+
+**Phase 4 exit criteria:** met — LLM interview E2E on production with model picker.
+
 ### Next recommended work
 
-1. **Phase 4 interview LLM:** wire **New question** refresh → `POST /api/interview/next` with rejected stems (`differentFromInstruction`)
-2. Optional: migrate `DATABASE_URL` to Supabase; Spotify app review for public users
+1. Link from dychen.net nav
+2. Spotify app review for public users (beyond allowlist)
 3. Optional: extract Node `llm-router` to toolbox npm when a second Node consumer exists
-4. Link from dychen.net nav
+4. Optional: tune interview verify rules or `interview/filter.ts` heuristics
 
 ---
 
@@ -113,7 +130,7 @@ MCP is **not** used in production. Port `createSpotifyApi` / `spotifyFetch` from
 
 | Skill | Web | Status |
 |-------|-----|--------|
-| Step 1 interview | `/interview` — chip wizard | Done (static bank) |
+| Step 1 interview | `/interview` — LLM chip wizard + model picker | Done |
 | Step 2 delivery choice | `/delivery` — Prompt + model picker | Done |
 | Step 2.1 | `/prompt` — copyable paragraph | Done |
 | Step 2.2 build | `/build` + API | Curate / verify / publish + Cursor via Node `llm-router` |
@@ -127,6 +144,7 @@ MCP is **not** used in production. Port `createSpotifyApi` / `spotifyFetch` from
 ```text
 apps/web/          # Astro — interview, delivery, prompt, build UI
 apps/api/          # Fastify — OAuth, curate, verify, publish (see apps/api/README.md)
+apps/api/src/model-catalog.ts   # LLM roster — interview + curation flags
 ```
 
 ---
@@ -144,6 +162,6 @@ apps/api/          # Fastify — OAuth, curate, verify, publish (see apps/api/RE
 
 ## Open questions
 
-See [PLAN.md § Open decisions](./PLAN.md#open-decisions): API language (Node vs Python), interview LLM vs static (static chosen for v1).
+See [PLAN.md § Open decisions](./PLAN.md#open-decisions): API language (Node vs Python).
 
-**Resolved:** repo public; UI theme = astro-whono; domain = `vibelist.dychen.net`; API = `api.vibelist.dychen.net`; CF Pages via Git connect; Phase 2 OAuth production verified.
+**Resolved:** repo public; UI theme = astro-whono; domain = `vibelist.dychen.net`; API = `api.vibelist.dychen.net`; CF Pages via Git connect; Phase 2 OAuth production verified; Phase 4 LLM interview; `DATABASE_URL` on Supabase.

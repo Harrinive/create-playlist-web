@@ -19,7 +19,8 @@ Same as Python — see [toolbox `packages/llm-router/README.md`](https://github.
 
 ```text
 cursor:composer-2.5
-openai:gpt-4o
+openai:gpt-5.4-mini
+anthropic:claude-haiku-4-5
 anthropic:claude-sonnet-4-6
 composer-2.5              # auto-detect cursor
 ```
@@ -35,7 +36,7 @@ const text = await completeChat(env, [
 ], { model: 'cursor:composer-2.5' });
 ```
 
-App-specific curation catalog (delivery labels, which models to show) lives in `../llm/models.ts` — not in this module.
+App-specific model roster (which models appear in interview / delivery pickers) lives in `../model-catalog.ts` — not in this module.
 
 ## Environment
 

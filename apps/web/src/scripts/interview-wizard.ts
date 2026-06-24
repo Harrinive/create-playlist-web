@@ -1,6 +1,6 @@
 import type { InterviewAnswers, InterviewOption } from '../lib/types';
-import type { InterviewStep } from '../lib/interview-questions';
-import { WIZARD_LABELS, getInterviewSteps, INTERVIEW_STEP_COUNT, INTERVIEW_STEP_IDS } from '../lib/interview-questions';
+import type { InterviewStep } from '../lib/interview-meta';
+import { WIZARD_LABELS, INTERVIEW_STEP_COUNT, INTERVIEW_STEP_IDS } from '../lib/interview-meta';
 import { fetchInterviewNext } from '../lib/interview-api';
 import { bilingualStepToDisplay, fillInterviewBilingual } from '../lib/interview-i18n';
 import {
@@ -10,7 +10,8 @@ import {
     upsertLlmStep
 } from '../lib/interview-llm-cache';
 import { isApiConfigured } from '../lib/api-config';
-import { isLlmInterviewModel, readInterviewModel } from '../lib/interview-model';
+import { resolveInterviewModelId } from '../lib/interview-model';
+import { readInterviewAlgorithmMode } from '../lib/interview-algorithm-mode';
 import {
     clearRejectedQuestions,
     recordRejectedQuestion,
@@ -20,10 +21,8 @@ import { readLocale, type Locale } from '../lib/locale';
 import { SESSION_KEY } from '../lib/types';
 
 type Draft = Partial<InterviewAnswers>;
-type StepsByLocale = Record<Locale, InterviewStep[]>;
 
 const DRAFT_KEY = `${SESSION_KEY}-draft`;
-const MIN_LOADING_MS = 450;
 
 const abortByRoot = new WeakMap<HTMLElement, AbortController>();
 let wizardSession = 0;
@@ -49,15 +48,15 @@ function getSelectedMulti(draft: Draft): InterviewOption[] {
     return Array.isArray(draft.m4) ? draft.m4 : [];
 }
 
-function isStepComplete(step: InterviewStep, draft: Draft): boolean {
-    if (step.multi) return getSelectedMulti(draft).length > 0;
-    return Boolean(draft[step.id as keyof Draft]);
+function isStepIdComplete(stepId: (typeof INTERVIEW_STEP_IDS)[number], draft: Draft): boolean {
+    if (stepId === 'm4') return getSelectedMulti(draft).length > 0;
+    return Boolean(draft[stepId]);
 }
 
-function countCompletedSteps(steps: InterviewStep[], draft: Draft): number {
+function countCompletedSteps(draft: Draft): number {
     let count = 0;
-    for (const step of steps) {
-        if (!isStepComplete(step, draft)) break;
+    for (const stepId of INTERVIEW_STEP_IDS) {
+        if (!isStepIdComplete(stepId, draft)) break;
         count += 1;
     }
     return count;
@@ -69,14 +68,6 @@ function clearAnswersFromIndex(draft: Draft, fromIndex: number) {
         if (stepId === 'm4') draft.m4 = undefined;
         else delete (draft as Record<string, unknown>)[stepId];
     }
-}
-
-function useLlmInterview(): boolean {
-    return isLlmInterviewModel() && isApiConfigured();
-}
-
-function staticSteps(locale: Locale): InterviewStep[] {
-    return getInterviewSteps(locale);
 }
 
 function displayStepFromCache(stepIndex: number, locale: Locale): InterviewStep | null {
@@ -98,7 +89,8 @@ function buildDraftAnswers(draft: Draft): Partial<InterviewAnswers> {
 async function loadLlmStep(
     stepIndex: number,
     locale: Locale,
-    refresh: boolean
+    refresh: boolean,
+    modelId: string | undefined
 ): Promise<InterviewStep> {
     if (!refresh) {
         const cached = displayStepFromCache(stepIndex, locale);
@@ -110,47 +102,31 @@ async function loadLlmStep(
         stepIndex,
         priorAnswers: buildDraftAnswers(draft),
         rejectedStems: rejectedStemsForStep(INTERVIEW_STEP_IDS[stepIndex] ?? 'm1'),
-        refresh
+        refresh,
+        model: modelId,
+        algorithmMode: readInterviewAlgorithmMode()
     });
 
     upsertLlmStep(stepIndex, response.step);
     return bilingualStepToDisplay(response.step, locale) as InterviewStep;
 }
 
-async function resolveNextStep(
-    steps: InterviewStep[],
-    stepIndex: number,
-    locale: Locale
-): Promise<InterviewStep | null> {
-    if (useLlmInterview()) {
-        return loadLlmStep(stepIndex, locale, false);
-    }
-    return refreshActiveStep(steps, stepIndex);
-}
-
-async function refreshActiveStep(
-    steps: InterviewStep[],
-    stepIndex: number,
-    locale: Locale
-): Promise<InterviewStep | null> {
-    const step = steps[stepIndex];
-    if (!step) return null;
-
-    if (useLlmInterview()) {
-        return loadLlmStep(stepIndex, locale, true);
-    }
-
-    const rejectedStems = rejectedStemsForStep(step.id);
-    void readInterviewModel();
-    void rejectedStems;
-    await new Promise((resolve) => window.setTimeout(resolve, MIN_LOADING_MS));
-    return step;
-}
-
-export function initInterviewWizard(stepsByLocale: StepsByLocale) {
+export async function initInterviewWizard() {
     const root = document.getElementById('interview-wizard');
     const stackEl = document.getElementById('interview-stack');
     if (!root || !stackEl) return;
+
+    const localeForError = readLocale();
+    if (!isApiConfigured()) {
+        stackEl.innerHTML = `<p class="help-line">${WIZARD_LABELS[localeForError].apiUnavailable}</p>`;
+        return;
+    }
+
+    let interviewModelId = await resolveInterviewModelId();
+    if (!interviewModelId) {
+        stackEl.innerHTML = `<p class="help-line">${WIZARD_LABELS[localeForError].apiUnavailable}</p>`;
+        return;
+    }
 
     abortByRoot.get(root)?.abort();
     const controller = new AbortController();
@@ -167,11 +143,8 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
     let loading = false;
 
     function resolveStepsForLocale(nextLocale: Locale): InterviewStep[] {
-        if (useLlmInterview()) {
-            const cached = readLlmSteps();
-            return cached.map((step) => bilingualStepToDisplay(step, nextLocale) as InterviewStep);
-        }
-        return stepsByLocale[nextLocale] ?? staticSteps(nextLocale);
+        const cached = readLlmSteps();
+        return cached.map((step) => bilingualStepToDisplay(step, nextLocale) as InterviewStep);
     }
 
     function labels() {
@@ -344,7 +317,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
         setRefreshLoading(block, true);
 
         try {
-            const refreshed = await refreshActiveStep(steps, stepIndex, locale);
+            const refreshed = await loadLlmStep(stepIndex, locale, true, interviewModelId);
             if (!isActive()) return;
             const nextStep = refreshed ?? step;
             steps = [...steps];
@@ -453,7 +426,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
         const selected = getSelectedMulti(draft);
         if (selected.length === 0) return;
 
-        const completed = countCompletedSteps(steps, draft);
+        const completed = countCompletedSteps(draft);
         const hasDownstreamAnswers = stepIndex + 1 < completed;
         const committedIds = block.dataset.committedIds?.split(',').filter(Boolean) ?? [];
         const currentIds = selected.map((o) => o.id).sort();
@@ -467,7 +440,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
 
         if (hasDownstreamAnswers) {
             clearAnswersFromIndex(draft, stepIndex + 1);
-            if (useLlmInterview()) truncateLlmSteps(stepIndex + 1);
+            truncateLlmSteps(stepIndex + 1);
             saveDraft(draft);
             await renderStack();
             await advanceFromStep(stepIndex);
@@ -490,14 +463,14 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
         const previous = draft[step.id as keyof Draft] as InterviewOption | undefined;
         if (previous?.id === option.id) return;
 
-        const completed = countCompletedSteps(steps, draft);
+        const completed = countCompletedSteps(draft);
         const isRetro = stepIndex < completed;
 
         if (isRetro && !window.confirm(labels().changeConfirm)) return;
 
         (draft as Record<string, InterviewOption>)[step.id] = option;
         if (isRetro) clearAnswersFromIndex(draft, stepIndex + 1);
-        if (isRetro && useLlmInterview()) truncateLlmSteps(stepIndex + 1);
+        if (isRetro) truncateLlmSteps(stepIndex + 1);
         saveDraft(draft);
 
         if (isRetro) {
@@ -528,7 +501,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
             stackEl.appendChild(loadingEl);
             loadingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-            const nextStep = await resolveNextStep(steps, nextIndex, locale);
+            const nextStep = await loadLlmStep(nextIndex, locale, false, interviewModelId);
             if (!isActive()) return;
             loadingEl.remove();
 
@@ -547,7 +520,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
     async function renderStack() {
         stackEl.innerHTML = '';
         const draft = getDraft();
-        const completed = countCompletedSteps(steps, draft);
+        const completed = countCompletedSteps(draft);
 
         if (completed >= INTERVIEW_STEP_COUNT) {
             finishInterview();
@@ -555,7 +528,15 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
         }
 
         for (let i = 0; i < completed; i += 1) {
-            const step = steps[i];
+            let step = steps[i];
+            if (!step) {
+                step = await loadLlmStep(i, locale, false, interviewModelId);
+                if (!isActive()) return;
+                steps = resolveStepsForLocale(locale);
+                step = steps[i];
+            }
+            if (!step) continue;
+
             const block = createStepBlock(step, i, 'answered');
             if (step.multi) {
                 const selected = getSelectedMulti(draft);
@@ -571,7 +552,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
 
     async function ensureActiveQuestion() {
         const draft = getDraft();
-        const completed = countCompletedSteps(steps, draft);
+        const completed = countCompletedSteps(draft);
 
         if (completed >= INTERVIEW_STEP_COUNT) {
             finishInterview();
@@ -581,39 +562,30 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
         const hasTail = stackEl.querySelector('.interview-step--active, .interview-loading');
         if (hasTail) return;
 
-        if (useLlmInterview()) {
-            loading = true;
-            const loadingEl = createLoadingBlock();
-            stackEl.appendChild(loadingEl);
-            loadingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        loading = true;
+        const loadingEl = createLoadingBlock();
+        stackEl.appendChild(loadingEl);
+        loadingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-            try {
-                const activeStep = await loadLlmStep(completed, locale, false);
-                if (!isActive()) return;
-                steps = resolveStepsForLocale(locale);
-                loadingEl.remove();
-                const block = createStepBlock(activeStep, completed, 'active');
-                stackEl.appendChild(block);
-                renderOptions(block, activeStep, completed);
-            } catch (error) {
-                if (!isActive()) return;
-                loadingEl.remove();
-                const message =
-                    error instanceof Error ? error.message : 'Could not load question';
-                const err = document.createElement('p');
-                err.className = 'help-line';
-                err.textContent = message;
-                stackEl.appendChild(err);
-            } finally {
-                loading = false;
-            }
-            return;
+        try {
+            const activeStep = await loadLlmStep(completed, locale, false, interviewModelId);
+            if (!isActive()) return;
+            steps = resolveStepsForLocale(locale);
+            loadingEl.remove();
+            const block = createStepBlock(activeStep, completed, 'active');
+            stackEl.appendChild(block);
+            renderOptions(block, activeStep, completed);
+        } catch (error) {
+            if (!isActive()) return;
+            loadingEl.remove();
+            const message = error instanceof Error ? error.message : 'Could not load question';
+            const err = document.createElement('p');
+            err.className = 'help-line';
+            err.textContent = message;
+            stackEl.appendChild(err);
+        } finally {
+            loading = false;
         }
-
-        const activeStep = steps[completed];
-        const block = createStepBlock(activeStep, completed, 'active');
-        stackEl.appendChild(block);
-        renderOptions(block, activeStep, completed);
     }
 
     document.addEventListener(
@@ -632,8 +604,25 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
     );
 
     document.addEventListener(
-        'interview-model-changed',
+        'interview-algorithm-mode-changed',
         () => {
+            clearDraft();
+            clearRejectedQuestions();
+            clearLlmSteps();
+            stackEl.innerHTML = '';
+            steps = resolveStepsForLocale(locale);
+            void renderStack().then(() => {
+                if (!isActive()) return;
+                return ensureActiveQuestion();
+            });
+        },
+        { signal }
+    );
+
+    document.addEventListener(
+        'interview-model-changed',
+        async () => {
+            interviewModelId = (await resolveInterviewModelId()) ?? interviewModelId;
             clearDraft();
             clearRejectedQuestions();
             clearLlmSteps();
