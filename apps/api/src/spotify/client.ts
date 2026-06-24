@@ -128,7 +128,39 @@ export type SpotifySearchTrack = {
     name: string;
     artists: Array<{ name: string }>;
     uri: string;
+    duration_ms: number;
+    album?: { name: string };
 };
+
+type SpotifyFetchOptions = {
+    method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+    body?: unknown;
+};
+
+export async function spotifyFetch<T>(
+    accessToken: string,
+    path: string,
+    options: SpotifyFetchOptions = {}
+): Promise<T> {
+    const response = await fetch(`https://api.spotify.com/v1/${path}`, {
+        method: options.method ?? 'GET',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: options.body ? JSON.stringify(options.body) : undefined
+    });
+
+    if (!response.ok) {
+        throw new Error(`Spotify API failed (${response.status}): ${await response.text()}`);
+    }
+
+    if (response.status === 204) {
+        return undefined as T;
+    }
+
+    return (await response.json()) as T;
+}
 
 type SpotifySearchResponse = {
     tracks?: {

@@ -1,5 +1,6 @@
 import { getApiBaseUrl, hasDevHostMismatch, isApiConfigured } from '../lib/api-config';
 import { isValidAnswers } from '../lib/build-prompt';
+import type { InterviewAnswers } from '../lib/types';
 import { SESSION_KEY } from '../lib/types';
 
 type MeResponse =
@@ -11,13 +12,63 @@ type SearchResponse = {
     tracks: Array<{ id: string; name: string; artists: string; uri: string }>;
 };
 
-function readInterviewAnswers(): boolean {
+type CompactBrief = {
+    anchor: string;
+    emotion: string;
+    pace: string;
+    sonic: string;
+    flow: string;
+    reject: string[];
+    seeds: string;
+    cooldownText?: string;
+};
+
+type ProposedLine = {
+    lineNumber: number;
+    artist: string;
+    title: string;
+    tags: string;
+    raw: string;
+};
+
+type CurateResponse = {
+    brief: CompactBrief;
+    sequenceIntent: string;
+    lines: ProposedLine[];
+    proposedCount: number;
+};
+
+type VerifyResponse = {
+    successRate: number;
+    okCount: number;
+    proposedCount: number;
+    offerPromptFallback: boolean;
+    tracks: Array<{
+        lineNumber: number;
+        id: string;
+        artist: string;
+        title: string;
+        uri: string;
+    }>;
+    skipped: Array<{ proposed: string; reason: string }>;
+};
+
+type PublishResponse = {
+    playlist: { id: string; url: string; name: string };
+    trackCount: number;
+    proposedCount: number;
+    sequenceIntent: string;
+    tracks: VerifyResponse['tracks'];
+    skipped: Array<{ proposed: string; reason: string }>;
+};
+
+function readInterviewAnswers(): InterviewAnswers | null {
     try {
         const stored = sessionStorage.getItem(SESSION_KEY);
         const raw = stored ? JSON.parse(stored) : null;
-        return isValidAnswers(raw);
+        return isValidAnswers(raw) ? raw : null;
     } catch {
-        return false;
+        return null;
     }
 }
 
@@ -31,6 +82,14 @@ function clearUrlParams() {
     window.history.replaceState({}, '', url.pathname);
 }
 
+function escapeHtml(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+}
+
 export function initBuildPage() {
     const missingEl = document.getElementById('build-missing');
     const contentEl = document.getElementById('build-content');
@@ -38,6 +97,14 @@ export function initBuildPage() {
     const connectEl = document.getElementById('build-connect');
     const connectedEl = document.getElementById('build-connected');
     const statusEl = document.getElementById('build-status');
+    const progressEl = document.getElementById('build-progress');
+    const flowEl = document.getElementById('build-flow');
+    const resultsEl = document.getElementById('build-results');
+    const fallbackEl = document.getElementById('build-fallback');
+    const resultsSummary = document.getElementById('build-results-summary');
+    const resultsOrder = document.getElementById('build-results-order');
+    const resultsSkipped = document.getElementById('build-results-skipped');
+    const startBtn = document.getElementById('build-start-btn') as HTMLButtonElement | null;
     const searchForm = document.getElementById('build-search-form') as HTMLFormElement | null;
     const searchInput = document.getElementById('build-search-input') as HTMLInputElement | null;
     const searchResults = document.getElementById('build-search-results');
@@ -47,10 +114,11 @@ export function initBuildPage() {
 
     if (!missingEl || !contentEl) return;
 
-    const hasAnswers = readInterviewAnswers();
+    const answers = readInterviewAnswers();
+    const hasAnswers = Boolean(answers);
     missingEl.hidden = hasAnswers;
     contentEl.hidden = !hasAnswers;
-    if (!hasAnswers) return;
+    if (!hasAnswers || !answers) return;
 
     const error = readUrlFlag('error');
     const connected = readUrlFlag('connected');
@@ -79,6 +147,16 @@ export function initBuildPage() {
         }
     }
 
+    function setProgress(message: string) {
+        if (!progressEl) return;
+        progressEl.textContent = message;
+        progressEl.hidden = false;
+    }
+
+    function hideProgress() {
+        if (progressEl) progressEl.hidden = true;
+    }
+
     async function showConnect() {
         if (unconfiguredEl) unconfiguredEl.hidden = true;
         if (connectEl) connectEl.hidden = false;
@@ -95,6 +173,128 @@ export function initBuildPage() {
         if (statusEl && connected) {
             statusEl.textContent = 'Spotify connected.';
             statusEl.hidden = false;
+        }
+    }
+
+    function renderResults(data: PublishResponse) {
+        if (!resultsEl || !resultsSummary || !resultsOrder || !resultsSkipped) return;
+
+        resultsSummary.innerHTML = `
+            <p><strong>Name:</strong> ${escapeHtml(data.playlist.name)}</p>
+            <p><strong>URL:</strong> <a href="${escapeHtml(data.playlist.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(data.playlist.url)}</a></p>
+            <p><strong>Tracks:</strong> ${data.trackCount} (from ${data.proposedCount} proposed)</p>
+            ${data.sequenceIntent ? `<p><strong>Sequence:</strong> ${escapeHtml(data.sequenceIntent)}</p>` : ''}
+        `;
+
+        const orderItems = data.tracks
+            .map(
+                (track, index) =>
+                    `<li>${index + 1}. ${escapeHtml(track.artist)} — ${escapeHtml(track.title)} ✓</li>`
+            )
+            .join('');
+        resultsOrder.innerHTML = `
+            <h3 class="build-results__heading">Order</h3>
+            <ol class="build-results__list">${orderItems}</ol>
+        `;
+
+        if (data.skipped.length > 0) {
+            const rows = data.skipped
+                .map(
+                    (row) =>
+                        `<tr><td>${escapeHtml(row.proposed)}</td><td>${escapeHtml(row.reason)}</td></tr>`
+                )
+                .join('');
+            resultsSkipped.innerHTML = `
+                <h3 class="build-results__heading">Not on playlist</h3>
+                <table class="build-results__table">
+                    <thead><tr><th>Line</th><th>Reason</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+        } else {
+            resultsSkipped.innerHTML = '';
+        }
+
+        resultsEl.hidden = false;
+        if (flowEl) flowEl.hidden = true;
+        if (fallbackEl) fallbackEl.hidden = true;
+    }
+
+    async function runBuild() {
+        if (!startBtn) return;
+        startBtn.disabled = true;
+        if (resultsEl) resultsEl.hidden = true;
+        if (fallbackEl) fallbackEl.hidden = true;
+
+        try {
+            setProgress('Step 2.2.3: curating tracklist…');
+            const curateResponse = await fetch(`${api}/api/curate`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers })
+            });
+            if (!curateResponse.ok) {
+                const err = (await curateResponse.json().catch(() => null)) as { error?: string } | null;
+                throw new Error(err?.error ?? 'Curate failed');
+            }
+            const curated = (await curateResponse.json()) as CurateResponse;
+
+            setProgress(`Step 2.2.4–2.2.5: verifying ${curated.proposedCount} lines on Spotify…`);
+            const verifyResponse = await fetch(`${api}/api/verify`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lines: curated.lines,
+                    brief: curated.brief
+                })
+            });
+            if (!verifyResponse.ok) {
+                const err = (await verifyResponse.json().catch(() => null)) as { error?: string } | null;
+                throw new Error(err?.error ?? 'Verify failed');
+            }
+            const verified = (await verifyResponse.json()) as VerifyResponse;
+
+            if (verified.offerPromptFallback || verified.tracks.length < 10) {
+                hideProgress();
+                if (fallbackEl) fallbackEl.hidden = false;
+                if (statusEl) {
+                    statusEl.textContent = `Only ${verified.okCount} of ${verified.proposedCount} lines verified (${Math.round(verified.successRate * 100)}%).`;
+                    statusEl.hidden = false;
+                }
+                return;
+            }
+
+            setProgress(`Step 2.2.7: publishing ${verified.tracks.length} tracks…`);
+            const publishResponse = await fetch(`${api}/api/publish`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    brief: curated.brief,
+                    sequenceIntent: curated.sequenceIntent,
+                    proposedCount: curated.proposedCount,
+                    tracks: verified.tracks,
+                    skipped: verified.skipped
+                })
+            });
+            if (!publishResponse.ok) {
+                const err = (await publishResponse.json().catch(() => null)) as { error?: string } | null;
+                throw new Error(err?.error ?? 'Publish failed');
+            }
+            const published = (await publishResponse.json()) as PublishResponse;
+            hideProgress();
+            renderResults(published);
+        } catch (buildError) {
+            hideProgress();
+            if (statusEl) {
+                statusEl.textContent =
+                    buildError instanceof Error ? buildError.message : 'Build failed — try again.';
+                statusEl.hidden = false;
+            }
+        } finally {
+            startBtn.disabled = false;
         }
     }
 
@@ -125,7 +325,17 @@ export function initBuildPage() {
         logoutBtn.addEventListener('click', async () => {
             await fetch(`${api}/auth/logout`, { method: 'POST', credentials: 'include' });
             if (searchResults) searchResults.innerHTML = '';
+            if (resultsEl) resultsEl.hidden = true;
+            if (fallbackEl) fallbackEl.hidden = true;
+            if (flowEl) flowEl.hidden = false;
             await showConnect();
+        });
+    }
+
+    if (startBtn && startBtn.dataset.bound !== 'true') {
+        startBtn.dataset.bound = 'true';
+        startBtn.addEventListener('click', () => {
+            void runBuild();
         });
     }
 

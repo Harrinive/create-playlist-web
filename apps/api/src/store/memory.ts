@@ -1,4 +1,6 @@
 import { encrypt, randomToken } from '../crypto.js';
+import type { PlaylistMemoryEntry } from './playlist-memory.js';
+import { prunePlaylistMemory } from './playlist-memory.js';
 import type { OAuthStateRecord, SessionRecord, TokenStore, UserRecord } from './types.js';
 
 export class MemoryTokenStore implements TokenStore {
@@ -6,6 +8,7 @@ export class MemoryTokenStore implements TokenStore {
     private usersBySpotifyId = new Map<string, string>();
     private sessions = new Map<string, SessionRecord>();
     private oauthStates = new Map<string, OAuthStateRecord>();
+    private playlistMemory = new Map<string, PlaylistMemoryEntry[]>();
 
     constructor(private readonly sessionSecret: string) {}
 
@@ -85,5 +88,14 @@ export class MemoryTokenStore implements TokenStore {
         if (input.refreshToken) {
             user.refreshTokenEnc = encrypt(input.refreshToken, this.sessionSecret);
         }
+    }
+
+    async getPlaylistMemory(userId: string): Promise<PlaylistMemoryEntry[]> {
+        return this.playlistMemory.get(userId) ?? [];
+    }
+
+    async appendPlaylistMemory(userId: string, entry: PlaylistMemoryEntry): Promise<void> {
+        const existing = this.playlistMemory.get(userId) ?? [];
+        this.playlistMemory.set(userId, prunePlaylistMemory([...existing, entry]));
     }
 }

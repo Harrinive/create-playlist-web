@@ -140,6 +140,79 @@
     padding-left: 1.2rem;
 }
 
+.build-flow {
+    margin: 0 0 24px;
+    max-width: 36rem;
+}
+
+.build-results {
+    margin: 0 0 28px;
+    max-width: 42rem;
+}
+
+.build-results__title {
+    margin: 0 0 12px;
+    font-size: 1.35rem;
+}
+
+.build-results__summary p {
+    margin: 0 0 8px;
+    color: var(--muted);
+    line-height: 1.65;
+}
+
+.build-results__section {
+    margin-top: 20px;
+}
+
+.build-results__heading {
+    margin: 0 0 8px;
+    font-size: 1rem;
+}
+
+.build-results__list {
+    margin: 0;
+    padding-left: 1.2rem;
+    color: var(--muted);
+    line-height: 1.65;
+}
+
+.build-results__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.build-results__table th,
+.build-results__table td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.build-results__table th {
+    color: var(--faint);
+    font-weight: 500;
+}
+
+.build-fallback {
+    margin: 0 0 24px;
+    max-width: 36rem;
+}
+
+.build-advanced {
+    margin: 0 0 24px;
+    max-width: 36rem;
+}
+
+.build-advanced summary {
+    cursor: pointer;
+    color: var(--faint);
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
 .page-kicker {
     font-size: 13px;
     color: var(--faint);

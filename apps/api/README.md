@@ -35,6 +35,9 @@ Spotify Developer redirect URI: `http://127.0.0.1:3001/auth/spotify/callback`
 | POST | `/auth/logout` | Clear session |
 | GET | `/api/me` | Session status |
 | GET | `/api/search?q=` | Track search (auth required) |
+| POST | `/api/curate` | LLM tracklist from interview answers (auth + LLM key) |
+| POST | `/api/verify` | Verify proposed lines on Spotify + trim to ~20 |
+| POST | `/api/publish` | Create private playlist + append per-user memory |
 
 Session cookie: `cp_session` (httpOnly). Production uses `SameSite=Lax` when API and web share `*.dychen.net`.
 
@@ -50,6 +53,7 @@ fly secrets set \
   SESSION_SECRET=... \
   WEB_ORIGIN=https://vibelist.dychen.net \
   DATABASE_URL=... \
+  OPENAI_API_KEY=... \
   NODE_ENV=production \
   -a create-playlist-api
 fly deploy -a create-playlist-api

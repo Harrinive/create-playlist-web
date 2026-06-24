@@ -18,6 +18,8 @@ export type OAuthStateRecord = {
     expiresAt: number;
 };
 
+export type { PlaylistMemoryEntry } from './playlist-memory.js';
+
 export interface TokenStore {
     init(): Promise<void>;
     saveOAuthState(state: string, ttlMs: number): Promise<void>;
@@ -36,5 +38,10 @@ export interface TokenStore {
     updateUserTokens(
         userId: string,
         input: { accessToken: string; expiresAt: number; refreshToken?: string }
+    ): Promise<void>;
+    getPlaylistMemory(userId: string): Promise<import('./playlist-memory.js').PlaylistMemoryEntry[]>;
+    appendPlaylistMemory(
+        userId: string,
+        entry: import('./playlist-memory.js').PlaylistMemoryEntry
     ): Promise<void>;
 }

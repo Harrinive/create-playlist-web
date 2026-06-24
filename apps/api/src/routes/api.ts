@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Env } from '../config.js';
 import { getValidAccessToken, searchTracks } from '../spotify/client.js';
 import { registerAuthRoutes, resolveSessionUser } from './auth.js';
+import { registerBuildRoutes } from './build.js';
 import type { TokenStore } from '../store/types.js';
 
 type AppContext = {
@@ -11,6 +12,7 @@ type AppContext = {
 
 export async function registerApiRoutes(app: FastifyInstance, ctx: AppContext) {
     await registerAuthRoutes(app, ctx);
+    await registerBuildRoutes(app, ctx);
 
     app.get('/health', async () => ({ ok: true }));
 

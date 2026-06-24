@@ -1,5 +1,7 @@
 import { Pool } from 'pg';
 import { encrypt, randomToken } from '../crypto.js';
+import type { PlaylistMemoryEntry } from './playlist-memory.js';
+import { prunePlaylistMemory } from './playlist-memory.js';
 import type { OAuthStateRecord, SessionRecord, TokenStore, UserRecord } from './types.js';
 
 export class PostgresTokenStore implements TokenStore {
@@ -30,6 +32,16 @@ export class PostgresTokenStore implements TokenStore {
             CREATE TABLE IF NOT EXISTS oauth_states (
                 state TEXT PRIMARY KEY,
                 expires_at BIGINT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS playlist_memory (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                spotify_playlist_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                anchor TEXT,
+                tracks JSONB NOT NULL
             );
         `);
     }
@@ -129,5 +141,51 @@ export class PostgresTokenStore implements TokenStore {
             `UPDATE users SET access_token = $2, expires_at = $3, updated_at = NOW() WHERE id = $1`,
             [userId, input.accessToken, input.expiresAt]
         );
+    }
+
+    async getPlaylistMemory(userId: string): Promise<PlaylistMemoryEntry[]> {
+        const result = await this.pool.query<{
+            createdAt: string;
+            spotifyPlaylistId: string;
+            name: string;
+            anchor: string | null;
+            tracks: PlaylistMemoryEntry['tracks'];
+        }>(
+            `SELECT created_at AS "createdAt", spotify_playlist_id AS "spotifyPlaylistId",
+                    name, anchor, tracks
+             FROM playlist_memory
+             WHERE user_id = $1
+             ORDER BY created_at ASC`,
+            [userId]
+        );
+
+        return result.rows.map((row) => ({
+            createdAt: new Date(row.createdAt).toISOString(),
+            spotifyPlaylistId: row.spotifyPlaylistId,
+            name: row.name,
+            anchor: row.anchor ?? '',
+            tracks: row.tracks
+        }));
+    }
+
+    async appendPlaylistMemory(userId: string, entry: PlaylistMemoryEntry): Promise<void> {
+        const existing = await this.getPlaylistMemory(userId);
+        const pruned = prunePlaylistMemory([...existing, entry]);
+        await this.pool.query(`DELETE FROM playlist_memory WHERE user_id = $1`, [userId]);
+        for (const playlist of pruned) {
+            await this.pool.query(
+                `INSERT INTO playlist_memory (id, user_id, created_at, spotify_playlist_id, name, anchor, tracks)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [
+                    randomToken(16),
+                    userId,
+                    playlist.createdAt,
+                    playlist.spotifyPlaylistId,
+                    playlist.name,
+                    playlist.anchor,
+                    JSON.stringify(playlist.tracks)
+                ]
+            );
+        }
     }
 }
