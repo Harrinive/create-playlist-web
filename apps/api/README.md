@@ -3,6 +3,8 @@
 **Production:** https://api.vibelist.dychen.net  
 **Fly app:** `create-playlist-api`
 
+LLM curation uses the in-repo Node **llm-router** module (`src/llm-router/`). Python twin: [toolbox `packages/llm-router`](https://github.com/Harrinive/toolbox/tree/main/packages/llm-router).
+
 ## Local dev
 
 ```bash

@@ -69,7 +69,9 @@ export async function initDeliveryPage() {
             const response = await fetch(`${api}/api/curate/models`);
             if (response.ok) {
                 const data = (await response.json()) as CurateModelsResponse;
-                models = data.models;
+                if (data.llmConfigured) {
+                    models = data.models;
+                }
             }
         } catch {
             models = [];

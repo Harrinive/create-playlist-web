@@ -2,8 +2,10 @@ import { getApiBaseUrl, hasDevHostMismatch, isApiConfigured } from '../lib/api-c
 import {
     curateModelLabel,
     currentLocale,
-    DEV_PREVIEW_CURATE_MODELS,
+    pickCurateModelOption,
     readCurateModel,
+    saveCurateModel,
+    type CurateModelOption,
     type CurateModelsResponse
 } from '../lib/curate-model';
 import { isValidAnswers } from '../lib/build-prompt';
@@ -98,7 +100,40 @@ function escapeHtml(value: string): string {
         .replaceAll('"', '&quot;');
 }
 
+const abortByRoot = new WeakMap<HTMLElement, AbortController>();
+
+async function fetchCurateModels(api: string): Promise<CurateModelsResponse> {
+    const response = await fetch(`${api}/api/curate/models`);
+    if (!response.ok) {
+        throw new Error('Could not load curation models from the API');
+    }
+    return (await response.json()) as CurateModelsResponse;
+}
+
+async function resolveBuildModel(api: string): Promise<CurateModelOption> {
+    const data = await fetchCurateModels(api);
+    const stored = readCurateModel();
+    const resolved = pickCurateModelOption(data, stored);
+    if (!resolved) {
+        throw new Error(
+            'LLM not configured on this server — set OPENAI_API_KEY or ANTHROPIC_API_KEY on the API'
+        );
+    }
+    if (stored !== resolved.id) {
+        saveCurateModel(resolved.id);
+    }
+    return resolved;
+}
+
 export function initBuildPage() {
+    const root = document.getElementById('build-page');
+    if (!root) return;
+
+    abortByRoot.get(root)?.abort();
+    const ac = new AbortController();
+    abortByRoot.set(root, ac);
+    const { signal } = ac;
+
     const missingEl = document.getElementById('build-missing');
     const contentEl = document.getElementById('build-content');
     const unconfiguredEl = document.getElementById('build-unconfigured');
@@ -148,40 +183,35 @@ export function initBuildPage() {
     const api = getApiBaseUrl();
     if (connectBtn) connectBtn.href = `${api}/auth/spotify`;
 
-    let selectedModel: string | null = readCurateModel();
-    let selectedModelLabel = '';
-
-    async function loadCurateModelLabel() {
-        if (!modelLabelEl || !api) return;
+    async function syncCurateModelLabel() {
+        if (!modelLabelEl || !api || signal.aborted) return;
         try {
-            const response = await fetch(`${api}/api/curate/models`);
-            if (!response.ok) return;
-            const data = (await response.json()) as CurateModelsResponse;
-            if (!selectedModel && data.defaultModel) {
-                selectedModel = data.defaultModel;
+            const resolved = await resolveBuildModel(api);
+            if (signal.aborted) return;
+            modelLabelEl.textContent = curateModelLabel(resolved, currentLocale());
+            modelLabelEl.hidden = false;
+            if (startBtn) startBtn.disabled = false;
+            if (statusEl?.dataset.modelError === 'true') {
+                statusEl.hidden = true;
+                delete statusEl.dataset.modelError;
             }
-            const match =
-                data.models.find((option) => option.id === selectedModel) ??
-                (data.defaultModel
-                    ? data.models.find((option) => option.id === data.defaultModel)
-                    : undefined);
-            const previewMatch =
-                import.meta.env.DEV && selectedModel
-                    ? DEV_PREVIEW_CURATE_MODELS.find((option) => option.id === selectedModel)
-                    : undefined;
-            const resolved = match ?? previewMatch;
-            if (resolved) {
-                selectedModel = resolved.id;
-                selectedModelLabel = curateModelLabel(resolved, currentLocale());
-                modelLabelEl.textContent = selectedModelLabel;
-                modelLabelEl.hidden = false;
-            }
-        } catch {
+        } catch (modelError) {
+            if (signal.aborted) return;
             modelLabelEl.hidden = true;
+            if (startBtn) startBtn.disabled = true;
+            if (statusEl) {
+                statusEl.textContent =
+                    modelError instanceof Error
+                        ? modelError.message
+                        : 'Curation model unavailable on this server';
+                statusEl.dataset.modelError = 'true';
+                statusEl.hidden = false;
+            }
         }
     }
 
-    void loadCurateModelLabel();
+    if (startBtn) startBtn.disabled = true;
+    void syncCurateModelLabel();
 
     if (hasDevHostMismatch()) {
         if (statusEl) {
@@ -271,13 +301,24 @@ export function initBuildPage() {
     }
 
     async function runBuild() {
-        if (!startBtn) return;
+        if (!startBtn || signal.aborted) return;
         startBtn.disabled = true;
         if (resultsEl) resultsEl.hidden = true;
         if (fallbackEl) fallbackEl.hidden = true;
+        if (statusEl) {
+            statusEl.hidden = true;
+            delete statusEl.dataset.modelError;
+        }
 
         try {
-            const curateLabel = selectedModelLabel || 'curating tracklist';
+            const model = await resolveBuildModel(api);
+            if (signal.aborted) return;
+            const curateLabel = curateModelLabel(model, currentLocale());
+            if (modelLabelEl) {
+                modelLabelEl.textContent = curateLabel;
+                modelLabelEl.hidden = false;
+            }
+
             setProgress(`Step 2.2.3: ${curateLabel}…`);
             const curateResponse = await fetch(`${api}/api/curate`, {
                 method: 'POST',
@@ -285,7 +326,7 @@ export function initBuildPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     answers,
-                    model: selectedModel ?? undefined
+                    model: model.id
                 })
             });
             if (!curateResponse.ok) {
@@ -348,7 +389,9 @@ export function initBuildPage() {
                 statusEl.hidden = false;
             }
         } finally {
-            startBtn.disabled = false;
+            if (!signal.aborted && startBtn) {
+                startBtn.disabled = false;
+            }
         }
     }
 
@@ -374,29 +417,32 @@ export function initBuildPage() {
         }
     }
 
-    if (logoutBtn && logoutBtn.dataset.bound !== 'true') {
-        logoutBtn.dataset.bound = 'true';
-        logoutBtn.addEventListener('click', async () => {
+    logoutBtn?.addEventListener(
+        'click',
+        async () => {
             await fetch(`${api}/auth/logout`, { method: 'POST', credentials: 'include' });
             if (searchResults) searchResults.innerHTML = '';
             if (resultsEl) resultsEl.hidden = true;
             if (fallbackEl) fallbackEl.hidden = true;
             if (flowEl) flowEl.hidden = false;
             await showConnect();
-        });
-    }
+        },
+        { signal }
+    );
 
-    if (startBtn && startBtn.dataset.bound !== 'true') {
-        startBtn.dataset.bound = 'true';
-        startBtn.addEventListener('click', () => {
+    startBtn?.addEventListener(
+        'click',
+        () => {
             void runBuild();
-        });
-    }
+        },
+        { signal }
+    );
 
-    if (searchForm && searchInput && searchResults && searchForm.dataset.bound !== 'true') {
-        searchForm.dataset.bound = 'true';
-        searchForm.addEventListener('submit', async (event) => {
+    searchForm?.addEventListener(
+        'submit',
+        async (event) => {
             event.preventDefault();
+            if (!searchInput || !searchResults) return;
             const q = searchInput.value.trim();
             if (!q) return;
 
@@ -421,8 +467,9 @@ export function initBuildPage() {
                 list.appendChild(item);
             });
             searchResults.appendChild(list);
-        });
-    }
+        },
+        { signal }
+    );
 
     void loadSession();
 }

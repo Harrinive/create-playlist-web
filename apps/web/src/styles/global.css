@@ -261,7 +261,8 @@ button:focus-visible {
     background: var(--text);
 }
 
-@media (max-width: 900px) {
+/* Match --layout-shell-max-inline-size: single column + compact header */
+@media (max-width: 1100px) {
     :root {
         --pad-x: 20px;
         --sidebar: 1fr;

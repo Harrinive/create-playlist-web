@@ -55,8 +55,9 @@ function setLocale(locale: Locale) {
     document.dispatchEvent(new CustomEvent('locale-changed', { detail: { locale } }));
 }
 
+/** Keep in sync with --layout-shell-max-inline-size (1100px) in global.css */
 function isCompactToolbar(): boolean {
-    return window.matchMedia('(max-width: 900px)').matches;
+    return window.matchMedia('(max-width: 1100px)').matches;
 }
 
 function syncToolbarPanelVisibility() {

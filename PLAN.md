@@ -266,25 +266,21 @@ Alternative: two repos (`create-playlist-web` + `create-playlist-api`) — defer
 
 **Exit criteria:** User connects Spotify; server can search one track on their behalf. **Met** — production verified at https://vibelist.dychen.net/build
 
-### Phase 3 — Curate + verify + publish (in progress)
+### Phase 3 — Curate + verify + publish (complete)
 
-**Shipped (code):**
+**Shipped:**
 
-- [x] `POST /api/curate` — Node direct OpenAI / Anthropic chat (not llm-router or Cursor yet)
+- [x] `POST /api/curate` — OpenAI, Anthropic, Cursor via Node `llm-router` (`apps/api/src/llm-router/`)
 - [x] `POST /api/verify` — batched Spotify search, match rules, cooldown, trim to ~20 (preserve order)
 - [x] `POST /api/publish` — create private playlist, add tracks, per-user playlist memory (Postgres)
 - [x] `/build` UI — curate → verify → publish + results table; prompt fallback if &lt;50% verify
 - [x] **Curation model picker at delivery** — `GET /api/curate/models`; pass slug to `/api/curate`
 - [x] **`CURATE_LLM_MODEL`** server default (with `LLM_MODEL` alias)
+- [x] **Cursor provider** — `cursor:composer-2.5` via `CURSOR_API_KEY` + `@cursor/sdk`
 - [x] Theme CSS fix for `astro dev` (`BaseHead.astro` import)
+- [x] Production E2E on Fly (interview → delivery → build → playlist)
 
-**Remaining for Phase 3 exit:**
-
-- [ ] Production E2E on Fly with LLM secrets set (see [Environment variables](#environment-variables-api))
-- [ ] **Cursor provider** — support `cursor:` slugs (`composer-2.5`, etc.) via `CURSOR_API_KEY` + cursor-sdk or a Node port of toolbox `llm-router` Cursor path
-- [ ] Optional: unify all providers through toolbox `llm-router` instead of hand-rolled OpenAI/Anthropic fetch
-
-**Exit criteria:** End-to-end Step 2.2 parity with skill for an allowlisted Spotify test user, including user-visible model choice at delivery for Step 2.2.3.
+**Exit criteria:** End-to-end Step 2.2 parity with skill for an allowlisted Spotify test user, including user-visible model choice at delivery for Step 2.2.3. **Met** — June 2026.
 
 ### LLM model roles (do not conflate)
 
@@ -333,7 +329,7 @@ Step 2.1 prompt today is client-side templates (no LLM). Orchestration must neve
 | `WEB_ORIGIN` | yes | CORS — `https://vibelist.dychen.net` |
 | `OPENAI_API_KEY` | one of* | OpenAI curation (`openai:gpt-4o-mini`, etc.) |
 | `ANTHROPIC_API_KEY` | one of* | Anthropic curation (`anthropic:claude-sonnet-4-6`, etc.) |
-| `CURSOR_API_KEY` | one of* | Cursor curation — **not implemented yet**; needs Phase 3 Cursor provider |
+| `CURSOR_API_KEY` | one of* | Cursor curation (`cursor:composer-2.5`, etc.) via Node `llm-router` |
 | `LLM_MODEL` | no | **Current** server default for `/api/curate` when request omits `model` (e.g. `openai:gpt-4o-mini`) |
 | `CURATE_LLM_MODEL` | no | **Planned** rename/default for Step 2.2.3 only (replaces `LLM_MODEL`) |
 | `INTERVIEW_LLM_MODEL` | no | **Planned** Phase 4 — Step 1 question generation only |
@@ -360,9 +356,9 @@ Step 2.1 prompt today is client-side templates (no LLM). Orchestration must neve
 ## Open decisions
 
 1. ~~**Domain:**~~ **Resolved** — `vibelist.dychen.net` on Cloudflare Pages
-2. ~~**API language:**~~ **Leaning Node** — Phase 3 uses direct OpenAI/Anthropic fetch; Cursor/llm-router unification still open
+2. ~~**API language:**~~ **Resolved** — Node Fastify API; Node `llm-router` in `apps/api/src/llm-router/` (Python twin in toolbox)
 3. ~~**Interview v1:**~~ **Resolved** — static wizard for v1; LLM interview in Phase 4 with separate `INTERVIEW_LLM_MODEL`
-4. **Curation providers:** hand-rolled Node fetch vs toolbox `llm-router` (incl. Cursor via cursor-sdk)
+4. ~~**Curation providers:**~~ **Resolved** — Node `llm-router` (OpenAI, Anthropic, Cursor); extract to npm when reused
 5. **Repo name on GitHub:** `create-playlist-web` vs `teahouse-playlist`
 6. ~~**Public vs private repo:**~~ **Resolved** — public at [Harrinive/create-playlist-web](https://github.com/Harrinive/create-playlist-web)
 

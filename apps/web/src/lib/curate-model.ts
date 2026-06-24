@@ -15,6 +15,11 @@ export type CurateModelsResponse = {
 /** Shown in `astro dev` when the API has no LLM keys — preview layout only. */
 export const DEV_PREVIEW_CURATE_MODELS: CurateModelOption[] = [
     {
+        id: 'cursor:composer-2.5',
+        labelEn: 'Generate tracklist by Composer 2.5',
+        labelZh: '用 Composer 2.5 生成曲目列表 (Generate tracklist by Composer 2.5)'
+    },
+    {
         id: 'openai:gpt-4o',
         labelEn: 'Generate tracklist by GPT-4o',
         labelZh: '用 GPT-4o 生成曲目列表 (Generate tracklist by GPT-4o)'
@@ -40,6 +45,19 @@ export function saveCurateModel(modelId: string) {
 
 export function curateModelLabel(option: CurateModelOption, locale: 'en' | 'zh'): string {
     return locale === 'zh' ? option.labelZh : option.labelEn;
+}
+
+/** Pick a server-allowed model; ignores stale or dev-preview-only session values. */
+export function pickCurateModelOption(
+    data: CurateModelsResponse,
+    stored: string | null
+): CurateModelOption | null {
+    if (data.models.length === 0) return null;
+    const fromStorage = stored ? data.models.find((m) => m.id === stored) : null;
+    const fromDefault = data.defaultModel
+        ? data.models.find((m) => m.id === data.defaultModel)
+        : null;
+    return fromStorage ?? fromDefault ?? data.models[0] ?? null;
 }
 
 export function currentLocale(): 'en' | 'zh' {

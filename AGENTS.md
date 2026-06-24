@@ -21,7 +21,7 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 | Item | State |
 |------|-------|
 | Repo / git | **Public** — `Harrinive/create-playlist-web`, `main` |
-| Phase | **Phase 3 in progress** — curate / verify / publish shipped in code |
+| Phase | **Phase 3 complete** — curate / verify / publish + Cursor curation |
 | Frontend | `apps/web/` — Astro 6, Whono-style UI |
 | Interview | Stacked static wizard (M1–M5), EN + 中文; **New question** refresh on active step (LLM regen Phase 4) |
 | Delivery | `/delivery` — Prompt + per-model tracklist options (Step 2.2.3) |
@@ -56,27 +56,27 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 
 **Phase 2 exit criteria:** met — connect Spotify → search tracks (production verified).
 
-### Phase 3 (in progress — code shipped)
+### Phase 3 (complete)
 
 | Item | Status |
 |------|--------|
 | `POST /api/curate`, `/api/verify`, `/api/publish` | Done |
 | `GET /api/curate/models` + delivery model picker | Done |
-| `CURATE_LLM_MODEL` + OpenAI/Anthropic client | Done |
+| Node `llm-router` (`apps/api/src/llm-router/`) | Done — OpenAI, Anthropic, Cursor (`@cursor/sdk`) |
+| `CURSOR_API_KEY` + `cursor:composer-2.5` at delivery | Done — verified local + production |
 | Per-user playlist memory (Postgres) | Done |
 | `/build` end-to-end UI + results table | Done |
-| CSS dev fix (`BaseHead` import) | Done |
-| Cursor provider / llm-router | **Not done** |
-| Production E2E curate → publish | **Not verified in docs** |
+| Build model resolution + Astro double-init fix | Done |
+| Production E2E curate → publish | **Verified** (allowlisted user) |
 
-**Phase 3 exit criteria:** production build on allowlisted Spotify user + delivery model choice — **pending E2E verify**.
+**Phase 3 exit criteria:** met — interview → delivery (model) → build → playlist on production.
 
 ### Next recommended work
 
-1. **Production smoke test:** interview → delivery (pick model) → build → playlist URL
-2. **Cursor provider** for `cursor:` curation slugs
-3. Optional: migrate `DATABASE_URL` to Supabase; Spotify app review for public users
-4. **Phase 4 interview LLM:** wire **New question** refresh → `POST /api/interview/next` with rejected stems (`differentFromInstruction`)
+1. **Phase 4 interview LLM:** wire **New question** refresh → `POST /api/interview/next` with rejected stems (`differentFromInstruction`)
+2. Optional: migrate `DATABASE_URL` to Supabase; Spotify app review for public users
+3. Optional: extract Node `llm-router` to toolbox npm when a second Node consumer exists
+4. Link from dychen.net nav
 
 ---
 
@@ -116,7 +116,7 @@ MCP is **not** used in production. Port `createSpotifyApi` / `spotifyFetch` from
 | Step 1 interview | `/interview` — chip wizard | Done (static bank) |
 | Step 2 delivery choice | `/delivery` — Prompt + model picker | Done |
 | Step 2.1 | `/prompt` — copyable paragraph | Done |
-| Step 2.2 build | `/build` + API | Curate / verify / publish shipped; Cursor provider open |
+| Step 2.2 build | `/build` + API | Curate / verify / publish + Cursor via Node `llm-router` |
 
 **Hard rules from skill:** verify/publish must not re-curate or reorder from scratch; trim preserves propose order; offer prompt fallback if verify &lt;50% ok.
 

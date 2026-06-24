@@ -209,7 +209,7 @@
     align-self: flex-end;
 }
 
-@media (min-width: 901px) {
+@media (min-width: 1101px) {
     .sidebar__top,
     .sidebar__header-actions {
         display: contents;
@@ -358,7 +358,8 @@
     font-family: var(--font-copy);
 }
 
-@media (max-width: 900px) {
+/* Compact layout — breakpoint matches --layout-shell-max-inline-size (1100px) */
+@media (max-width: 1100px) {
     .shell {
         grid-template-columns: minmax(0, 1fr);
     }
@@ -498,6 +499,8 @@
         max-width: 100%;
         margin-top: 6px;
         box-shadow: none;
+        right: 0;
+        left: auto;
     }
 
     .content {
@@ -509,13 +512,6 @@
 @media (hover: none) {
     .sidebar-actions .icon-button[data-tooltip]::after {
         display: none;
-    }
-}
-
-@media (max-width: 900px) {
-    .toolbar-dropdown__menu {
-        right: 0;
-        left: auto;
     }
 }
 

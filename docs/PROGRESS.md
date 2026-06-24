@@ -1,6 +1,6 @@
 # Progress log — create-playlist-web
 
-Chronological record through **Phase 3 in progress** (June 2026).
+Chronological record through **Phase 3 complete** (June 2026).
 
 ---
 
@@ -72,18 +72,18 @@ Chronological record through **Phase 3 in progress** (June 2026).
 
 ---
 
-## Phase 3 — Curate + verify + publish (in progress)
+## Phase 3 — Curate + verify + publish (complete)
 
 ### Backend (`apps/api/`)
 
 | Item | Detail |
 |------|--------|
-| `POST /api/curate` | OpenAI / Anthropic chat for Step 2.2.3 (~26 proposed lines); `CURATE_LLM_MODEL` default |
-| `GET /api/curate/models` | Lists models available from configured API keys |
+| `POST /api/curate` | Step 2.2.3 via Node `llm-router` — OpenAI, Anthropic, Cursor |
+| `GET /api/curate/models` | Lists models from configured API keys (incl. `cursor:composer-2.5`) |
 | `POST /api/verify` | Batched Spotify search, match rules, cooldown, trim to ~20 (preserve order) |
 | `POST /api/publish` | Private playlist create + add tracks; per-user playlist memory (Postgres / in-memory dev) |
-| LLM client | Hand-rolled fetch in `apps/api/src/llm/` — not llm-router or Cursor yet |
-| Model catalog | `apps/api/src/llm/models.ts` — GPT-4o, GPT-4o mini, Claude Sonnet (filtered by keys) |
+| `apps/api/src/llm-router/` | Extractable Node gateway; Python twin in toolbox `packages/llm-router/` |
+| Model catalog | `apps/api/src/llm/models.ts` — Composer 2.5, GPT-4o, GPT-4o mini, Claude Sonnet |
 
 ### Frontend (`apps/web/`)
 
@@ -91,15 +91,17 @@ Chronological record through **Phase 3 in progress** (June 2026).
 |------|--------|
 | `/build` | Full flow: curate → verify → publish; results table; &lt;50% verify → prompt fallback |
 | `/delivery` | Dynamic model picker — prompt + one button per available curation model |
+| Build reliability | Resolve curation model from API at click time; AbortController on page re-init |
 | Model session | `sessionStorage` key `create-playlist-curate-model`; passed to `/api/curate` |
-| Dev preview | `DEV_PREVIEW_CURATE_MODELS` in `astro dev` when API has no LLM keys (layout only) |
-| Copy / footer | Home Step 2–3 updated; footer *Vibelist — mood interview → Spotify* |
+| Dev preview | `DEV_PREVIEW_CURATE_MODELS` when API has no LLM keys (layout only) |
 
 ### Bugs fixed during Phase 3
 
 | Bug | Cause | Fix |
 |-----|-------|-----|
 | Theme missing in `astro dev` | `global.css?url` + manual `<link>` — Vite serves path as JS in dev | Import `../styles/global.css` in `BaseHead.astro` (commit `fa42168`) |
+| Build flashes then fails | Stale `sessionStorage` model slug; Astro double-init on `/build` | `resolveBuildModel()` at curate time; single init with `AbortController` |
+| “Model not available on this server” | Dev preview or stale slug not in API catalog | Server-side `normalizeModelId`; delivery respects `llmConfigured` |
 
 ### Commits (Phase 3)
 
@@ -108,24 +110,44 @@ Chronological record through **Phase 3 in progress** (June 2026).
 | `e34bf77` | Phase 3 API routes + build UI (curate / verify / publish) |
 | `fa42168` | Fix theme CSS in Astro dev |
 | `124086b` | Delivery model picker + `CURATE_LLM_MODEL` + dev preview models |
+| _(this commit)_ | Node `llm-router` + Cursor provider; build fixes; Phase 3 docs |
+
+### Production ops (Phase 3)
+
+| Step | Status |
+|------|--------|
+| Fly LLM secrets (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CURSOR_API_KEY`, `CURATE_LLM_MODEL`) | Done |
+| Cursor cloud (`CURSOR_LLM_RUNTIME=cloud`, `CURSOR_CLOUD_REPO`) | Done on Fly |
+| Web + API deploy from `main` | Auto via CF Pages Git + `deploy-api.yml` |
+| E2E: interview → delivery (model) → build → playlist URL | **Verified** on allowlisted user |
+
+**Phase 3 exit criteria met:** full Step 2.2 on production with user-chosen curation model.
+
+---
+
+## Phase 3 — earlier notes (archive)
+
+### Backend (`apps/api/`) — initial ship
+
+| Item | Detail |
+|------|--------|
+| `POST /api/curate` | OpenAI / Anthropic chat for Step 2.2.3 (~26 proposed lines); `CURATE_LLM_MODEL` default |
+| LLM client | Initially hand-rolled fetch in `apps/api/src/llm/client.ts` — replaced by `llm-router` |
+
+### Frontend — initial ship
+
+| Item | Detail |
+|------|--------|
+| Copy / footer | Home Step 2–3 updated; footer *Vibelist — mood interview → Spotify* |
 
 ### Local dev (Phase 3)
 
 | Step | Detail |
 |------|--------|
 | Web | `http://127.0.0.1:4321` — `PUBLIC_API_URL=http://127.0.0.1:3001` in `apps/web/.env` |
-| API | `http://127.0.0.1:3001` — add `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` for real curate |
-| UI-only preview | No LLM keys needed — delivery shows dev preview model buttons |
-| Full build | Spotify OAuth + at least one LLM key on API; user on Spotify app allowlist |
-
-### Production ops (Phase 3)
-
-| Step | Status |
-|------|--------|
-| Fly LLM secrets (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`, `CURATE_LLM_MODEL`) | User set — **E2E build not yet logged in PROGRESS** |
-| Web + API deploy from `main` | Auto via CF Pages Git + `deploy-api.yml` |
-
-**Phase 3 exit criteria:** not yet met — need production E2E curate → verify → publish on allowlisted user; **Cursor provider** still open (see [PLAN.md](../PLAN.md)).
+| API | `http://127.0.0.1:3001` — at least one of `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CURSOR_API_KEY` |
+| Cursor local | `CURSOR_LLM_RUNTIME=local` in `apps/api/.env` |
+| Full build | Spotify OAuth + LLM key(s); user on Spotify app allowlist |
 
 ---
 
@@ -139,13 +161,12 @@ Chronological record through **Phase 3 in progress** (June 2026).
 
 ---
 
-## Not done yet — Phase 3 remainder + Phase 4
+## Not done yet — Phase 4+
 
 | Phase | Work |
 |-------|------|
-| **Phase 3** | Production E2E verify; **Cursor provider** (`cursor:` + `CURSOR_API_KEY`); optional llm-router unification |
-| **Phase 4** | LLM interview questions (`INTERVIEW_LLM_MODEL`); **refresh → regenerate** active question with prior answers + `differentFromInstruction(rejected stem)`; dychen.net nav link; Spotify app review for public users |
-| **Ops optional** | Migrate `DATABASE_URL` to Supabase/Neon; narrow CF build watch paths to `apps/web/**` |
+| **Phase 4** | LLM interview questions (`INTERVIEW_LLM_MODEL`); **refresh → regenerate** active question; dychen.net nav link; Spotify app review for public users |
+| **Ops optional** | Migrate `DATABASE_URL` to Supabase/Neon; narrow CF build watch paths to `apps/web/**`; extract Node `llm-router` to shared npm package |
 
 ---
 
@@ -156,7 +177,8 @@ Chronological record through **Phase 3 in progress** (June 2026).
 3. **Spotify redirect URI must exactly match** the API callback URL including host (`127.0.0.1` vs `localhost` matters).
 4. **CF Pages “Retry deployment”** — row menu (⋮) or deployment Details; push to `main` also triggers auto deploy.
 5. **Astro CSS in dev** — import styles in layout/frontmatter; do not use `?url` + `<link rel="stylesheet">` for global theme.
-6. **LLM keys on Fly** — at least one of `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` for `/api/curate`; set `CURATE_LLM_MODEL` to match provider.
+6. **LLM keys on Fly** — at least one of `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `CURSOR_API_KEY` for `/api/curate`; set `CURATE_LLM_MODEL` to match provider. Cursor on Fly needs `CURSOR_LLM_RUNTIME=cloud` + `CURSOR_CLOUD_REPO`.
+7. **Node vs Python llm-router** — Vibelist uses `apps/api/src/llm-router/`; Cycloud uses toolbox `packages/llm-router/`. Keep model slugs and env vars aligned; see README in each package.
 
 ---
 

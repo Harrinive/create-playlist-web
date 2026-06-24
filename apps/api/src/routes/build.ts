@@ -12,6 +12,8 @@ import {
     findCurateModel,
     isAllowedCurateModel,
     listCurateModels,
+    llmConfigured,
+    normalizeCurateModelId,
     resolveCurateDefaultModel
 } from '../llm/models.js';
 import { addTracksToPlaylist, createPlaylist } from '../spotify/publish.js';
@@ -100,13 +102,17 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
         }
 
         if (!isAllowedCurateModel(ctx.env, body.data.model)) {
-            return reply.code(400).send({ error: 'Model not available on this server' });
+            return reply.code(400).send({
+                error: 'Model not available on this server',
+                requestedModel: body.data.model ?? null,
+                availableModels: listCurateModels(ctx.env).map((option) => option.id)
+            });
         }
 
-        if (!ctx.env.OPENAI_API_KEY && !ctx.env.ANTHROPIC_API_KEY) {
+        if (!llmConfigured(ctx.env)) {
             return reply.code(503).send({
                 error: 'LLM not configured',
-                hint: 'Set OPENAI_API_KEY or ANTHROPIC_API_KEY on the API server'
+                hint: 'Set OPENAI_API_KEY, ANTHROPIC_API_KEY, and/or CURSOR_API_KEY on the API server'
             });
         }
 
@@ -115,7 +121,10 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
         const brief = buildCompactBrief(body.data.answers as InterviewAnswers, cooldown);
 
         try {
-            const model = body.data.model ?? resolveCurateDefaultModel(ctx.env) ?? undefined;
+            const model =
+                normalizeCurateModelId(ctx.env, body.data.model) ??
+                resolveCurateDefaultModel(ctx.env) ??
+                undefined;
             const curated = await curateTracklist(ctx.env, brief, model);
             const modelInfo = model ? findCurateModel(ctx.env, model) : null;
             return {

@@ -1,7 +1,7 @@
-import { formatBriefBlock } from '../brief.js';
-import type { Env } from '../config.js';
 import type { CompactBrief, ProposedLine } from '../types/interview.js';
-import { chatCompletion } from './client.js';
+import type { Env } from '../config.js';
+import { completeChat } from '../llm-router/index.js';
+import { formatBriefBlock } from '../brief.js';
 
 const TASK_PROMPT_STARTER = `You are a music supervisor scoring a short scene. The brief below is the director's note—treat it as law.
 
@@ -107,7 +107,7 @@ ${formatBriefBlock(brief)}
 
 ${TASK_RULES}`;
 
-    const raw = await chatCompletion(
+    const raw = await completeChat(
         env,
         [
             {
@@ -117,7 +117,7 @@ ${TASK_RULES}`;
             },
             { role: 'user', content: userPrompt }
         ],
-        model
+        { model }
     );
 
     return parseCurateResponse(raw);

@@ -126,6 +126,13 @@ Set via `fly secrets set -a create-playlist-api`. Values live only on Fly — **
 | `SESSION_SECRET` | Sign OAuth state / session | Random 32+ chars (generated once) |
 | `DATABASE_URL` | Postgres session + refresh tokens | Fly Managed Postgres **or** Supabase connection string |
 | `NODE_ENV` | Production mode | `production` |
+| `OPENAI_API_KEY` | OpenAI curation | Optional if other LLM keys set |
+| `ANTHROPIC_API_KEY` | Anthropic curation | Optional if other LLM keys set |
+| `CURSOR_API_KEY` | Cursor curation (`cursor:composer-2.5`) | [Cursor Dashboard → API Keys](https://cursor.com/dashboard) |
+| `CURSOR_LLM_RUNTIME` | `cloud` on Fly; `local` for dev | Required with Cursor on production |
+| `CURSOR_CLOUD_REPO` | Git URL for Cursor cloud agents | e.g. `https://github.com/Harrinive/create-playlist-web` |
+| `CURSOR_CLOUD_REF` | Git ref for cloud repo | `main` |
+| `CURATE_LLM_MODEL` / `LLM_MODEL` | Default curation slug | e.g. `cursor:composer-2.5` or `openai:gpt-4o-mini` |
 
 List without values:
 
