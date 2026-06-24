@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from '../lib/api-config';
 import { saveCurateModel, DEV_PREVIEW_CURATE_MODELS, type CurateModelsResponse } from '../lib/curate-model';
 import { isValidAnswers } from '../lib/build-prompt';
+import { saveLastDelivery } from '../lib/last-delivery';
 import { SESSION_KEY } from '../lib/types';
 
 function createDeliveryButton(
@@ -108,11 +109,15 @@ export async function initDeliveryPage() {
             const choice = btn.dataset.delivery;
             const model = btn.dataset.model;
             if (choice === 'prompt') {
+                saveLastDelivery('prompt');
+                document.dispatchEvent(new CustomEvent('last-delivery-changed'));
                 window.location.assign('/prompt');
                 return;
             }
             if (choice === 'build') {
                 if (model) saveCurateModel(model);
+                saveLastDelivery('build');
+                document.dispatchEvent(new CustomEvent('last-delivery-changed'));
                 window.location.assign('/build');
             }
         });

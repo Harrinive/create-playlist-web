@@ -144,7 +144,7 @@ Chronological record through **Phase 3 in progress** (June 2026).
 | Phase | Work |
 |-------|------|
 | **Phase 3** | Production E2E verify; **Cursor provider** (`cursor:` + `CURSOR_API_KEY`); optional llm-router unification |
-| **Phase 4** | LLM interview questions (`INTERVIEW_LLM_MODEL`), dychen.net nav link, Spotify app review for public users |
+| **Phase 4** | LLM interview questions (`INTERVIEW_LLM_MODEL`); **refresh → regenerate** active question with prior answers + `differentFromInstruction(rejected stem)`; dychen.net nav link; Spotify app review for public users |
 | **Ops optional** | Migrate `DATABASE_URL` to Supabase/Neon; narrow CF build watch paths to `apps/web/**` |
 
 ---
@@ -157,6 +157,26 @@ Chronological record through **Phase 3 in progress** (June 2026).
 4. **CF Pages “Retry deployment”** — row menu (⋮) or deployment Details; push to `main` also triggers auto deploy.
 5. **Astro CSS in dev** — import styles in layout/frontmatter; do not use `?url` + `<link rel="stylesheet">` for global theme.
 6. **LLM keys on Fly** — at least one of `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` for `/api/curate`; set `CURATE_LLM_MODEL` to match provider.
+
+---
+
+## Interview UX refresh (June 2026)
+
+### Shipped (web)
+
+| Item | Detail |
+|------|--------|
+| Stacked interview | Questions appear below prior answers; scroll to review; retro-edit with confirm clears downstream |
+| Sidebar toolbar | Language + interview model dropdowns; mobile **Menu** panel; last prompt / last result link |
+| **New question** (refresh) | Button on the **active** (unanswered) step only — records rejected stem in `sessionStorage` (`create-playlist-interview-rejected`) |
+| Static v1 behavior | Refresh shows loading, then re-shows the same bank question (no LLM yet) |
+| Helpers | `apps/web/src/lib/interview-refresh.ts` — `recordRejectedQuestion`, `differentFromInstruction()` for Phase 4 prompt |
+
+### Phase 4 todo (not implemented)
+
+- `POST /api/interview/next` — LLM generates next/refreshed question from prior answers + rejected stems (`Be different from: …`)
+- Wire `refreshActiveStep()` in `interview-wizard.ts` to API when `INTERVIEW_LLM_MODEL` ≠ static
+- Optional: surface refresh history in dev tools or admin for debugging
 
 ---
 

@@ -300,6 +300,7 @@ Step 2.1 prompt today is client-side templates (no LLM). Orchestration must neve
 
 - [x] Chinese interview mode toggle *(shipped in Phase 1)*
 - [ ] LLM-generated interview questions (skill parity) — uses `INTERVIEW_LLM_MODEL`, not the curation model
+- [ ] **New question** refresh on active step — `POST /api/interview/next` with prior answers + rejected stems (`Be different from: …`); UI + `interview-refresh.ts` shipped in static v1
 - [x] Per-user playlist memory in Postgres *(shipped in Phase 3)*
 - [ ] Link from dychen.net nav
 - [ ] Spotify app review for public users

@@ -238,6 +238,79 @@
     max-width: 32rem;
 }
 
+.interview-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.interview-step {
+    scroll-margin-top: 24px;
+}
+
+.interview-step--answered {
+    opacity: 0.92;
+}
+
+.interview-step--answered .interview-step__stem {
+    font-size: 22px;
+}
+
+.interview-step__header {
+    margin-bottom: 8px;
+}
+
+.interview-step__stem {
+    margin-bottom: 8px;
+}
+
+.interview-step__hint {
+    margin-top: 0;
+}
+
+.interview-step__options {
+    margin-bottom: 0;
+}
+
+.interview-step__actions {
+    margin-top: 16px;
+}
+
+.interview-step__refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.interview-step__refresh-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.interview-step.is-refreshing .interview-step__options,
+.interview-step.is-refreshing [data-role="done"] {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.interview-loading {
+    padding: 20px 0 8px;
+    color: var(--muted);
+    font-family: var(--font-copy);
+}
+
+.interview-loading__text {
+    margin: 0 0 4px;
+    font-size: 15px;
+    color: var(--text);
+}
+
+.interview-loading__hint {
+    margin: 0;
+    font-size: 13px;
+    color: var(--faint);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .chip-option {
         transition: none;

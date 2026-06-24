@@ -168,18 +168,39 @@ export const INTERVIEW_BY_LOCALE = STEPS;
 
 export const WIZARD_LABELS: Record<
     Locale,
-    { back: string; continue: string; chooseDelivery: string; question: (n: number, dim: string) => string }
+    {
+        continue: string;
+        chooseDelivery: string;
+        question: (n: number, dim: string) => string;
+        pleaseWait: string;
+        preparingQuestion: string;
+        changeConfirm: string;
+        done: string;
+        refreshQuestion: string;
+        refreshingQuestion: string;
+    }
 > = {
     en: {
-        back: 'Back',
         continue: 'Continue',
         chooseDelivery: 'Choose delivery',
-        question: (n, dim) => `Question ${n} · ${dim}`
+        question: (n, dim) => `Question ${n} · ${dim}`,
+        pleaseWait: 'Please wait…',
+        preparingQuestion: 'Preparing your next question',
+        changeConfirm:
+            'Change this answer? Everything below will be cleared and you will answer those questions again.',
+        done: 'Done',
+        refreshQuestion: 'New question',
+        refreshingQuestion: 'Finding another question…'
     },
     zh: {
-        back: '上一步',
         continue: '继续',
         chooseDelivery: '选择交付方式',
-        question: (n, dim) => `第 ${n} 题 · ${dim}`
+        question: (n, dim) => `第 ${n} 题 · ${dim}`,
+        pleaseWait: '请稍候…',
+        preparingQuestion: '正在准备下一题',
+        changeConfirm: '更改此答案？下方所有问题将被清除，你需要重新回答。',
+        done: '完成',
+        refreshQuestion: '换一题',
+        refreshingQuestion: '正在换一题…'
     }
 };

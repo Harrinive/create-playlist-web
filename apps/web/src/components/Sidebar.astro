@@ -3,7 +3,8 @@ import siteConfig from '../data/site-config';
 import UiIcon from './UiIcon.astro';
 
 const pathname = Astro.url.pathname;
-const showStartOver = pathname.startsWith('/interview') || pathname.startsWith('/prompt');
+const showStartOver = pathname.startsWith('/interview');
+const showInterviewModel = pathname.startsWith('/interview');
 ---
 
 <aside id="site-sidebar" class="sidebar">
@@ -20,31 +21,84 @@ const showStartOver = pathname.startsWith('/interview') || pathname.startsWith('
         </span>
     </div>
 
-    <ul class="app-toolbar" aria-label="App actions">
-        <li class="app-toolbar__item">
-            <button type="button" class="app-toolbar__btn app-toolbar__btn--ghost" data-locale-btn="en" aria-pressed="false">
-                EN
-            </button>
+    <button
+        type="button"
+        id="toolbar-menu-toggle"
+        class="toolbar-menu-toggle app-toolbar__btn"
+        aria-expanded="false"
+        aria-controls="app-toolbar"
+    >
+        <span data-locale="en">Menu</span>
+        <span data-locale="zh" hidden>菜单</span>
+        <span class="toolbar-dropdown__caret" aria-hidden="true">▾</span>
+    </button>
+
+    <ul id="app-toolbar" class="app-toolbar" aria-label="App actions">
+        <li class="app-toolbar__item app-toolbar__item--dropdown">
+            <div class="toolbar-dropdown" id="locale-dropdown">
+                <button
+                    type="button"
+                    class="app-toolbar__btn toolbar-dropdown__trigger"
+                    id="locale-trigger"
+                    aria-haspopup="listbox"
+                    aria-expanded="false"
+                    aria-controls="locale-menu"
+                >
+                    <span class="toolbar-dropdown__prefix" data-locale="en">Language</span>
+                    <span class="toolbar-dropdown__prefix" data-locale="zh" hidden>语言</span>
+                    <span class="toolbar-dropdown__value" id="locale-label"></span>
+                    <span class="toolbar-dropdown__caret" aria-hidden="true">▾</span>
+                </button>
+                <ul class="toolbar-dropdown__menu" id="locale-menu" role="listbox" hidden></ul>
+            </div>
         </li>
-        <li class="app-toolbar__item">
-            <button type="button" class="app-toolbar__btn app-toolbar__btn--ghost" data-locale-btn="zh" aria-pressed="false">
-                中文
-            </button>
-        </li>
+
+        {
+            showInterviewModel && (
+                <li class="app-toolbar__item app-toolbar__item--dropdown">
+                    <div class="toolbar-dropdown" id="interview-model-dropdown">
+                        <button
+                            type="button"
+                            class="app-toolbar__btn toolbar-dropdown__trigger"
+                            id="interview-model-trigger"
+                            aria-haspopup="listbox"
+                            aria-expanded="false"
+                            aria-controls="interview-model-menu"
+                        >
+                            <span class="toolbar-dropdown__prefix" data-locale="en">Interview</span>
+                            <span class="toolbar-dropdown__prefix" data-locale="zh" hidden>访谈</span>
+                            <span class="toolbar-dropdown__value" id="interview-model-label"></span>
+                            <span class="toolbar-dropdown__caret" aria-hidden="true">▾</span>
+                        </button>
+                        <ul
+                            class="toolbar-dropdown__menu"
+                            id="interview-model-menu"
+                            role="listbox"
+                            hidden
+                        />
+                    </div>
+                </li>
+            )
+        }
+
         {
             showStartOver && (
                 <li class="app-toolbar__item">
                     <button type="button" class="app-toolbar__btn" id="start-over-btn" data-start-over>
+                        <UiIcon name="rotate-ccw" />
                         <span data-locale="en">Start over</span>
                         <span data-locale="zh" hidden>重新开始</span>
                     </button>
                 </li>
             )
         }
+
         <li class="app-toolbar__item">
-            <a class="app-toolbar__btn" href="/prompt">
-                <span data-locale="en">Last prompt</span>
-                <span data-locale="zh" hidden>上次提示</span>
+            <a class="app-toolbar__btn" id="last-result-link" href="/prompt">
+                <span data-locale="en" data-last-label="prompt">Last prompt</span>
+                <span data-locale="en" data-last-label="build" hidden>Last result</span>
+                <span data-locale="zh" data-last-label="prompt" hidden>上次提示</span>
+                <span data-locale="zh" data-last-label="build" hidden>上次结果</span>
             </a>
         </li>
     </ul>

@@ -103,6 +103,80 @@
     font-size: 14px;
 }
 
+.app-toolbar__item--dropdown {
+    position: relative;
+}
+
+.toolbar-dropdown {
+    position: relative;
+}
+
+.toolbar-dropdown__trigger {
+    gap: 4px;
+}
+
+.toolbar-dropdown__prefix {
+    color: var(--muted);
+}
+
+.toolbar-menu-toggle {
+    display: none;
+}
+
+.toolbar-dropdown__value {
+    color: var(--text);
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.toolbar-dropdown__caret {
+    font-size: 11px;
+    opacity: 0.6;
+}
+
+.toolbar-dropdown__menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 20;
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    min-width: 220px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.toolbar-dropdown__option {
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.toolbar-dropdown__option:hover,
+.toolbar-dropdown__option.is-selected {
+    background: var(--panel);
+}
+
+.toolbar-dropdown__option-label {
+    display: block;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.toolbar-dropdown__option-desc {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--faint);
+    line-height: 1.4;
+}
+
 .sidebar-actions {
     margin-top: auto;
     display: inline-flex;
@@ -241,52 +315,49 @@
     }
 
     .sidebar {
-        position: static;
+        position: relative;
         height: auto;
         padding: calc(28px + env(safe-area-inset-top)) calc(var(--pad-x) + env(safe-area-inset-right))
             calc(16px + env(safe-area-inset-bottom)) calc(var(--pad-x) + env(safe-area-inset-left));
-        flex-direction: row;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-areas:
+            'title menu theme'
+            'panel panel panel';
         align-items: center;
-        row-gap: 10px;
-        column-gap: 12px;
+        column-gap: 10px;
+        row-gap: 0;
     }
 
     .sidebar__title {
+        grid-area: title;
         transform-origin: left center;
-        order: 1;
-        flex: 1 1 auto;
         font-size: 22px;
+        min-width: 0;
+    }
+
+    .sidebar__title-text {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .sidebar__quote {
         display: none;
     }
 
-    .app-toolbar {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: 6px 8px;
-        margin-top: 0;
-        order: 2;
-        width: auto;
-        flex: 0 1 auto;
-    }
-
-    .app-toolbar__item {
-        width: auto;
-    }
-
-    .app-toolbar__btn {
-        min-height: var(--tap-min-h);
-        padding: 6px 10px;
+    .toolbar-menu-toggle {
+        grid-area: menu;
+        display: inline-flex;
+        flex-shrink: 0;
     }
 
     .sidebar-actions {
-        order: 3;
+        grid-area: theme;
         margin-top: 0;
         margin-left: 0;
+        flex-shrink: 0;
     }
 
     .sidebar-actions .icon-button {
@@ -294,6 +365,48 @@
         height: 36px;
         min-width: 36px;
         min-height: 36px;
+    }
+
+    .app-toolbar {
+        grid-area: panel;
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+        margin-top: 10px;
+        padding: 8px;
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--bg);
+        box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 8%, transparent);
+    }
+
+    .app-toolbar.is-open {
+        display: flex;
+    }
+
+    .app-toolbar__item {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .app-toolbar__btn,
+    .toolbar-dropdown__trigger {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .toolbar-dropdown {
+        width: 100%;
+    }
+
+    .toolbar-dropdown__menu {
+        position: static;
+        width: 100%;
+        min-width: 0;
+        margin-top: 6px;
+        box-shadow: none;
     }
 
     .content {
@@ -305,6 +418,21 @@
 @media (hover: none) {
     .sidebar-actions .icon-button[data-tooltip]::after {
         display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .toolbar-dropdown__menu {
+        right: 0;
+        left: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-toolbar__btn,
+    .toolbar-dropdown__trigger {
+        font-size: 14px;
+        padding: 8px 10px;
     }
 }
 

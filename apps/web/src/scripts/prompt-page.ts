@@ -1,4 +1,5 @@
 import { buildPrompt, isValidAnswers } from '../lib/build-prompt';
+import { saveLastDelivery } from '../lib/last-delivery';
 import { readLocale } from '../lib/locale';
 import { SESSION_KEY } from '../lib/types';
 
@@ -37,6 +38,8 @@ export function initPromptPage() {
 
     const paragraph = buildPrompt(raw);
     promptEl.textContent = paragraph;
+    saveLastDelivery('prompt');
+    document.dispatchEvent(new CustomEvent('last-delivery-changed'));
     missingEl.hidden = true;
     contentEl.hidden = false;
 

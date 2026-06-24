@@ -7,6 +7,7 @@ import {
     type CurateModelsResponse
 } from '../lib/curate-model';
 import { isValidAnswers } from '../lib/build-prompt';
+import { saveBuildResult, saveLastDelivery } from '../lib/last-delivery';
 import type { InterviewAnswers } from '../lib/types';
 import { SESSION_KEY } from '../lib/types';
 
@@ -261,6 +262,12 @@ export function initBuildPage() {
         resultsEl.hidden = false;
         if (flowEl) flowEl.hidden = true;
         if (fallbackEl) fallbackEl.hidden = true;
+        saveBuildResult({
+            playlistName: data.playlist.name,
+            playlistUrl: data.playlist.url,
+            trackCount: data.trackCount
+        });
+        document.dispatchEvent(new CustomEvent('last-delivery-changed'));
     }
 
     async function runBuild() {

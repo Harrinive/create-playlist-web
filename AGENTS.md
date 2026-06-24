@@ -23,7 +23,7 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 | Repo / git | **Public** — `Harrinive/create-playlist-web`, `main` |
 | Phase | **Phase 3 in progress** — curate / verify / publish shipped in code |
 | Frontend | `apps/web/` — Astro 6, Whono-style UI |
-| Interview | Static 5-step wizard (M1–M5), EN + 中文 |
+| Interview | Stacked static wizard (M1–M5), EN + 中文; **New question** refresh on active step (LLM regen Phase 4) |
 | Delivery | `/delivery` — Prompt + per-model tracklist options (Step 2.2.3) |
 | Prompt | Client-side Step 2.1 (`build-prompt.ts`) |
 | Build path | `/build` — OAuth + curate → verify → publish UI |
@@ -36,7 +36,7 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 - Landing (`/`), interview wizard (`/interview`), delivery choice (`/delivery`), prompt (`/prompt`)
 - Session storage for answers; draft resume via `sessionStorage`
 - Bilingual interview labels (Chinese mode); **English prompt output** always
-- Sidebar utilities: **EN / 中文**, **Start over**, **Last prompt**, theme (light / dark / system)
+- Sidebar utilities: language + interview model dropdowns, mobile Menu panel, Start over (interview), Last prompt/result, theme (light / dark / system)
 - Deployed to Cloudflare Pages (Git connect, root `apps/web`, output `dist`)
 
 ### Phase 2 (complete)
@@ -76,6 +76,7 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 1. **Production smoke test:** interview → delivery (pick model) → build → playlist URL
 2. **Cursor provider** for `cursor:` curation slugs
 3. Optional: migrate `DATABASE_URL` to Supabase; Spotify app review for public users
+4. **Phase 4 interview LLM:** wire **New question** refresh → `POST /api/interview/next` with rejected stems (`differentFromInstruction`)
 
 ---
 
