@@ -4,7 +4,7 @@ Replace the Cursor-only `/create-playlist` flow with a **public website** where 
 
 **Local path:** `Programs/create-playlist-web/`  
 **Skill spec (source of truth for product behavior):** `~/.cursor/skills/create-playlist/`  
-**Target domain (TBD):** e.g. `playlist.dychen.net` or `dychen.net/create-playlist`
+**Target domain:** `vibelist.dychen.net` (Cloudflare Pages)
 
 ---
 
@@ -78,7 +78,7 @@ Hybrid split — same pattern as dychen.net (static) + Cycloud (stateful API):
 
 | Layer | Choice | Notes |
 |-------|--------|-------|
-| **Frontend** | Astro 6 + Tailwind 4 | Match [dychen.net](https://github.com/Harrinive/dychen-net); reuse layout patterns |
+| **Frontend** | Astro 6 + Whono CSS | Ported from [astro-whono](https://github.com/cxro/astro-whono); `@lucide/astro` icons; no Tailwind |
 | **Frontend host** | Cloudflare Pages | Free, auto-deploy on push, custom subdomain |
 | **API** | Node (Express/Fastify) **or** Python (FastAPI) | Prefer **Node** to reuse `spotify-mcp-server` TypeScript utils with minimal port |
 | **API host** | Fly.io | Same as Cycloud; secrets via `fly secrets`; Dockerfile with `git` if toolbox pip deps |
@@ -226,26 +226,39 @@ Alternative: two repos (`create-playlist-web` + `create-playlist-api`) — defer
 
 ### Phase 0 — Scaffold (1 session)
 
-- [ ] Init git repo; push to `Harrinive/create-playlist-web`
-- [ ] Astro app with dychen-style shell (design-tokens)
-- [ ] Placeholder pages: `/`, `/interview`, `/prompt`, `/build`
-- [ ] README + AGENTS.md (done)
+- [x] Init git repo; push to `Harrinive/create-playlist-web`
+- [x] Astro app with Whono-style shell (two-column layout, fonts)
+- [x] Pages: `/`, `/interview`, `/prompt`, `/build` (placeholder)
+- [x] README + AGENTS.md
 
 ### Phase 1 — Prompt-only MVP
 
-- [ ] 4-step interview UI (static options)
-- [ ] Client or server prompt generation per [step-2-1-prompt.md](file://~/.cursor/skills/create-playlist/step-2-1-prompt.md)
-- [ ] Deploy web to Cloudflare Pages
-- [ ] No Spotify OAuth
+- [x] Interview UI — static option bank covering M1–M5 (5 wizard steps)
+- [x] Client prompt generation per [step-2-1-prompt.md](file://~/.cursor/skills/create-playlist/step-2-1-prompt.md)
+- [x] Chinese interview mode toggle (bilingual Q/options; English prompt output)
+- [x] Sidebar app toolbar (EN/中文, start over, last prompt, theme)
+- [x] Step 2 delivery choice (`/delivery` — Prompt vs Build)
+- [x] Deploy web to Cloudflare Pages (`vibelist.dychen.net`, Git connect)
+- [x] No Spotify OAuth
 
-**Exit criteria:** User can complete interview and copy a valid Spotify Prompted Playlist paragraph.
+**Exit criteria:** User can complete interview and copy a valid Spotify Prompted Playlist paragraph. **Met** — live at https://vibelist.dychen.net
 
 ### Phase 2 — API skeleton + OAuth
 
+**Frontend prep (done — no backend yet):**
+
+- [x] `/delivery` — skill Step 2 fork UI
+- [x] `/build` — placeholder page + session guard; links back to prompt/delivery
+- [x] Interview flow ends at `/delivery` (not `/prompt`)
+- [x] `wrangler.toml` for Pages; optional GitHub Actions deploy workflow
+
+**Backend (not started):**
+
 - [ ] Fly app + Neon DB (users, tokens)
 - [ ] Spotify OAuth login/logout
-- [ ] Health check; CORS for web origin
+- [ ] Health check; CORS for `https://vibelist.dychen.net`
 - [ ] Port `spotifyFetch` / search from spotify-mcp-server
+- [ ] Wire `/build` to Connect Spotify → API
 
 **Exit criteria:** User connects Spotify; server can search one track on their behalf.
 
@@ -260,8 +273,8 @@ Alternative: two repos (`create-playlist-web` + `create-playlist-api`) — defer
 
 ### Phase 4 — Polish
 
+- [x] Chinese interview mode toggle *(shipped in Phase 1)*
 - [ ] LLM-generated interview questions (skill parity)
-- [ ] Chinese interview mode toggle
 - [ ] Skill memory (optional Postgres table — like skill `memory.json`)
 - [ ] Link from dychen.net nav
 - [ ] Spotify app review for public users
@@ -291,7 +304,7 @@ Alternative: two repos (`create-playlist-web` + `create-playlist-api`) — defer
 | `SPOTIFY_REDIRECT_URI` | yes | OAuth callback |
 | `SESSION_SECRET` | yes | Cookie signing |
 | `DATABASE_URL` | yes | Neon Postgres |
-| `WEB_ORIGIN` | yes | CORS — `https://playlist.dychen.net` |
+| `WEB_ORIGIN` | yes | CORS — `https://vibelist.dychen.net` |
 | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `CURSOR_API_KEY` | one of | llm-router backends |
 | `DEFAULT_LLM_MODEL` | no | e.g. `cursor:composer-2.5` |
 
@@ -311,11 +324,11 @@ Alternative: two repos (`create-playlist-web` + `create-playlist-api`) — defer
 
 ## Open decisions
 
-1. **Domain:** subdomain vs path on dychen.net
+1. ~~**Domain:**~~ **Resolved** — `vibelist.dychen.net` on Cloudflare Pages
 2. **API language:** Node (reuse TS) vs Python (reuse llm-router natively)
 3. **Interview v1:** static wizard vs LLM from day one
 4. **Repo name on GitHub:** `create-playlist-web` vs `teahouse-playlist`
-5. **Public vs private repo:** public matches dychen.net / Cycloud pattern
+5. ~~**Public vs private repo:**~~ **Resolved** — public at [Harrinive/create-playlist-web](https://github.com/Harrinive/create-playlist-web)
 
 ---
 

@@ -1,43 +1,54 @@
-# Astro Starter Kit: Minimal
+# create-playlist-web — frontend
 
-```sh
-npm create astro@latest -- --template minimal
+Astro static site: mood interview → delivery choice → Spotify Prompted Playlist paragraph (Phase 1) or build placeholder (Phase 2).
+
+**Live:** https://vibelist.dychen.net  
+Parent repo: [create-playlist-web](https://github.com/Harrinive/create-playlist-web)
+
+## Commands
+
+```bash
+npm install
+npm run dev      # http://localhost:4321
+npm run build    # dist/
+npm run preview  # serve dist/
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Requires Node ≥ 22.12.
 
-## 🚀 Project Structure
+## Routes
 
-Inside of your Astro project, you'll see the following folders and files:
+| Path | File | Purpose |
+|------|------|---------|
+| `/` | `src/pages/index.astro` | Landing |
+| `/interview` | `src/pages/interview.astro` | Step 1 wizard (M1–M5) |
+| `/delivery` | `src/pages/delivery.astro` | Step 2 — Prompt vs Build |
+| `/prompt` | `src/pages/prompt.astro` | Step 2.1 — copyable paragraph |
+| `/build` | `src/pages/build.astro` | Phase 2 placeholder (awaits API) |
+
+## Architecture
 
 ```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+Sidebar (Sidebar.astro)
+  ├── EN / 中文     → app-toolbar.ts + locale.ts
+  ├── Start over    → clears sessionStorage
+  ├── Last prompt   → /prompt
+  └── Theme toggle  → sidebar-theme.ts
+
+/interview → /delivery → /prompt  or  /build (placeholder)
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+**Session keys:** `create-playlist-answers`, `create-playlist-answers-draft`, `create-playlist-locale`
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## Styling
 
-Any static assets, like images, can be placed in the `public/` directory.
+Whono-derived CSS (no Tailwind): `src/styles/global.css`, `layout.css`, `app.css`.  
+Fonts: LXGW WenKai Lite + Noto Serif SC subsets in `public/fonts/`.
 
-## 🧞 Commands
+## Skill alignment
 
-All commands are run from the root of the project, from a terminal:
+- Interview covers M1–M5 before delivery (static bank, not LLM)
+- Prompt format: `~/.cursor/skills/create-playlist/step-2-1-prompt.md`
+- Chinese mode: bilingual Q/options only; deliverables English
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+See [AGENTS.md](../../AGENTS.md) for Phase 2 backend status.
