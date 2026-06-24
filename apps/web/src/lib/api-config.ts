@@ -1,4 +1,4 @@
-const PRODUCTION_API_URL = 'https://create-playlist-api.fly.dev';
+const PRODUCTION_API_URL = 'https://api.vibelist.dychen.net';
 
 /** Base URL for create-playlist-api (no trailing slash). */
 export function getApiBaseUrl(): string {

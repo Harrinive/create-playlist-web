@@ -19,10 +19,15 @@ type AppContext = {
 
 function cookieOptions(env: Env) {
     const secure = env.NODE_ENV === 'production';
+    // Lax is enough when API + web share *.dychen.net (same-site); None only for cross-site (e.g. fly.dev).
+    const webHost = new URL(env.WEB_ORIGIN).hostname;
+    const sameDychenSite =
+        webHost === 'dychen.net' ||
+        webHost.endsWith('.dychen.net');
     return {
         httpOnly: true,
         secure,
-        sameSite: secure ? ('none' as const) : ('lax' as const),
+        sameSite: secure && !sameDychenSite ? ('none' as const) : ('lax' as const),
         path: '/',
         maxAge: SESSION_TTL_MS / 1000
     };

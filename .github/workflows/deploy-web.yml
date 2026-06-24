@@ -1,11 +1,6 @@
-name: Deploy web
+name: Deploy web (optional — use CF Pages Git connect instead)
 
 on:
-    push:
-        branches: [main]
-        paths:
-            - 'apps/web/**'
-            - '.github/workflows/deploy-web.yml'
     workflow_dispatch:
 
 concurrency:
