@@ -9,8 +9,11 @@ const showInterviewModel = pathname.startsWith('/interview');
 
 <aside id="site-sidebar" class="sidebar">
     <div class="sidebar__top">
-        <a class="sidebar__title" href="/" aria-label={siteConfig.title}>
-            <span class="sidebar__title-text">{siteConfig.title}</span>
+        <a class="sidebar__title" href="/" aria-label={siteConfig.title.en}>
+            <span class="sidebar__title-text">
+                <span data-locale="en">{siteConfig.title.en}</span>
+                <span data-locale="zh" hidden>{siteConfig.title.zh}</span>
+            </span>
         </a>
 
         <div class="sidebar__header-actions">

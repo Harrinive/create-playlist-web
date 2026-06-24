@@ -368,6 +368,8 @@ export function initBuildPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     brief: curated.brief,
+                    answers,
+                    locale: currentLocale(),
                     sequenceIntent: curated.sequenceIntent,
                     proposedCount: curated.proposedCount,
                     tracks: verified.tracks,

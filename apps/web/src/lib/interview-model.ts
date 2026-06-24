@@ -17,6 +17,13 @@ export const INTERVIEW_MODELS: InterviewModelOption[] = [
         labelZh: '题库模式',
         descriptionEn: 'Fixed mood interview (v1)',
         descriptionZh: '固定情绪访谈（v1）'
+    },
+    {
+        id: 'llm',
+        labelEn: 'AI interview',
+        labelZh: 'AI 访谈',
+        descriptionEn: 'Fresh questions each run (needs API)',
+        descriptionZh: '每次全新出题（需 API）'
     }
 ];
 
@@ -26,6 +33,10 @@ export function readInterviewModel(): string {
         if (stored && INTERVIEW_MODELS.some((m) => m.id === stored)) return stored;
     } catch {}
     return 'static';
+}
+
+export function isLlmInterviewModel(modelId?: string): boolean {
+    return (modelId ?? readInterviewModel()) === 'llm';
 }
 
 export function saveInterviewModel(modelId: string) {

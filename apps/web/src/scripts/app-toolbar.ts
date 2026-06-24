@@ -7,6 +7,7 @@ import {
     saveInterviewModel
 } from '../lib/interview-model';
 import { clearRejectedQuestions } from '../lib/interview-refresh';
+import { clearLlmSteps } from '../lib/interview-llm-cache';
 import { lastResultHref, readLastDelivery } from '../lib/last-delivery';
 import { SESSION_KEY } from '../lib/types';
 
@@ -135,6 +136,7 @@ function startOver() {
         sessionStorage.removeItem(SESSION_KEY);
         sessionStorage.removeItem(DRAFT_KEY);
         clearRejectedQuestions();
+        clearLlmSteps();
     } catch {}
     window.location.assign('/interview');
 }

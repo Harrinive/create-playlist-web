@@ -2,8 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import {
     buildCompactBrief,
-    buildPlaylistDescription,
-    buildPlaylistName,
+    buildPlaylistMetadata,
     formatBriefBlock
 } from '../brief.js';
 import type { Env } from '../config.js';
@@ -188,6 +187,8 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
         const body = z
             .object({
                 brief: compactBriefSchema,
+                answers: interviewAnswersSchema,
+                locale: z.enum(['en', 'zh']).optional().default('en'),
                 sequenceIntent: z.string().optional(),
                 proposedCount: z.number().int().positive().optional(),
                 tracks: z
@@ -216,8 +217,10 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
         }
 
         const accessToken = await getValidAccessToken(ctx.env, ctx.store, user);
-        const name = buildPlaylistName(body.data.brief);
-        const description = buildPlaylistDescription(body.data.brief);
+        const { name, description } = buildPlaylistMetadata(
+            body.data.answers as InterviewAnswers,
+            body.data.locale
+        );
 
         try {
             const playlist = await createPlaylist(accessToken, { name, description, public: false });

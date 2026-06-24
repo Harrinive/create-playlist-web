@@ -17,17 +17,17 @@ export const DEV_PREVIEW_CURATE_MODELS: CurateModelOption[] = [
     {
         id: 'cursor:composer-2.5',
         labelEn: 'Generate tracklist by Composer 2.5',
-        labelZh: '用 Composer 2.5 生成曲目列表 (Generate tracklist by Composer 2.5)'
+        labelZh: '用 Composer 2.5 生成曲目列表'
     },
     {
         id: 'openai:gpt-4o',
         labelEn: 'Generate tracklist by GPT-4o',
-        labelZh: '用 GPT-4o 生成曲目列表 (Generate tracklist by GPT-4o)'
+        labelZh: '用 GPT-4o 生成曲目列表'
     },
     {
         id: 'anthropic:claude-sonnet-4-6',
         labelEn: 'Generate tracklist by Claude Sonnet',
-        labelZh: '用 Claude Sonnet 生成曲目列表 (Generate tracklist by Claude Sonnet)'
+        labelZh: '用 Claude Sonnet 生成曲目列表'
     }
 ];
 

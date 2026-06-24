@@ -1,6 +1,8 @@
 export type InterviewOption = {
     id: string;
     label: string;
+    /** English line shown below Chinese in zh-mode interview options. */
+    labelEn?: string;
 };
 
 export type InterviewAnswers = {

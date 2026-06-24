@@ -20,25 +20,25 @@ const CURATE_MODEL_CATALOG: CurateModelOption[] = [
         id: 'cursor:composer-2.5',
         provider: 'cursor',
         labelEn: 'Generate tracklist by Composer 2.5',
-        labelZh: '用 Composer 2.5 生成曲目列表 (Generate tracklist by Composer 2.5)'
+        labelZh: '用 Composer 2.5 生成曲目列表'
     },
     {
         id: 'openai:gpt-4o',
         provider: 'openai',
         labelEn: 'Generate tracklist by GPT-4o',
-        labelZh: '用 GPT-4o 生成曲目列表 (Generate tracklist by GPT-4o)'
+        labelZh: '用 GPT-4o 生成曲目列表'
     },
     {
         id: 'openai:gpt-4o-mini',
         provider: 'openai',
         labelEn: 'Generate tracklist by GPT-4o mini',
-        labelZh: '用 GPT-4o mini 生成曲目列表 (Generate tracklist by GPT-4o mini)'
+        labelZh: '用 GPT-4o mini 生成曲目列表'
     },
     {
         id: 'anthropic:claude-sonnet-4-6',
         provider: 'anthropic',
         labelEn: 'Generate tracklist by Claude Sonnet',
-        labelZh: '用 Claude Sonnet 生成曲目列表 (Generate tracklist by Claude Sonnet)'
+        labelZh: '用 Claude Sonnet 生成曲目列表'
     }
 ];
 

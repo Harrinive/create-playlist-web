@@ -1,5 +1,8 @@
 export default {
-    title: 'Create Playlist',
+    title: {
+        en: 'Vibe List',
+        zh: '氛围歌单'
+    },
     tagline: {
         en: 'Four questions. One paragraph. Paste into Spotify.',
         zh: '四个问题。一段话。粘贴到 Spotify。'

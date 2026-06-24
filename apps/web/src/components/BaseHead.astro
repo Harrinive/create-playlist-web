@@ -8,14 +8,13 @@ export type Props = {
 };
 
 const { title, description } = Astro.props;
-const pageTitle = title ? `${title} | ${siteConfig.title}` : siteConfig.title;
+const pageTitle = title ? `${title} | ${siteConfig.title.en}` : siteConfig.title.en;
 const metaDescription = description ?? siteConfig.description.en;
 ---
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
 <title>{pageTitle}</title>
 <meta name="generator" content={Astro.generator} />
 <meta name="description" content={metaDescription} />
