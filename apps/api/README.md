@@ -1,5 +1,8 @@
 # Fly.io API for Spotify OAuth and playlist build (Phase 2+).
 
+**Production:** https://api.vibelist.dychen.net  
+**Fly app:** `create-playlist-api`
+
 ## Local dev
 
 ```bash
@@ -33,22 +36,33 @@ Spotify Developer redirect URI: `http://127.0.0.1:3001/auth/spotify/callback`
 | GET | `/api/me` | Session status |
 | GET | `/api/search?q=` | Track search (auth required) |
 
+Session cookie: `cp_session` (httpOnly). Production uses `SameSite=Lax` when API and web share `*.dychen.net`.
+
 ## Deploy (Fly.io)
 
 ```bash
 fly apps create create-playlist-api   # once
+fly certs add api.vibelist.dychen.net -a create-playlist-api
 fly secrets set \
   SPOTIFY_CLIENT_ID=... \
   SPOTIFY_CLIENT_SECRET=... \
-  SPOTIFY_REDIRECT_URI=https://create-playlist-api.fly.dev/auth/spotify/callback \
+  SPOTIFY_REDIRECT_URI=https://api.vibelist.dychen.net/auth/spotify/callback \
   SESSION_SECRET=... \
   WEB_ORIGIN=https://vibelist.dychen.net \
-  DATABASE_URL=...
-fly deploy
+  DATABASE_URL=... \
+  NODE_ENV=production \
+  -a create-playlist-api
+fly deploy -a create-playlist-api
 ```
 
-Add the production redirect URI in the Spotify Developer dashboard.
+Add both redirect URIs in the Spotify Developer dashboard (local + production).
 
-**CORS:** session cookie is set on the API host; the web app calls the API with `credentials: 'include'`.
+**DNS:** `CNAME api.vibelist` → `le60ye1.create-playlist-api.fly.dev` (grey cloud in Cloudflare). See [docs/DASHBOARD-OPS.md](../../docs/DASHBOARD-OPS.md).
 
-Without `DATABASE_URL`, dev uses an in-memory store. Production requires Postgres (Neon).
+**CORS:** web calls API with `credentials: 'include'`. API and web must be same-site in production (`vibelist.dychen.net` + `api.vibelist.dychen.net`).
+
+Without `DATABASE_URL`, dev uses an in-memory store. Production requires Postgres.
+
+## CI
+
+`.github/workflows/deploy-api.yml` deploys on push to `apps/api/**` when `FLY_API_TOKEN` is set in GitHub secrets.

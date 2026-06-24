@@ -4,12 +4,15 @@ Web app for mood-driven Spotify playlist creation — a browser version of the *
 
 **Repo:** https://github.com/Harrinive/create-playlist-web  
 **Live:** https://vibelist.dychen.net  
-**Status:** Phase 1 live. Phase 2 works locally (OAuth + track search); Fly deploy pending.
+**API:** https://api.vibelist.dychen.net  
+**Status:** Phase 1–2 complete (prompt path + Spotify OAuth + search in production).
 
 | Doc | Purpose |
 |-----|---------|
 | [PLAN.md](./PLAN.md) | Architecture, phases, stack, open questions |
 | [AGENTS.md](./AGENTS.md) | Agent handoff — start here for implementation |
+| [docs/PROGRESS.md](./docs/PROGRESS.md) | What shipped, bugs fixed, deploy history |
+| [docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md) | CF / Fly / Spotify / GitHub settings (no secret values) |
 | [apps/api/README.md](./apps/api/README.md) | API local dev + Fly deploy |
 
 ---
@@ -27,22 +30,20 @@ Web app for mood-driven Spotify playlist creation — a browser version of the *
 | EN / 中文 + theme | Sidebar | Bilingual interview; English prompt |
 | Deploy | CF Pages | `vibelist.dychen.net`, root `apps/web` |
 
-### Done (Phase 2 — local dev)
+### Done (Phase 2)
 
 | Item | Notes |
 |------|-------|
-| `apps/api/` | Fastify — OAuth, `/api/me`, `/api/search` |
-| `/build` | Connect Spotify, test search, disconnect |
-| Interview wizard | Fixed Continue button on first visit |
-| Dev hosts | Use **127.0.0.1** (not `localhost`) for web + API cookies |
-
-**Phase 2 exit criteria met locally:** connect Spotify → search tracks on user's behalf.
+| `apps/api/` on Fly | OAuth, `/api/me`, `/api/search` |
+| API domain | `api.vibelist.dychen.net` (same-site cookies with web) |
+| `/build` | Connect Spotify, test search, disconnect — **verified production** |
+| CF Pages env | `PUBLIC_API_URL`, `NODE_VERSION=22` |
+| Dev hosts | **127.0.0.1** (not `localhost`) for web + API cookies |
 
 ### Not done yet
 
-- Fly.io API deploy + Neon `DATABASE_URL`
-- `PUBLIC_API_URL` on Cloudflare Pages (production build path)
 - Phase 3: curate → verify → publish ~20 tracks
+- Optional: Supabase migration for `DATABASE_URL`; Spotify app review for public users
 
 ---
 
@@ -74,10 +75,10 @@ Spotify redirect URI: `http://127.0.0.1:3001/auth/spotify/callback`
 
 | Layer | Host | Notes |
 |-------|------|-------|
-| Web | Cloudflare Pages | Git connect, root `apps/web`, output `dist` |
-| API | Fly.io | `apps/api` — secrets via `fly secrets set` |
+| Web | Cloudflare Pages | Git connect on `main`, root `apps/web`, output `dist` |
+| API | Fly.io | `create-playlist-api` → `api.vibelist.dychen.net` |
 
-Production: set `PUBLIC_API_URL` in Cloudflare Pages env; `WEB_ORIGIN=https://vibelist.dychen.net` on Fly.
+See [docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md) for full dashboard checklist.
 
 ---
 

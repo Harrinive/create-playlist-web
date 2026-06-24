@@ -21,14 +21,15 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 | Item | State |
 |------|-------|
 | Repo / git | **Public** — `Harrinive/create-playlist-web`, `main` |
-| Phase | **Phase 2 local complete** — OAuth + search verified; Fly deploy pending |
+| Phase | **Phase 2 complete** — OAuth + search live in production |
 | Frontend | `apps/web/` — Astro 6, Whono-style UI |
 | Interview | Static 5-step wizard (M1–M5), EN + 中文; Continue-button fix shipped |
 | Delivery | `/delivery` — Prompt vs Build |
 | Prompt | Client-side Step 2.1 (`build-prompt.ts`) |
-| Build path | `/build` — Connect Spotify + test search (`PUBLIC_API_URL`) |
-| API | `apps/api/` — Fastify, OAuth, Postgres or in-memory dev store |
-| Live web | **vibelist.dychen.net** (prompt path; build awaits Fly + `PUBLIC_API_URL`) |
+| Build path | `/build` — Connect Spotify + test search |
+| API | `apps/api/` on Fly — `api.vibelist.dychen.net` |
+| Live web | **https://vibelist.dychen.net** |
+| Ops docs | [docs/PROGRESS.md](./docs/PROGRESS.md), [docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md) |
 
 ### Shipped (Phase 1)
 
@@ -36,31 +37,30 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 - Session storage for answers; draft resume via `sessionStorage`
 - Bilingual interview labels (Chinese mode); **English prompt output** always
 - Sidebar utilities: **EN / 中文**, **Start over**, **Last prompt**, theme (light / dark / system)
-- Deployed to Cloudflare Pages (`apps/web`, root `apps/web`, output `dist`)
+- Deployed to Cloudflare Pages (Git connect, root `apps/web`, output `dist`)
 
-### Phase 2 progress
+### Phase 2 (complete)
 
 | Item | Status |
 |------|--------|
 | `apps/api/` Fastify server | Done — health, OAuth, `/api/me`, `/api/search` |
-| Spotify OAuth (auth code flow) | Done — verified locally |
-| Token store (Postgres or in-memory dev) | Done |
+| Spotify OAuth (auth code flow) | Done — verified locally and production |
+| Token store (Postgres or in-memory dev) | Done — Fly `DATABASE_URL` in prod |
 | `/build` Connect Spotify UI | Done |
-| Interview Continue button (first visit) | Fixed — Astro double-init |
-| Dev cookie host | **127.0.0.1** for web + API (not `localhost`) |
-| `dotenv` loads `apps/api/.env` | Done |
-| Fly.io deploy + Neon production DB | **Not deployed** |
-| `PUBLIC_API_URL` on CF Pages | **Not set** |
+| Fly deploy `create-playlist-api` | Done |
+| API custom domain `api.vibelist.dychen.net` | Done — TLS Issued; same-site cookies |
+| CF Pages `PUBLIC_API_URL` + `NODE_VERSION` | Done |
+| Spotify production redirect URI | Done |
+| GitHub `deploy-api.yml` | Optional — needs `FLY_API_TOKEN` |
+| Web deploy | CF Pages Git connect on push to `main` |
 
-**Phase 2 exit criteria:** met locally (connect Spotify → search one track).
+**Phase 2 exit criteria:** met — connect Spotify → search tracks (production verified).
 
 ### Next recommended work
 
-1. Commit pushed → `fly deploy` `apps/api` + Neon `DATABASE_URL`
-2. Fly secrets: `SPOTIFY_*`, `SESSION_SECRET`, `WEB_ORIGIN=https://vibelist.dychen.net`
-3. Spotify dashboard: production redirect URI on Fly hostname
-4. Cloudflare Pages: `PUBLIC_API_URL=https://create-playlist-api.fly.dev` → redeploy web
-5. **Phase 3:** `POST /api/curate`, verify loop, publish playlist
+1. **Phase 3:** `POST /api/curate`, verify loop, publish ~20-track playlist
+2. Optional: migrate `DATABASE_URL` to Supabase (Cycloud pattern); destroy Fly MPG if unused
+3. Optional: Spotify app review for non-allowlisted users
 
 ---
 
@@ -68,11 +68,13 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 
 1. **This file** — scope and constraints
 2. **[PLAN.md](./PLAN.md)** — architecture, phases, stack
-3. **Skill router:** `~/.cursor/skills/create-playlist/SKILL.md`
-4. **For Step 2.2 API mapping:** `step-2-2-mcp-fallback.md` (direct Spotify Web API, not MCP)
-5. **Reference apps:** [dychen.net](https://github.com/Harrinive/dychen-net) (Astro/CF deploy pattern), [Cycloud](https://github.com/Harrinive/Cycloud) (Fly/secrets)
-6. **UI reference:** [astro-whono](https://github.com/cxro/astro-whono) (theme ported into `apps/web/src/styles/`)
-7. **Shared libs:** [toolbox/AGENTS.md](https://github.com/Harrinive/toolbox/blob/main/AGENTS.md)
+3. **[docs/PROGRESS.md](./docs/PROGRESS.md)** — shipped work and bug fixes
+4. **[docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md)** — CF / Fly / Spotify / GitHub settings
+5. **Skill router:** `~/.cursor/skills/create-playlist/SKILL.md`
+6. **For Step 2.2 API mapping:** `step-2-2-mcp-fallback.md` (direct Spotify Web API, not MCP)
+7. **Reference apps:** [dychen.net](https://github.com/Harrinive/dychen-net) (Astro/CF deploy pattern), [Cycloud](https://github.com/Harrinive/Cycloud) (Fly/secrets)
+8. **UI reference:** [astro-whono](https://github.com/cxro/astro-whono) (theme ported into `apps/web/src/styles/`)
+9. **Shared libs:** [toolbox/AGENTS.md](https://github.com/Harrinive/toolbox/blob/main/AGENTS.md)
 
 ---
 
@@ -98,7 +100,7 @@ MCP is **not** used in production. Port `createSpotifyApi` / `spotifyFetch` from
 | Step 1 interview | `/interview` — chip wizard | Done (static bank) |
 | Step 2 delivery choice | `/delivery` — Prompt vs Build | Done |
 | Step 2.1 | `/prompt` — copyable paragraph | Done |
-| Step 2.2 build | `/build` + API | OAuth + search done locally; curate/publish Phase 3 |
+| Step 2.2 build | `/build` + API | OAuth + search done; curate/publish Phase 3 |
 
 **Hard rules from skill:** verify/publish must not re-curate or reorder from scratch; trim preserves propose order; offer prompt fallback if verify &lt;50% ok.
 
@@ -128,4 +130,4 @@ apps/api/          # Fastify — OAuth, /api/me, /api/search (see apps/api/READM
 
 See [PLAN.md § Open decisions](./PLAN.md#open-decisions): API language (Node vs Python), interview LLM vs static (static chosen for v1).
 
-**Resolved:** repo public; UI theme = astro-whono; domain = `vibelist.dychen.net`; CF Pages via Git connect (not GitHub Actions secrets).
+**Resolved:** repo public; UI theme = astro-whono; domain = `vibelist.dychen.net`; API = `api.vibelist.dychen.net`; CF Pages via Git connect; Phase 2 OAuth production verified.

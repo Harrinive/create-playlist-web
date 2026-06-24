@@ -3,7 +3,7 @@
 Astro static site: interview → delivery → prompt (Phase 1) or Spotify connect + search (Phase 2).
 
 **Live:** https://vibelist.dychen.net  
-**API:** [apps/api/README.md](../api/README.md)
+**API:** https://api.vibelist.dychen.net
 
 ## Commands
 

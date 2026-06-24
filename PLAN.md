@@ -252,18 +252,19 @@ Alternative: two repos (`create-playlist-web` + `create-playlist-api`) — defer
 - [x] Interview flow ends at `/delivery` (not `/prompt`)
 - [x] `wrangler.toml` for Pages; optional GitHub Actions deploy workflow
 
-**Backend (scaffolded locally — deploy pending):**
+**Backend (deployed — production verified 2026-06-23):**
 
 - [x] `apps/api/` Fastify server (`/health`, CORS, cookies)
 - [x] Spotify OAuth (`/auth/spotify`, callback, logout)
-- [x] Token store (Neon Postgres or in-memory dev fallback)
+- [x] Token store (Postgres via Fly `DATABASE_URL`; in-memory dev fallback)
 - [x] `GET /api/me`, `GET /api/search?q=` (auth required)
 - [x] `/build` Connect Spotify UI (`PUBLIC_API_URL`)
-- [ ] Fly app deployed + secrets configured
-- [ ] Spotify Developer app + production redirect URI
-- [ ] `PUBLIC_API_URL` on Cloudflare Pages build env
+- [x] Fly app `create-playlist-api` + secrets
+- [x] API custom domain `api.vibelist.dychen.net` (same-site OAuth cookies)
+- [x] Spotify Developer production redirect URI
+- [x] `PUBLIC_API_URL` + `NODE_VERSION` on Cloudflare Pages
 
-**Exit criteria:** User connects Spotify; server can search one track on their behalf. **Met locally** (2026-06-23); production deploy pending.
+**Exit criteria:** User connects Spotify; server can search one track on their behalf. **Met** — production verified at https://vibelist.dychen.net/build
 
 ### Phase 3 — Curate + verify + publish
 
