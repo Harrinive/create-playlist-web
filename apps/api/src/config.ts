@@ -10,6 +10,7 @@ const envSchema = z.object({
     DATABASE_URL: z.string().url().optional(),
     OPENAI_API_KEY: z.string().min(1).optional(),
     ANTHROPIC_API_KEY: z.string().min(1).optional(),
+    CURATE_LLM_MODEL: z.string().min(1).optional(),
     LLM_MODEL: z.string().min(1).optional(),
     PORT: z.coerce.number().int().positive().default(3001),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development')

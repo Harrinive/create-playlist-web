@@ -1,4 +1,5 @@
 import type { Env } from '../config.js';
+import { resolveCurateDefaultModel } from './models.js';
 
 type ChatMessage = {
     role: 'system' | 'user' | 'assistant';
@@ -11,7 +12,7 @@ type ParsedModel = {
 };
 
 function parseModel(model: string | undefined, env: Env): ParsedModel {
-    const raw = model ?? env.LLM_MODEL ?? 'openai:gpt-4o-mini';
+    const raw = model ?? resolveCurateDefaultModel(env) ?? 'openai:gpt-4o-mini';
     if (raw.startsWith('openai:')) {
         return { provider: 'openai', model: raw.slice('openai:'.length) };
     }

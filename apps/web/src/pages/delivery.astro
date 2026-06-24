@@ -31,28 +31,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                 <span data-locale="zh" hidden>你想怎么交付？</span>
             </h1>
 
-            <div id="delivery-options" class="chip-grid" role="group">
-                <button type="button" class="chip-option chip-option--delivery" data-delivery="prompt">
-                    <span class="chip-option__label">
-                        <span data-locale="en">Prompt for Spotify Prompted Playlist</span>
-                        <span data-locale="zh" hidden>Spotify 提示歌单段落 (Prompt for Spotify Prompted Playlist)</span>
-                    </span>
-                    <span class="chip-option__sublabel">
-                        <span data-locale="en">Paste in the Spotify app</span>
-                        <span data-locale="zh" hidden>在 Spotify 应用中粘贴</span>
-                    </span>
-                </button>
-                <button type="button" class="chip-option chip-option--delivery" data-delivery="build">
-                    <span class="chip-option__label">
-                        <span data-locale="en">Build on Spotify</span>
-                        <span data-locale="zh" hidden>在 Spotify 上创建 (Build on Spotify)</span>
-                    </span>
-                    <span class="chip-option__sublabel">
-                        <span data-locale="en">~20 verified tracks — coming soon</span>
-                        <span data-locale="zh" hidden>约 20 首验证曲目 — 即将推出</span>
-                    </span>
-                </button>
-            </div>
+            <div id="delivery-options" class="chip-grid" role="group"></div>
 
             <div class="actions-row">
                 <a class="text-link-button" href="/interview">

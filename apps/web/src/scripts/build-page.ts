@@ -1,4 +1,11 @@
 import { getApiBaseUrl, hasDevHostMismatch, isApiConfigured } from '../lib/api-config';
+import {
+    curateModelLabel,
+    currentLocale,
+    DEV_PREVIEW_CURATE_MODELS,
+    readCurateModel,
+    type CurateModelsResponse
+} from '../lib/curate-model';
 import { isValidAnswers } from '../lib/build-prompt';
 import type { InterviewAnswers } from '../lib/types';
 import { SESSION_KEY } from '../lib/types';
@@ -105,6 +112,7 @@ export function initBuildPage() {
     const resultsOrder = document.getElementById('build-results-order');
     const resultsSkipped = document.getElementById('build-results-skipped');
     const startBtn = document.getElementById('build-start-btn') as HTMLButtonElement | null;
+    const modelLabelEl = document.getElementById('build-model-label');
     const searchForm = document.getElementById('build-search-form') as HTMLFormElement | null;
     const searchInput = document.getElementById('build-search-input') as HTMLInputElement | null;
     const searchResults = document.getElementById('build-search-results');
@@ -138,6 +146,41 @@ export function initBuildPage() {
 
     const api = getApiBaseUrl();
     if (connectBtn) connectBtn.href = `${api}/auth/spotify`;
+
+    let selectedModel: string | null = readCurateModel();
+    let selectedModelLabel = '';
+
+    async function loadCurateModelLabel() {
+        if (!modelLabelEl || !api) return;
+        try {
+            const response = await fetch(`${api}/api/curate/models`);
+            if (!response.ok) return;
+            const data = (await response.json()) as CurateModelsResponse;
+            if (!selectedModel && data.defaultModel) {
+                selectedModel = data.defaultModel;
+            }
+            const match =
+                data.models.find((option) => option.id === selectedModel) ??
+                (data.defaultModel
+                    ? data.models.find((option) => option.id === data.defaultModel)
+                    : undefined);
+            const previewMatch =
+                import.meta.env.DEV && selectedModel
+                    ? DEV_PREVIEW_CURATE_MODELS.find((option) => option.id === selectedModel)
+                    : undefined;
+            const resolved = match ?? previewMatch;
+            if (resolved) {
+                selectedModel = resolved.id;
+                selectedModelLabel = curateModelLabel(resolved, currentLocale());
+                modelLabelEl.textContent = selectedModelLabel;
+                modelLabelEl.hidden = false;
+            }
+        } catch {
+            modelLabelEl.hidden = true;
+        }
+    }
+
+    void loadCurateModelLabel();
 
     if (hasDevHostMismatch()) {
         if (statusEl) {
@@ -227,12 +270,16 @@ export function initBuildPage() {
         if (fallbackEl) fallbackEl.hidden = true;
 
         try {
-            setProgress('Step 2.2.3: curating tracklist…');
+            const curateLabel = selectedModelLabel || 'curating tracklist';
+            setProgress(`Step 2.2.3: ${curateLabel}…`);
             const curateResponse = await fetch(`${api}/api/curate`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ answers })
+                body: JSON.stringify({
+                    answers,
+                    model: selectedModel ?? undefined
+                })
             });
             if (!curateResponse.ok) {
                 const err = (await curateResponse.json().catch(() => null)) as { error?: string } | null;

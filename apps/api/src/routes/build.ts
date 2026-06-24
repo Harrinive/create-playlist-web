@@ -8,6 +8,12 @@ import {
 } from '../brief.js';
 import type { Env } from '../config.js';
 import { curateTracklist } from '../llm/curate.js';
+import {
+    findCurateModel,
+    isAllowedCurateModel,
+    listCurateModels,
+    resolveCurateDefaultModel
+} from '../llm/models.js';
 import { addTracksToPlaylist, createPlaylist } from '../spotify/publish.js';
 import { trimVerifiedLines, verifySuccessRate } from '../spotify/trim.js';
 import { verifyProposedLines } from '../spotify/verify.js';
@@ -63,6 +69,19 @@ async function requireUser(request: Parameters<typeof resolveSessionUser>[0], ct
 }
 
 export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext) {
+    app.get('/api/curate/models', async () => {
+        const models = listCurateModels(ctx.env).map((option) => ({
+            id: option.id,
+            labelEn: option.labelEn,
+            labelZh: option.labelZh
+        }));
+        return {
+            models,
+            defaultModel: resolveCurateDefaultModel(ctx.env),
+            llmConfigured: models.length > 0
+        };
+    });
+
     app.post('/api/curate', async (request, reply) => {
         const user = await requireUser(request, ctx);
         if (!user) {
@@ -80,6 +99,10 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
             return reply.code(400).send({ error: 'Invalid interview answers' });
         }
 
+        if (!isAllowedCurateModel(ctx.env, body.data.model)) {
+            return reply.code(400).send({ error: 'Model not available on this server' });
+        }
+
         if (!ctx.env.OPENAI_API_KEY && !ctx.env.ANTHROPIC_API_KEY) {
             return reply.code(503).send({
                 error: 'LLM not configured',
@@ -92,14 +115,18 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
         const brief = buildCompactBrief(body.data.answers as InterviewAnswers, cooldown);
 
         try {
-            const curated = await curateTracklist(ctx.env, brief, body.data.model);
+            const model = body.data.model ?? resolveCurateDefaultModel(ctx.env) ?? undefined;
+            const curated = await curateTracklist(ctx.env, brief, model);
+            const modelInfo = model ? findCurateModel(ctx.env, model) : null;
             return {
                 brief,
                 briefText: formatBriefBlock(brief),
                 sequenceIntent: curated.sequenceIntent,
                 orderingAxes: curated.orderingAxes,
                 lines: curated.lines,
-                proposedCount: curated.lines.length
+                proposedCount: curated.lines.length,
+                model: model ?? null,
+                modelLabel: modelInfo?.labelEn ?? model ?? null
             };
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Curate failed';

@@ -36,6 +36,7 @@ Spotify Developer redirect URI: `http://127.0.0.1:3001/auth/spotify/callback`
 | GET | `/api/me` | Session status |
 | GET | `/api/search?q=` | Track search (auth required) |
 | POST | `/api/curate` | LLM tracklist from interview answers (auth + LLM key) |
+| GET | `/api/curate/models` | Available curation models for delivery UI |
 | POST | `/api/verify` | Verify proposed lines on Spotify + trim to ~20 |
 | POST | `/api/publish` | Create private playlist + append per-user memory |
 
