@@ -1,9 +1,17 @@
+const PRODUCTION_API_URL = 'https://create-playlist-api.fly.dev';
+
 /** Base URL for create-playlist-api (no trailing slash). */
 export function getApiBaseUrl(): string {
     const url = import.meta.env.PUBLIC_API_URL;
     if (typeof url === 'string' && url.length > 0) {
         return url.replace(/\/$/, '');
     }
+
+    // Fallback when CF Pages build env was not set (static site bakes env at build time).
+    if (typeof window !== 'undefined' && window.location.hostname === 'vibelist.dychen.net') {
+        return PRODUCTION_API_URL;
+    }
+
     return '';
 }
 
