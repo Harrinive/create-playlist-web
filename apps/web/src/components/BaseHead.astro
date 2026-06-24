@@ -1,6 +1,6 @@
 ---
 import siteConfig from '../data/site-config';
-import globalStylesHref from '../styles/global.css?url';
+import '../styles/global.css';
 
 export type Props = {
     title?: string;
@@ -19,4 +19,3 @@ const metaDescription = description ?? siteConfig.description.en;
 <title>{pageTitle}</title>
 <meta name="generator" content={Astro.generator} />
 <meta name="description" content={metaDescription} />
-<link rel="stylesheet" href={globalStylesHref} />
