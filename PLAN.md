@@ -329,8 +329,8 @@ Step 2.1 prompt today is client-side templates (no LLM). Orchestration must neve
 | `SESSION_SECRET` | yes | Cookie signing |
 | `DATABASE_URL` | yes | Supabase Postgres (or any Postgres) |
 | `WEB_ORIGIN` | yes | CORS — `https://vibelist.dychen.net` |
-| `OPENAI_API_KEY` | one of* | OpenAI curation (`openai:gpt-4o-mini`, etc.) |
-| `ANTHROPIC_API_KEY` | one of* | Anthropic curation (`anthropic:claude-sonnet-4-6`, etc.) |
+| `OPENAI_API_KEY` | one of* | OpenAI (`openai:gpt-5.4-mini`, etc.) |
+| `ANTHROPIC_API_KEY` | one of* | Anthropic (`anthropic:claude-sonnet-4-6`, etc.) |
 | `CURSOR_API_KEY` | one of* | Cursor curation (`cursor:composer-2.5`, etc.) via Node `llm-router` |
 | `CURATE_LLM_MODEL` | no | Server default for `/api/curate` when request omits `model` |
 | `INTERVIEW_LLM_MODEL` | no | Server default for `/api/interview/next` when request omits `model` |
@@ -338,7 +338,7 @@ Step 2.1 prompt today is client-side templates (no LLM). Orchestration must neve
 
 \*At least **one** LLM key required for `/api/curate` and `/api/interview/next`. Set `CURATE_LLM_MODEL` and `INTERVIEW_LLM_MODEL` to match the providers you configured.
 
-**Fly secrets (production):** e.g. `fly secrets set OPENAI_API_KEY=... CURATE_LLM_MODEL=openai:gpt-4o-mini INTERVIEW_LLM_MODEL=openai:gpt-4o-mini -a create-playlist-api`. Unset legacy `LLM_MODEL` if still present.
+**Fly secrets (production):** e.g. `fly secrets set CURATE_LLM_MODEL=anthropic:claude-sonnet-4-6 INTERVIEW_LLM_MODEL=openai:gpt-5.4-mini -a create-playlist-api`.
 
 ---
 

@@ -1,5 +1,5 @@
 import type { Env } from '../config.js';
-import { curationCatalogEntries } from '../model-catalog.js';
+import { curationCatalogEntries, DEFAULT_CURATE_MODEL_ID } from '../model-catalog.js';
 import {
     anyLlmProviderConfigured,
     formatModel,
@@ -36,7 +36,8 @@ export function resolveCurateDefaultModel(env: Env): string | null {
         if (normalized) return normalized;
     }
 
-    return available[0]?.id ?? null;
+    const catalogDefault = available.find((option) => option.id === DEFAULT_CURATE_MODEL_ID);
+    return catalogDefault?.id ?? available[0]?.id ?? null;
 }
 
 export function normalizeCurateModelId(env: Env, model: string | undefined): string | undefined {

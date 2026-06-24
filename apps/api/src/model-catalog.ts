@@ -63,6 +63,12 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
     }
 ];
 
+/** Server default when `CURATE_LLM_MODEL` is unset (must be in catalog with `curation: true`). */
+export const DEFAULT_CURATE_MODEL_ID = 'anthropic:claude-sonnet-4-6';
+
+/** Server default when `INTERVIEW_LLM_MODEL` is unset. */
+export const DEFAULT_INTERVIEW_MODEL_ID = 'openai:gpt-5.4-mini';
+
 export function interviewCatalogEntries(): ModelCatalogEntry[] {
     return MODEL_CATALOG.filter((entry) => entry.interview);
 }

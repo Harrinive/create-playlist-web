@@ -79,7 +79,7 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 |------|--------|
 | `POST /api/interview/next`, `GET /api/interview/models` | Done |
 | `INTERVIEW_LLM_MODEL` server default (separate from `CURATE_LLM_MODEL`) | Done |
-| Sidebar interview **model picker** (GPT-4o mini, GPT-4o, Claude Sonnet) | Done — static question bank removed |
+| Sidebar interview **model picker** (GPT-5.4 mini, Haiku 4.5, Sonnet 4.6) | Done — static question bank removed |
 | **New question** refresh → LLM regen with rejected stems | Done |
 | Bilingual interview (Chinese UI + EN/ZH stems) | Done |
 | Chinese playlist title/description at publish | Done |

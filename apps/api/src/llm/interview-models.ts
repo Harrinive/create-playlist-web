@@ -1,5 +1,5 @@
 import type { Env } from '../config.js';
-import { interviewCatalogEntries } from '../model-catalog.js';
+import { interviewCatalogEntries, DEFAULT_INTERVIEW_MODEL_ID } from '../model-catalog.js';
 import {
     anyLlmProviderConfigured,
     isProviderConfigured,
@@ -35,7 +35,8 @@ export function resolveInterviewDefaultModel(env: Env): string | null {
         if (normalized) return normalized;
     }
 
-    return available[0]?.id ?? null;
+    const catalogDefault = available.find((option) => option.id === DEFAULT_INTERVIEW_MODEL_ID);
+    return catalogDefault?.id ?? available[0]?.id ?? null;
 }
 
 export function normalizeInterviewModelId(env: Env, model: string | undefined): string | undefined {

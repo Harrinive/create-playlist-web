@@ -163,8 +163,8 @@ Chronological record through **Phase 4 complete** (June 2026).
 |------|--------|
 | `DATABASE_URL` → Supabase | Done |
 | `CURSOR_CLOUD_REPO` valid on Fly | Done |
-| `INTERVIEW_LLM_MODEL` on Fly (optional) | Recommended |
-| Unset legacy `LLM_MODEL` Fly secret | Recommended (`fly secrets unset LLM_MODEL -a create-playlist-api`) |
+| `CURATE_LLM_MODEL` on Fly | `anthropic:claude-sonnet-4-6` (default curation) |
+| `INTERVIEW_LLM_MODEL` on Fly | Optional — code default `openai:gpt-5.4-mini` |
 | Production smoke: `/health`, interview models, AI interview, build | **Verified** |
 
 **Phase 4 exit criteria met:** LLM interview with model picker and refresh on production.
@@ -173,12 +173,14 @@ Chronological record through **Phase 4 complete** (June 2026).
 
 Central catalog: **`apps/api/src/model-catalog.ts`** — edit one file to change interview + curation pickers.
 
-| Slug | Interview | Curation |
-|------|-----------|----------|
-| `cursor:composer-2.5` | — | ✓ |
-| `openai:gpt-5.4-mini` | ✓ | ✓ |
-| `anthropic:claude-haiku-4-5` | ✓ | ✓ |
-| `anthropic:claude-sonnet-4-6` | ✓ | ✓ |
+| Slug | Interview default | Curation default |
+|------|-------------------|------------------|
+| `cursor:composer-2.5` | — | option |
+| `openai:gpt-5.4-mini` | **✓** | option |
+| `anthropic:claude-haiku-4-5` | option | option |
+| `anthropic:claude-sonnet-4-6` | option | **✓** (Fly `CURATE_LLM_MODEL` + `DEFAULT_CURATE_MODEL_ID`) |
+
+Defaults live in `model-catalog.ts` (`DEFAULT_INTERVIEW_MODEL_ID`, `DEFAULT_CURATE_MODEL_ID`).
 
 Per-turn interview algorithm (`INTERVIEW_ALGORITHM_MODE=full`), sidebar algorithm toggle, and `LLM_MODEL` removal shipped in same release window.
 

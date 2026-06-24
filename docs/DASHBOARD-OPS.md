@@ -132,7 +132,7 @@ Set via `fly secrets set -a create-playlist-api`. Values live only on Fly — **
 | `CURSOR_LLM_RUNTIME` | `cloud` on Fly; `local` for dev | Required with Cursor on production |
 | `CURSOR_CLOUD_REPO` | Git URL for Cursor cloud agents | e.g. `https://github.com/Harrinive/create-playlist-web` |
 | `CURSOR_CLOUD_REF` | Git ref for cloud repo | `main` |
-| `CURATE_LLM_MODEL` | Default curation slug | e.g. `cursor:composer-2.5` or `openai:gpt-5.4-mini` |
+| `CURATE_LLM_MODEL` | Default curation slug | e.g. `anthropic:claude-sonnet-4-6` (code default) or `cursor:composer-2.5` |
 | `INTERVIEW_LLM_MODEL` | Default interview slug | e.g. `openai:gpt-5.4-mini` |
 | `INTERVIEW_ALGORITHM_MODE` | Interview generation pipeline | `full` (plan→draft→verify, default) or `fast` (single call) |
 
