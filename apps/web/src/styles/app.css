@@ -95,6 +95,51 @@
     min-height: 1.2em;
 }
 
+.build-search {
+    margin: 0 0 24px;
+    max-width: 36rem;
+}
+
+.build-search__label {
+    display: block;
+    font-size: 13px;
+    color: var(--faint);
+    margin-bottom: 8px;
+    font-family: var(--font-copy);
+}
+
+.build-search__row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.build-search__input {
+    flex: 1 1 220px;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-size: 15px;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font-copy);
+}
+
+.build-search-results {
+    margin: 0 0 24px;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.65;
+    max-width: 36rem;
+}
+
+.build-track-list {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
 .page-kicker {
     font-size: 13px;
     color: var(--faint);

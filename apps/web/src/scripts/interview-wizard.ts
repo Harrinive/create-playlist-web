@@ -7,9 +7,14 @@ import { SESSION_KEY } from '../lib/types';
 type Draft = Partial<InterviewAnswers>;
 type StepsByLocale = Record<Locale, InterviewStep[]>;
 
+const DRAFT_KEY = `${SESSION_KEY}-draft`;
+const STEP_KEY = `${SESSION_KEY}-wizard-step`;
+
+const abortByRoot = new WeakMap<HTMLElement, AbortController>();
+
 function getDraft(): Draft {
     try {
-        const raw = sessionStorage.getItem(`${SESSION_KEY}-draft`);
+        const raw = sessionStorage.getItem(DRAFT_KEY);
         return raw ? (JSON.parse(raw) as Draft) : {};
     } catch {
         return {};
@@ -17,11 +22,21 @@ function getDraft(): Draft {
 }
 
 function saveDraft(draft: Draft) {
-    sessionStorage.setItem(`${SESSION_KEY}-draft`, JSON.stringify(draft));
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
 }
 
 function clearDraft() {
-    sessionStorage.removeItem(`${SESSION_KEY}-draft`);
+    sessionStorage.removeItem(DRAFT_KEY);
+}
+
+function getStepIndex(root: HTMLElement): number {
+    const raw = root.dataset.stepIndex;
+    const n = raw ? Number.parseInt(raw, 10) : 0;
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+function setStepIndex(root: HTMLElement, index: number) {
+    root.dataset.stepIndex = String(index);
 }
 
 export function initInterviewWizard(stepsByLocale: StepsByLocale) {
@@ -38,58 +53,16 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
 
     if (!stemEl || !dimensionEl || !optionsEl || !backBtn || !nextBtn || !dotsEl) return;
 
-    let stepIndex = 0;
+    abortByRoot.get(root)?.abort();
+    const controller = new AbortController();
+    abortByRoot.set(root, controller);
+    const { signal } = controller;
+
     let locale: Locale = readLocale();
-    let steps = getInterviewSteps(locale);
-    const draft = getDraft();
-
-    if (root.dataset.initialized !== 'true') {
-        root.dataset.initialized = 'true';
-
-        backBtn.addEventListener('click', () => {
-            if (stepIndex > 0) {
-                stepIndex -= 1;
-                renderStep();
-            }
-        });
-
-        nextBtn.addEventListener('click', () => {
-            const step = steps[stepIndex];
-            if (!isStepComplete(step)) return;
-
-            if (stepIndex < steps.length - 1) {
-                stepIndex += 1;
-                renderStep();
-                stemEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                return;
-            }
-
-            const answers: InterviewAnswers = {
-                m1: draft.m1!,
-                m2: draft.m2!,
-                m3: draft.m3!,
-                m5: draft.m5!,
-                m4: draft.m4!
-            };
-
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify(answers));
-            clearDraft();
-            window.location.assign('/delivery');
-        });
-
-        document.addEventListener('locale-changed', (event) => {
-            const detail = (event as CustomEvent<{ locale: Locale }>).detail;
-            if (!detail?.locale || detail.locale === locale) return;
-            locale = detail.locale;
-            steps = stepsByLocale[locale] ?? getInterviewSteps(locale);
-            renderStep();
-        });
-    } else {
-        locale = readLocale();
-        steps = stepsByLocale[locale] ?? getInterviewSteps(locale);
-    }
+    let steps = stepsByLocale[locale] ?? getInterviewSteps(locale);
 
     function getSelectedSingle(stepId: string): InterviewOption | undefined {
+        const draft = getDraft();
         const key = stepId as keyof Draft;
         const value = draft[key];
         if (value && !Array.isArray(value)) return value as InterviewOption;
@@ -97,6 +70,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
     }
 
     function getSelectedMulti(): InterviewOption[] {
+        const draft = getDraft();
         return Array.isArray(draft.m4) ? draft.m4 : [];
     }
 
@@ -106,6 +80,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
     }
 
     function updateNextButton() {
+        const stepIndex = getStepIndex(root);
         const step = steps[stepIndex];
         const labels = WIZARD_LABELS[locale];
         nextBtn.disabled = !isStepComplete(step);
@@ -127,23 +102,28 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
                 btn.textContent = option.label;
                 if (selectedIds.has(option.id)) btn.classList.add('is-selected');
 
-                btn.addEventListener('click', () => {
-                    let next = getSelectedMulti();
-                    if (option.id === 'none') {
-                        next = [option];
-                    } else {
-                        next = next.filter((o) => o.id !== 'none');
-                        if (selectedIds.has(option.id)) {
-                            next = next.filter((o) => o.id !== option.id);
+                btn.addEventListener(
+                    'click',
+                    () => {
+                        const draft = getDraft();
+                        let next = getSelectedMulti();
+                        if (option.id === 'none') {
+                            next = [option];
                         } else {
-                            next = [...next, option];
+                            next = next.filter((o) => o.id !== 'none');
+                            if (selectedIds.has(option.id)) {
+                                next = next.filter((o) => o.id !== option.id);
+                            } else {
+                                next = [...next, option];
+                            }
                         }
-                    }
-                    draft.m4 = next;
-                    saveDraft(draft);
-                    renderOptions(step);
-                    updateNextButton();
-                });
+                        draft.m4 = next;
+                        saveDraft(draft);
+                        renderOptions(step);
+                        updateNextButton();
+                    },
+                    { signal }
+                );
 
                 optionsEl.appendChild(btn);
             });
@@ -158,18 +138,24 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
             btn.textContent = option.label;
             if (selected?.id === option.id) btn.classList.add('is-selected');
 
-            btn.addEventListener('click', () => {
-                (draft as Record<string, InterviewOption>)[step.id] = option;
-                saveDraft(draft);
-                renderOptions(step);
-                updateNextButton();
-            });
+            btn.addEventListener(
+                'click',
+                () => {
+                    const draft = getDraft();
+                    (draft as Record<string, InterviewOption>)[step.id] = option;
+                    saveDraft(draft);
+                    renderOptions(step);
+                    updateNextButton();
+                },
+                { signal }
+            );
 
             optionsEl.appendChild(btn);
         });
     }
 
     function renderDots() {
+        const stepIndex = getStepIndex(root);
         dotsEl.innerHTML = '';
         steps.forEach((_, i) => {
             const dot = document.createElement('span');
@@ -182,6 +168,7 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
     }
 
     function renderStep() {
+        const stepIndex = getStepIndex(root);
         const step = steps[stepIndex];
         const labels = WIZARD_LABELS[locale];
         dimensionEl.textContent = labels.question(stepIndex + 1, step.dimension);
@@ -202,6 +189,62 @@ export function initInterviewWizard(stepsByLocale: StepsByLocale) {
         renderOptions(step);
         updateNextButton();
     }
+
+    backBtn.addEventListener(
+        'click',
+        () => {
+            let stepIndex = getStepIndex(root);
+            if (stepIndex > 0) {
+                stepIndex -= 1;
+                setStepIndex(root, stepIndex);
+                renderStep();
+            }
+        },
+        { signal }
+    );
+
+    nextBtn.addEventListener(
+        'click',
+        () => {
+            const stepIndex = getStepIndex(root);
+            const step = steps[stepIndex];
+            if (!isStepComplete(step)) return;
+
+            if (stepIndex < steps.length - 1) {
+                setStepIndex(root, stepIndex + 1);
+                renderStep();
+                stemEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+
+            const draft = getDraft();
+            const answers: InterviewAnswers = {
+                m1: draft.m1!,
+                m2: draft.m2!,
+                m3: draft.m3!,
+                m5: draft.m5!,
+                m4: draft.m4!
+            };
+
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(answers));
+            clearDraft();
+            root.dataset.stepIndex = '0';
+            window.location.assign('/delivery');
+        },
+        { signal }
+    );
+
+    document.addEventListener(
+        'locale-changed',
+        (event) => {
+            const detail = (event as CustomEvent<{ locale: Locale }>).detail;
+            if (!detail?.locale || detail.locale === locale) return;
+            locale = detail.locale;
+            steps = stepsByLocale[locale] ?? getInterviewSteps(locale);
+            renderStep();
+        },
+        { signal }
+    );
 
     renderStep();
 }

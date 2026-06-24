@@ -21,15 +21,14 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 | Item | State |
 |------|-------|
 | Repo / git | **Public** — `Harrinive/create-playlist-web`, `main` |
-| Phase | **Phase 1 complete** — prompt-only MVP live on CF Pages |
-| Frontend | `apps/web/` — Astro 6, [astro-whono](https://github.com/cxro/astro-whono)-style UI |
-| Interview | Static 5-step wizard (M1–M5), EN + 中文 UI toggle |
-| Delivery | `/delivery` — Prompt vs Build fork (skill Step 2) |
-| Prompt | Client-side Step 2.1 paragraph (`build-prompt.ts`), copy button |
-| Build path | `/build` — **placeholder**; awaits Phase 2 API + OAuth |
-| API / OAuth | **Not started** (`apps/api/` does not exist yet) |
-| Spotify Developer app | TBD |
-| Domain / CF Pages | **vibelist.dychen.net** — Pages Git connect (same pattern as dychen.net) |
+| Phase | **Phase 2 local complete** — OAuth + search verified; Fly deploy pending |
+| Frontend | `apps/web/` — Astro 6, Whono-style UI |
+| Interview | Static 5-step wizard (M1–M5), EN + 中文; Continue-button fix shipped |
+| Delivery | `/delivery` — Prompt vs Build |
+| Prompt | Client-side Step 2.1 (`build-prompt.ts`) |
+| Build path | `/build` — Connect Spotify + test search (`PUBLIC_API_URL`) |
+| API | `apps/api/` — Fastify, OAuth, Postgres or in-memory dev store |
+| Live web | **vibelist.dychen.net** (prompt path; build awaits Fly + `PUBLIC_API_URL`) |
 
 ### Shipped (Phase 1)
 
@@ -39,30 +38,29 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 - Sidebar utilities: **EN / 中文**, **Start over**, **Last prompt**, theme (light / dark / system)
 - Deployed to Cloudflare Pages (`apps/web`, root `apps/web`, output `dist`)
 
-### Phase 2 progress (frontend prep only)
-
-Work done so far **does not include a backend** — it wires the UI for the full build path:
+### Phase 2 progress
 
 | Item | Status |
 |------|--------|
-| `/delivery` — Prompt vs Build choice | Done (`delivery.astro`, `delivery-page.ts`) |
-| Interview → `/delivery` (not straight to prompt) | Done |
-| `/build` placeholder + session guard | Done (`build.astro`, `build-page.ts`) |
-| `wrangler.toml` (Pages output dir) | Done |
-| `.github/workflows/deploy-web.yml` | Optional; CF Git deploy is primary (no repo secrets needed) |
-| `apps/api/` Fly + Neon skeleton | **Not started** |
-| Spotify OAuth login/logout | **Not started** |
-| Port `spotifyFetch` / search from spotify-mcp-server | **Not started** |
+| `apps/api/` Fastify server | Done — health, OAuth, `/api/me`, `/api/search` |
+| Spotify OAuth (auth code flow) | Done — verified locally |
+| Token store (Postgres or in-memory dev) | Done |
+| `/build` Connect Spotify UI | Done |
+| Interview Continue button (first visit) | Fixed — Astro double-init |
+| Dev cookie host | **127.0.0.1** for web + API (not `localhost`) |
+| `dotenv` loads `apps/api/.env` | Done |
+| Fly.io deploy + Neon production DB | **Not deployed** |
+| `PUBLIC_API_URL` on CF Pages | **Not set** |
 
-### Next recommended work (Phase 2 backend)
+**Phase 2 exit criteria:** met locally (connect Spotify → search one track).
 
-1. Create Spotify Developer app; redirect URI → Fly API callback
-2. Scaffold `apps/api/` on Fly.io + Neon (sessions, refresh tokens)
-3. `GET /auth/spotify`, callback, logout; CORS `WEB_ORIGIN=https://vibelist.dychen.net`
-4. Port search helpers from [spotify-mcp-server](https://github.com/Harrinive/spotify-mcp-server)
-5. Wire `/build` to “Connect Spotify” → API (replace placeholder copy)
+### Next recommended work
 
-Phase 3 after that: `POST /api/curate`, verify, publish (~20 tracks).
+1. Commit pushed → `fly deploy` `apps/api` + Neon `DATABASE_URL`
+2. Fly secrets: `SPOTIFY_*`, `SESSION_SECRET`, `WEB_ORIGIN=https://vibelist.dychen.net`
+3. Spotify dashboard: production redirect URI on Fly hostname
+4. Cloudflare Pages: `PUBLIC_API_URL=https://create-playlist-api.fly.dev` → redeploy web
+5. **Phase 3:** `POST /api/curate`, verify loop, publish playlist
 
 ---
 
@@ -87,7 +85,7 @@ Astro (CF Pages)  ──API──►  Node or Python API (Fly.io)   [Phase 2+]
                               └── spotify-mcp-server utils (search, publish)
 ```
 
-**Today:** static Astro only — no API.
+**Today:** static web on CF Pages; API runs separately (local or Fly) for build path.
 
 MCP is **not** used in production. Port `createSpotifyApi` / `spotifyFetch` from `Programs/Packages/spotify-mcp-server`.
 
@@ -100,7 +98,7 @@ MCP is **not** used in production. Port `createSpotifyApi` / `spotifyFetch` from
 | Step 1 interview | `/interview` — chip wizard | Done (static bank) |
 | Step 2 delivery choice | `/delivery` — Prompt vs Build | Done |
 | Step 2.1 | `/prompt` — copyable paragraph | Done |
-| Step 2.2 build | `/build` + API | Placeholder UI only; API not started |
+| Step 2.2 build | `/build` + API | OAuth + search done locally; curate/publish Phase 3 |
 
 **Hard rules from skill:** verify/publish must not re-curate or reorder from scratch; trim preserves propose order; offer prompt fallback if verify &lt;50% ok.
 
@@ -109,29 +107,8 @@ MCP is **not** used in production. Port `createSpotifyApi` / `spotifyFetch` from
 ## Key files (implemented)
 
 ```text
-apps/web/
-├── src/pages/
-│   ├── index.astro
-│   ├── interview.astro
-│   ├── delivery.astro         # Step 2 fork
-│   ├── prompt.astro
-│   └── build.astro            # Phase 2 placeholder
-├── src/scripts/
-│   ├── interview-wizard.ts
-│   ├── delivery-page.ts
-│   ├── build-page.ts
-│   ├── prompt-page.ts
-│   ├── app-toolbar.ts
-│   └── sidebar-theme.ts
-├── src/lib/
-│   ├── interview-questions.ts
-│   ├── build-prompt.ts
-│   └── locale.ts
-└── wrangler.toml
-
-# Not yet:
-apps/api/                      # Phase 2 backend
-packages/shared/               # Optional shared types
+apps/web/          # Astro — interview, delivery, prompt, build UI
+apps/api/          # Fastify — OAuth, /api/me, /api/search (see apps/api/README.md)
 ```
 
 ---

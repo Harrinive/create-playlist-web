@@ -23,35 +23,96 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
         <div id="build-content" hidden>
             <p class="page-kicker">
-                <span data-locale="en">Coming soon</span>
-                <span data-locale="zh" hidden>即将推出</span>
-            </p>
-            <h1 class="page-title">
                 <span data-locale="en">Build on Spotify</span>
                 <span data-locale="zh" hidden>在 Spotify 上创建</span>
-            </h1>
-            <p class="intro-lead">
-                <span data-locale="en">
-                    Phase 2 will connect your Spotify account, curate ~20 tracks, verify them, and publish a playlist. For
-                    now, use the prompt path.
-                </span>
-                <span data-locale="zh" hidden>
-                    第二阶段将连接 Spotify 账号、策展约 20 首歌、验证并发布歌单。现在请使用提示词路径。
-                </span>
             </p>
-            <div class="actions-row">
-                <a class="text-link-button text-link-button--primary" href="/prompt">
-                    <span data-locale="en">Get a prompt instead</span>
-                    <span data-locale="zh" hidden>改为获取提示词</span>
-                </a>
-                <a class="text-link-button" href="/delivery">
-                    <span data-locale="en">Back to delivery</span>
-                    <span data-locale="zh" hidden>返回交付选择</span>
-                </a>
-                <a class="text-link-button" href="/">
-                    <span data-locale="en">Home</span>
-                    <span data-locale="zh" hidden>首页</span>
-                </a>
+            <h1 class="page-title">
+                <span data-locale="en">Connect your account</span>
+                <span data-locale="zh" hidden>连接你的账号</span>
+            </h1>
+            <p id="build-status" class="help-line" hidden role="status"></p>
+
+            <div id="build-unconfigured" hidden>
+                <p class="intro-lead">
+                    <span data-locale="en">
+                        The build API is not configured yet. Set <code>PUBLIC_API_URL</code> when the Fly API is
+                        deployed, or use the prompt path for now.
+                    </span>
+                    <span data-locale="zh" hidden>
+                        构建 API 尚未配置。部署 Fly API 后设置 <code>PUBLIC_API_URL</code>，或暂时使用提示词路径。
+                    </span>
+                </p>
+                <div class="actions-row">
+                    <a class="text-link-button text-link-button--primary" href="/prompt">
+                        <span data-locale="en">Get a prompt instead</span>
+                        <span data-locale="zh" hidden>改为获取提示词</span>
+                    </a>
+                </div>
+            </div>
+
+            <div id="build-connect" hidden>
+                <p class="intro-lead">
+                    <span data-locale="en">
+                        Connect Spotify to verify tracks and publish a playlist. Full curate-and-publish flow is still in
+                        progress — after connecting you can test search.
+                    </span>
+                    <span data-locale="zh" hidden>
+                        连接 Spotify 以验证曲目并发布歌单。完整流程仍在开发中 — 连接后可测试搜索。
+                    </span>
+                </p>
+                <div class="actions-row">
+                    <a id="build-connect-btn" class="text-link-button text-link-button--primary" href="#">
+                        <span data-locale="en">Connect Spotify</span>
+                        <span data-locale="zh" hidden>连接 Spotify</span>
+                    </a>
+                    <a class="text-link-button" href="/prompt">
+                        <span data-locale="en">Get a prompt instead</span>
+                        <span data-locale="zh" hidden>改为获取提示词</span>
+                    </a>
+                </div>
+            </div>
+
+            <div id="build-connected" hidden>
+                <p class="intro-lead">
+                    <span data-locale="en">Connected as </span>
+                    <span data-locale="zh" hidden>已连接 </span>
+                    <strong id="build-user-label"></strong>
+                    <span data-locale="en">. Curate and publish coming in Phase 3.</span>
+                    <span data-locale="zh" hidden>。策展与发布将在第三阶段推出。</span>
+                </p>
+
+                <form id="build-search-form" class="build-search">
+                    <label class="build-search__label" for="build-search-input">
+                        <span data-locale="en">Test track search</span>
+                        <span data-locale="zh" hidden>测试曲目搜索</span>
+                    </label>
+                    <div class="build-search__row">
+                        <input
+                            id="build-search-input"
+                            class="build-search__input"
+                            type="search"
+                            name="q"
+                            placeholder="artist and track"
+                            autocomplete="off"
+                        />
+                        <button type="submit" class="text-link-button text-link-button--primary">
+                            <span data-locale="en">Search</span>
+                            <span data-locale="zh" hidden>搜索</span>
+                        </button>
+                    </div>
+                </form>
+                <div id="build-search-results" class="build-search-results" aria-live="polite"></div>
+
+                <div class="actions-row">
+                    <button id="build-logout-btn" type="button" class="text-link-button">
+                        <span data-locale="en">Disconnect</span>
+                        <span data-locale="zh" hidden>断开连接</span>
+                    </button>
+                    <a class="text-link-button" href="/delivery">
+                        <span data-locale="en">Back to delivery</span>
+                        <span data-locale="zh" hidden>返回交付选择</span>
+                    </a>
+                </div>
             </div>
         </div>
     </section>
