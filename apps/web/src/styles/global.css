@@ -98,6 +98,8 @@ body {
     font-family: var(--font-readable);
     line-height: 1.75;
     font-size: 16px;
+    max-width: 100%;
+    overflow-x: clip;
 }
 
 html {
