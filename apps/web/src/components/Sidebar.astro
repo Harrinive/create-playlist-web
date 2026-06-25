@@ -2,8 +2,6 @@
 import siteConfig from '../data/site-config';
 import UiIcon from './UiIcon.astro';
 
-const pathname = Astro.url.pathname;
-const showStartOver = pathname.startsWith('/interview');
 const quoteEnLines = siteConfig.quote.en.split('\n');
 const quoteZhLines = siteConfig.quote.zh.split('\n');
 ---
@@ -127,17 +125,6 @@ const quoteZhLines = siteConfig.quote.zh.split('\n');
                         />
                     </div>
                 </li>
-
-                {
-                    showStartOver && (
-                        <li class="app-toolbar__item">
-                            <button type="button" class="app-toolbar__btn" id="start-over-btn" data-start-over>
-                                <span data-locale="en">Start over</span>
-                                <span data-locale="zh" hidden>重新开始</span>
-                            </button>
-                        </li>
-                    )
-                }
 
                 <li class="app-toolbar__item">
                     <a class="app-toolbar__btn" id="last-result-link" href="/prompt">

@@ -19,7 +19,6 @@ import {
 } from '../lib/interview-algorithm-mode';
 import { lastResultHref, readLastDelivery } from '../lib/last-delivery';
 import { openOverlay, openWithFade, closeInstant, closeWithTransition } from '../lib/motion';
-import { performStartOver } from '../lib/start-over';
 
 const LOCALE_OPTIONS: {
     id: Locale;
@@ -145,7 +144,7 @@ function bindMobileToolbarMenu() {
         if (event.key === 'Escape') closeMobileToolbar();
     });
 
-    panel.querySelectorAll('a.app-toolbar__btn, [data-start-over]').forEach((node) => {
+    panel.querySelectorAll('a.app-toolbar__btn').forEach((node) => {
         node.addEventListener('click', () => closeMobileToolbar());
     });
 }
@@ -258,14 +257,6 @@ function bindLocaleDropdown() {
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') closeLocaleMenu();
-    });
-}
-
-function bindStartOver() {
-    document.querySelectorAll<HTMLElement>('[data-start-over]').forEach((btn) => {
-        if (btn.dataset.bound === 'true') return;
-        btn.dataset.bound = 'true';
-        btn.addEventListener('click', performStartOver);
     });
 }
 
@@ -562,7 +553,6 @@ export async function initAppToolbar() {
     bindLocaleDropdown();
     updateLocaleLabel();
     bindMobileToolbarMenu();
-    bindStartOver();
     await bindInterviewModelDropdown();
     bindInterviewAlgorithmDropdown();
     updateLastResultLink();

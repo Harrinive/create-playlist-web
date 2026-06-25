@@ -17,11 +17,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <span data-locale="zh" hidden>{siteConfig.description.zh}</span>
     </p>
 
-    <div class="actions-row">
+    <div class="actions-row" id="home-interview-actions">
         <a class="text-link-button text-link-button--primary" href="/interview">
-            <span data-locale="en">Start interview</span>
-            <span data-locale="zh" hidden>开始访谈</span>
+            <span data-locale="en">
+                <span data-home-interview-label="start">Start interview</span>
+                <span data-home-interview-label="continue" hidden>Continue interview</span>
+            </span>
+            <span data-locale="zh" hidden>
+                <span data-home-interview-label="start">开始访谈</span>
+                <span data-home-interview-label="continue" hidden>继续访谈</span>
+            </span>
         </a>
+        <button type="button" class="text-link-button" id="home-start-over" hidden>
+            <span data-locale="en">Start over</span>
+            <span data-locale="zh" hidden>重新开始</span>
+        </button>
         <a class="text-link-button" href="/prompt">
             <span data-locale="en">View last prompt</span>
             <span data-locale="zh" hidden>查看上次提示词</span>
@@ -65,3 +75,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </div>
     </div>
 </BaseLayout>
+
+<script>
+    import '../scripts/home-page.ts';
+</script>
