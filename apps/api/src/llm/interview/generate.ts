@@ -6,12 +6,10 @@ import {
 } from '../../types/interview-step.js';
 import { draftInterviewStep, reviseInterviewStep } from './draft.js';
 import { planInterviewTurn } from './plan.js';
+import { buildFastUserPrompt, fastSystemPrompt } from './prompts.js';
 import {
-    dimensionGuidance,
     extractJson,
-    formatPriorAnswers,
     llmStepSchema,
-    rejectedStemsBlock,
     type InterviewTurnContext,
     type LlmStepDraft
 } from './shared.js';
@@ -20,30 +18,6 @@ import { verifyInterviewStep } from './verify.js';
 export type GenerateInterviewStepInput = InterviewTurnContext & {
     algorithmMode?: 'fast' | 'full';
 };
-
-const FAST_SYSTEM = `You are a music mood interviewer for a playlist app. Invent fresh scene-first questions — never copy example menus from training.
-
-Rules:
-- One immersive stem + distinct image-led options (~3–7 English words each)
-- Advance the scene on a new axis each turn; do not echo the user's last pick in the stem
-- Filter options silently from prior answers (time-of-day, mood, energy must stay consistent)
-- Option ids: lowercase kebab-case English slugs (e.g. rain-car, warm-close)
-- Always output BOTH English and Chinese for stem, hint (if any), and every option label
-- Chinese: poetic, sensory, same vibe as English — not stiff literal translation
-- Q1 (scene): 5–8 options partitioning different worlds
-- Q2–Q4: 4–6 options
-- M5 (sound): felt-first texture (close/far, weight, density) — not instrument gear menus
-- M4 (avoid): multi-select negatives; MUST include id "none" with open/surprise-me meaning
-- Do not include a manual "something else" option
-
-Respond with JSON only (no markdown fences):
-{
-  "stemEn": "...",
-  "stemZh": "...",
-  "hintEn": "optional short hint",
-  "hintZh": "optional",
-  "options": [{ "id": "slug", "labelEn": "...", "labelZh": "..." }]
-}`;
 
 function toBilingualStep(stepIndex: number, parsed: LlmStepDraft): BilingualInterviewStep {
     const meta = interviewStepMeta(stepIndex);
@@ -94,19 +68,17 @@ async function generateInterviewStepFast(
         throw new Error(`Invalid step index ${input.stepIndex}`);
     }
 
-    const userPrompt = `Question ${input.stepIndex + 1} of 5 — ${dimensionGuidance(input.stepIndex)}
-${input.refresh ? 'This is a REFRESH — user rejected the previous stem; invent a new scene on the same dimension.' : ''}
-
-Prior answers:
-${formatPriorAnswers(input.priorAnswers)}
-${rejectedStemsBlock(input.rejectedStems)}
-
-Return JSON only.`;
+    const userPrompt = buildFastUserPrompt(
+        input.stepIndex,
+        input.priorAnswers,
+        input.rejectedStems,
+        input.refresh
+    );
 
     const raw = await completeChat(
         env,
         [
-            { role: 'system', content: FAST_SYSTEM },
+            { role: 'system', content: fastSystemPrompt() },
             { role: 'user', content: userPrompt }
         ],
         { model }

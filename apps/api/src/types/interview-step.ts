@@ -23,7 +23,7 @@ export const INTERVIEW_STEP_SEQUENCE = [
         id: 'm1' as const,
         dimension: { en: 'Scene', zh: '场景' },
         multi: false,
-        optionMin: 5,
+        optionMin: 6,
         optionMax: 8
     },
     {
