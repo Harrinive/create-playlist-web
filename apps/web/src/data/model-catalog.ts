@@ -12,13 +12,13 @@ export {
 
 import { curationCatalogEntries, interviewCatalogEntries } from '../../../api/src/model-catalog.ts';
 
-export const DEV_PREVIEW_INTERVIEW_MODELS = interviewCatalogEntries().map((entry) => ({
+export const CATALOG_INTERVIEW_MODELS = interviewCatalogEntries().map((entry) => ({
     id: entry.id,
     labelEn: entry.labelEn,
     labelZh: entry.labelZh
 }));
 
-export const DEV_PREVIEW_CURATE_MODELS = curationCatalogEntries().map((entry) => ({
+export const CATALOG_CURATE_MODELS = curationCatalogEntries().map((entry) => ({
     id: entry.id,
     labelEn: entry.curationLabelEn,
     labelZh: entry.curationLabelZh

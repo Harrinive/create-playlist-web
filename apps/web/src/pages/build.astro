@@ -1,25 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import InterviewMissing from '../components/InterviewMissing.astro';
 ---
 
 <BaseLayout title="Build on Spotify">
     <section id="build-page">
-        <div id="build-missing" hidden>
-            <h1 class="page-title">
-                <span data-locale="en">No interview yet</span>
-                <span data-locale="zh" hidden>还没有访谈</span>
-            </h1>
-            <p class="intro-lead">
-                <span data-locale="en">Complete the interview first — we'll remember your answers for this browser session.</span>
-                <span data-locale="zh" hidden>请先完成访谈 — 答案会保存在当前浏览器会话中。</span>
-            </p>
-            <div class="actions-row">
-                <a class="text-link-button text-link-button--primary" href="/interview">
-                    <span data-locale="en">Start interview</span>
-                    <span data-locale="zh" hidden>开始访谈</span>
-                </a>
-            </div>
-        </div>
+        <InterviewMissing id="build-missing" />
 
         <div id="build-content" hidden>
             <p class="page-kicker">
@@ -173,10 +159,5 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 <script>
     import { initBuildPage } from '../scripts/build-page.ts';
 
-    function bootBuild() {
-        initBuildPage();
-    }
-
-    bootBuild();
-    document.addEventListener('astro:page-load', bootBuild);
+    document.addEventListener('astro:page-load', () => initBuildPage());
 </script>

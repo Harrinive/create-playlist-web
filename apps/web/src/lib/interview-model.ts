@@ -1,9 +1,10 @@
-import { fetchInterviewModels, type InterviewModelsResponse } from './interview-api';
+import {
+    fetchInterviewModels as fetchInterviewModelsFromApi,
+    type InterviewModelsResponse
+} from './interview-api';
 import { ensureInterviewAlgorithmModeDefault } from './interview-algorithm-mode';
-import { getApiBaseUrl } from './api-config';
-import type { Locale } from './locale';
-
-export const INTERVIEW_MODEL_KEY = 'create-playlist-interview-model';
+import { CATALOG_INTERVIEW_MODELS } from '../data/model-catalog';
+import { INTERVIEW_MODEL_KEY } from './session-keys';
 
 export type InterviewModelOption = {
     id: string;
@@ -11,40 +12,43 @@ export type InterviewModelOption = {
     labelZh: string;
 };
 
-import { DEV_PREVIEW_INTERVIEW_MODELS } from '../data/model-catalog';
+export type { InterviewModelsResponse };
 
-export { DEV_PREVIEW_INTERVIEW_MODELS };
+export { CATALOG_INTERVIEW_MODELS };
 
 let modelsCache: InterviewModelsResponse | null = null;
 
-export async function loadInterviewModels(): Promise<InterviewModelsResponse> {
-    if (modelsCache) return modelsCache;
-
-    const api = getApiBaseUrl();
-    if (api) {
-        const data = await fetchInterviewModels();
-        if (data?.llmConfigured && data.models.length > 0) {
-            if (data.defaultAlgorithmMode) {
-                ensureInterviewAlgorithmModeDefault(data.defaultAlgorithmMode);
-            }
-            modelsCache = data;
-            return data;
-        }
-    }
-
-    if (import.meta.env.DEV) {
-        return {
-            models: DEV_PREVIEW_INTERVIEW_MODELS,
-            defaultModel: DEV_PREVIEW_INTERVIEW_MODELS[0]?.id ?? null,
-            llmConfigured: false
-        };
-    }
-
-    return { models: [], defaultModel: null, llmConfigured: false };
-}
+const catalogFallback = (): InterviewModelsResponse => ({
+    models: CATALOG_INTERVIEW_MODELS,
+    defaultModel: CATALOG_INTERVIEW_MODELS[0]?.id ?? null,
+    llmConfigured: false
+});
 
 export function invalidateInterviewModelsCache() {
     modelsCache = null;
+}
+
+export async function fetchInterviewModels(
+    signal?: AbortSignal
+): Promise<InterviewModelsResponse | null> {
+    return fetchInterviewModelsFromApi(signal);
+}
+
+export async function loadInterviewModels(opts?: {
+    signal?: AbortSignal;
+}): Promise<InterviewModelsResponse> {
+    if (modelsCache) return modelsCache;
+
+    const data = await fetchInterviewModels(opts?.signal);
+    if (data?.llmConfigured && data.models.length > 0) {
+        if (data.defaultAlgorithmMode) {
+            ensureInterviewAlgorithmModeDefault(data.defaultAlgorithmMode);
+        }
+        modelsCache = data;
+        return data;
+    }
+
+    return catalogFallback();
 }
 
 export function readInterviewModel(): string | null {
@@ -59,7 +63,10 @@ export function saveInterviewModel(modelId: string) {
     sessionStorage.setItem(INTERVIEW_MODEL_KEY, modelId);
 }
 
-export function interviewModelLabel(option: InterviewModelOption, locale: Locale): string {
+export function interviewModelLabel(
+    option: InterviewModelOption,
+    locale: 'en' | 'zh'
+): string {
     return locale === 'zh' ? option.labelZh : option.labelEn;
 }
 
@@ -76,9 +83,27 @@ export function pickInterviewModelOption(
     return fromStorage ?? fromDefault ?? data.models[0] ?? null;
 }
 
-export async function resolveInterviewModelId(): Promise<string | undefined> {
-    const data = await loadInterviewModels();
-    const picked = pickInterviewModelOption(data, readInterviewModel());
+export function sameModelIds(a: InterviewModelOption[], b: InterviewModelOption[]): boolean {
+    if (a.length !== b.length) return false;
+    return a.every((model, index) => model.id === b[index]?.id);
+}
+
+export async function resolveInterviewModelId(signal?: AbortSignal): Promise<string | undefined> {
+    const data = await fetchInterviewModels(signal);
+    if (data?.llmConfigured && data.models.length > 0) {
+        modelsCache = data;
+        if (data.defaultAlgorithmMode) {
+            ensureInterviewAlgorithmModeDefault(data.defaultAlgorithmMode);
+        }
+        const picked = pickInterviewModelOption(data, readInterviewModel());
+        if (picked) {
+            saveInterviewModel(picked.id);
+            return picked.id;
+        }
+    }
+
+    const catalog = catalogFallback();
+    const picked = pickInterviewModelOption(catalog, readInterviewModel());
     if (picked) {
         saveInterviewModel(picked.id);
         return picked.id;

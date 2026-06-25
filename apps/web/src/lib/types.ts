@@ -13,4 +13,4 @@ export type InterviewAnswers = {
     m4: InterviewOption[];
 };
 
-export const SESSION_KEY = 'create-playlist-answers';
+export { SESSION_KEY } from './session-keys';

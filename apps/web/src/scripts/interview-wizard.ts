@@ -18,11 +18,9 @@ import {
     rejectedStemsForStep
 } from '../lib/interview-refresh';
 import { readLocale, type Locale } from '../lib/locale';
-import { SESSION_KEY } from '../lib/types';
+import { DRAFT_KEY, SESSION_KEY } from '../lib/session-keys';
 
 type Draft = Partial<InterviewAnswers>;
-
-const DRAFT_KEY = `${SESSION_KEY}-draft`;
 
 const abortByRoot = new WeakMap<HTMLElement, AbortController>();
 let wizardSession = 0;
@@ -90,7 +88,8 @@ async function loadLlmStep(
     stepIndex: number,
     locale: Locale,
     refresh: boolean,
-    modelId: string | undefined
+    modelId: string | undefined,
+    signal?: AbortSignal
 ): Promise<InterviewStep> {
     if (!refresh) {
         const cached = displayStepFromCache(stepIndex, locale);
@@ -104,7 +103,8 @@ async function loadLlmStep(
         rejectedStems: rejectedStemsForStep(INTERVIEW_STEP_IDS[stepIndex] ?? 'm1'),
         refresh,
         model: modelId,
-        algorithmMode: readInterviewAlgorithmMode()
+        algorithmMode: readInterviewAlgorithmMode(),
+        signal
     });
 
     upsertLlmStep(stepIndex, response.step);
@@ -122,12 +122,6 @@ export async function initInterviewWizard() {
         return;
     }
 
-    let interviewModelId = await resolveInterviewModelId();
-    if (!interviewModelId) {
-        stackEl.innerHTML = `<p class="help-line">${WIZARD_LABELS[localeForError].apiUnavailable}</p>`;
-        return;
-    }
-
     abortByRoot.get(root)?.abort();
     const controller = new AbortController();
     abortByRoot.set(root, controller);
@@ -137,6 +131,24 @@ export async function initInterviewWizard() {
     function isActive(): boolean {
         return wizardSession === session && abortByRoot.get(root) === controller;
     }
+
+    stackEl.innerHTML = '';
+    const bootLoading = document.createElement('div');
+    bootLoading.className = 'interview-loading';
+    bootLoading.innerHTML = `
+        <p class="interview-loading__text">${WIZARD_LABELS[localeForError].pleaseWait}</p>
+        <p class="interview-loading__hint">${WIZARD_LABELS[localeForError].preparingQuestion}</p>
+    `;
+    stackEl.appendChild(bootLoading);
+
+    let interviewModelId = await resolveInterviewModelId(signal);
+    if (!isActive()) return;
+    if (!interviewModelId) {
+        stackEl.innerHTML = `<p class="help-line">${WIZARD_LABELS[localeForError].apiUnavailable}</p>`;
+        return;
+    }
+
+    stackEl.innerHTML = '';
 
     let locale: Locale = readLocale();
     let steps = resolveStepsForLocale(locale);
@@ -317,7 +329,7 @@ export async function initInterviewWizard() {
         setRefreshLoading(block, true);
 
         try {
-            const refreshed = await loadLlmStep(stepIndex, locale, true, interviewModelId);
+            const refreshed = await loadLlmStep(stepIndex, locale, true, interviewModelId, signal);
             if (!isActive()) return;
             const nextStep = refreshed ?? step;
             steps = [...steps];
@@ -501,7 +513,7 @@ export async function initInterviewWizard() {
             stackEl.appendChild(loadingEl);
             loadingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-            const nextStep = await loadLlmStep(nextIndex, locale, false, interviewModelId);
+            const nextStep = await loadLlmStep(nextIndex, locale, false, interviewModelId, signal);
             if (!isActive()) return;
             loadingEl.remove();
 
@@ -530,7 +542,7 @@ export async function initInterviewWizard() {
         for (let i = 0; i < completed; i += 1) {
             let step = steps[i];
             if (!step) {
-                step = await loadLlmStep(i, locale, false, interviewModelId);
+                step = await loadLlmStep(i, locale, false, interviewModelId, signal);
                 if (!isActive()) return;
                 steps = resolveStepsForLocale(locale);
                 step = steps[i];
@@ -568,7 +580,7 @@ export async function initInterviewWizard() {
         loadingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         try {
-            const activeStep = await loadLlmStep(completed, locale, false, interviewModelId);
+            const activeStep = await loadLlmStep(completed, locale, false, interviewModelId, signal);
             if (!isActive()) return;
             steps = resolveStepsForLocale(locale);
             loadingEl.remove();
@@ -622,7 +634,7 @@ export async function initInterviewWizard() {
     document.addEventListener(
         'interview-model-changed',
         async () => {
-            interviewModelId = (await resolveInterviewModelId()) ?? interviewModelId;
+            interviewModelId = (await resolveInterviewModelId(signal)) ?? interviewModelId;
             clearDraft();
             clearRejectedQuestions();
             clearLlmSteps();

@@ -93,7 +93,18 @@ Chronological record through **Phase 4 complete** (June 2026).
 | `/delivery` | Dynamic model picker — prompt + one button per available curation model |
 | Build reliability | Resolve curation model from API at click time; AbortController on page re-init |
 | Model session | `sessionStorage` key `create-playlist-curate-model`; passed to `/api/curate` |
-| Dev preview | `DEV_PREVIEW_CURATE_MODELS` when API has no LLM keys (layout only) |
+| Dev preview | `CATALOG_CURATE_MODELS` when API has no LLM keys (layout only) |
+
+### Frontend lifecycle cleanup (2026-06-24)
+
+| Item | Detail |
+|------|--------|
+| `/delivery` | Static `CATALOG_CURATE_MODELS` first paint; API refine; no duplicate boot |
+| Interview model picker | Static `CATALOG_INTERVIEW_MODELS` in sidebar; API refine via `sameModelIds` |
+| Page lifecycle | `AbortController` on delivery, build, prompt, interview wizard; build fetches use `signal` |
+| Session keys | Centralized in `apps/web/src/lib/session-keys.ts`; `startOver` clears all user keys |
+| Shared UI | `InterviewMissing.astro` for delivery / prompt / build empty states |
+| App toolbar | Resize listener bound once (fixes ClientRouter leak) |
 
 ### Bugs fixed during Phase 3
 

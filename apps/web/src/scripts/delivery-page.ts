@@ -1,11 +1,16 @@
-import { getApiBaseUrl } from '../lib/api-config';
-import { saveCurateModel, DEV_PREVIEW_CURATE_MODELS, type CurateModelsResponse } from '../lib/curate-model';
-import { isValidAnswers } from '../lib/build-prompt';
+import {
+    CATALOG_CURATE_MODELS,
+    fetchCurateModels,
+    sameModelIds,
+    saveCurateModel,
+    type CurateModelOption
+} from '../lib/curate-model';
 import { saveLastDelivery } from '../lib/last-delivery';
 import { applyLocaleToDocument, readLocale } from '../lib/locale';
-import { SESSION_KEY } from '../lib/types';
+import { readStoredInterviewAnswers } from '../lib/session-answers';
 
 const abortByRoot = new WeakMap<HTMLElement, AbortController>();
+let deliveryOptionsGeneration = 0;
 
 function createDeliveryButton(
     option: { delivery: string; model?: string },
@@ -33,6 +38,45 @@ function createDeliveryButton(
     return button;
 }
 
+function renderDeliveryOptions(optionsEl: HTMLElement, models: CurateModelOption[]) {
+    optionsEl.replaceChildren();
+
+    optionsEl.appendChild(
+        createDeliveryButton(
+            { delivery: 'prompt' },
+            'Prompt for Spotify Prompted Playlist',
+            'Spotify 提示歌单',
+            'Paste in the Spotify app',
+            '粘贴到 Spotify 应用'
+        )
+    );
+
+    if (models.length > 0) {
+        for (const model of models) {
+            optionsEl.appendChild(
+                createDeliveryButton(
+                    { delivery: 'build', model: model.id },
+                    model.labelEn,
+                    model.labelZh,
+                    '~20 verified tracks on your Spotify',
+                    '约 20 首验证曲目，发布到你的 Spotify'
+                )
+            );
+        }
+        return;
+    }
+
+    optionsEl.appendChild(
+        createDeliveryButton(
+            { delivery: 'build' },
+            'Build on Spotify',
+            '在 Spotify 上创建',
+            '~20 verified tracks on your account',
+            '约 20 首验证曲目，发布到你的账号'
+        )
+    );
+}
+
 export async function initDeliveryPage() {
     const root = document.getElementById('delivery-page');
     const missingEl = document.getElementById('delivery-missing');
@@ -45,16 +89,10 @@ export async function initDeliveryPage() {
     const controller = new AbortController();
     abortByRoot.set(root, controller);
     const { signal } = controller;
+    const gen = ++deliveryOptionsGeneration;
 
-    let raw: unknown;
-    try {
-        const stored = sessionStorage.getItem(SESSION_KEY);
-        raw = stored ? JSON.parse(stored) : null;
-    } catch {
-        raw = null;
-    }
-
-    const hasAnswers = isValidAnswers(raw);
+    const answers = readStoredInterviewAnswers();
+    const hasAnswers = Boolean(answers);
     missingEl.hidden = hasAnswers;
     contentEl.hidden = !hasAnswers;
 
@@ -66,89 +104,42 @@ export async function initDeliveryPage() {
         { signal }
     );
 
-    if (optionsEl.dataset.bound === 'true') {
-        optionsEl.innerHTML = '';
-    } else {
-        optionsEl.dataset.bound = 'true';
-    }
-
-    const promptButton = createDeliveryButton(
-        { delivery: 'prompt' },
-        'Prompt for Spotify Prompted Playlist',
-        'Spotify 提示歌单',
-        'Paste in the Spotify app',
-        '粘贴到 Spotify 应用'
-    );
-    optionsEl.appendChild(promptButton);
-
-    const api = getApiBaseUrl();
-    let models: CurateModelsResponse['models'] = [];
-
-    if (api) {
-        try {
-            const response = await fetch(`${api}/api/curate/models`);
-            if (response.ok) {
-                const data = (await response.json()) as CurateModelsResponse;
-                if (data.llmConfigured) {
-                    models = data.models;
-                }
-            }
-        } catch {
-            models = [];
-        }
-    }
-
-    if (models.length === 0 && import.meta.env.DEV) {
-        models = DEV_PREVIEW_CURATE_MODELS;
-    }
-
-    if (models.length > 0) {
-        for (const model of models) {
-            const button = createDeliveryButton(
-                { delivery: 'build', model: model.id },
-                model.labelEn,
-                model.labelZh,
-                '~20 verified tracks on your Spotify',
-                '约 20 首验证曲目，发布到你的 Spotify'
-            );
-            optionsEl.appendChild(button);
-        }
-    } else {
-        const button = createDeliveryButton(
-            { delivery: 'build' },
-            'Build on Spotify',
-            '在 Spotify 上创建',
-            '~20 verified tracks on your account',
-            '约 20 首验证曲目，发布到你的账号'
-        );
-        optionsEl.appendChild(button);
-    }
-
+    renderDeliveryOptions(optionsEl, CATALOG_CURATE_MODELS);
     applyLocaleToDocument(readLocale());
 
-    if (!optionsEl.dataset.clicksBound) {
-        optionsEl.dataset.clicksBound = 'true';
-        optionsEl.addEventListener(
-            'click',
-            (event) => {
-                const btn = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-delivery]');
-                if (!btn) return;
-                const choice = btn.dataset.delivery;
-                const model = btn.dataset.model;
-                if (choice === 'prompt') {
-                    saveLastDelivery('prompt');
-                    document.dispatchEvent(new CustomEvent('last-delivery-changed'));
-                    window.location.assign('/prompt');
-                    return;
-                }
-                if (choice === 'build') {
-                    if (model) saveCurateModel(model);
-                    saveLastDelivery('build');
-                    document.dispatchEvent(new CustomEvent('last-delivery-changed'));
-                    window.location.assign('/build');
-                }
-            },
-            { signal }
-        );
+    optionsEl.addEventListener(
+        'click',
+        (event) => {
+            const btn = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-delivery]');
+            if (!btn) return;
+            const choice = btn.dataset.delivery;
+            const model = btn.dataset.model;
+            if (choice === 'prompt') {
+                saveLastDelivery('prompt');
+                document.dispatchEvent(new CustomEvent('last-delivery-changed'));
+                window.location.assign('/prompt');
+                return;
+            }
+            if (choice === 'build') {
+                if (model) saveCurateModel(model);
+                saveLastDelivery('build');
+                document.dispatchEvent(new CustomEvent('last-delivery-changed'));
+                window.location.assign('/build');
+            }
+        },
+        { signal }
+    );
+
+    try {
+        const data = await fetchCurateModels(signal);
+        if (gen !== deliveryOptionsGeneration || !data) return;
+
+        const models = data.llmConfigured ? data.models : [];
+        if (!sameModelIds(models, CATALOG_CURATE_MODELS)) {
+            renderDeliveryOptions(optionsEl, models);
+            applyLocaleToDocument(readLocale());
+        }
+    } catch {
+        // Keep static catalog on network failure.
     }
 }

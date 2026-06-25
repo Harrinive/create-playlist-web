@@ -1,10 +1,12 @@
 import { applyLocaleToDocument, readLocale, writeLocale, type Locale } from '../lib/locale';
 import {
-    loadInterviewModels,
+    CATALOG_INTERVIEW_MODELS,
+    fetchInterviewModels,
     interviewModelLabel,
     readInterviewModel,
     saveInterviewModel,
     pickInterviewModelOption,
+    sameModelIds,
     type InterviewModelOption
 } from '../lib/interview-model';
 import {
@@ -17,9 +19,13 @@ import {
 import { clearRejectedQuestions } from '../lib/interview-refresh';
 import { clearLlmSteps } from '../lib/interview-llm-cache';
 import { lastResultHref, readLastDelivery } from '../lib/last-delivery';
-import { SESSION_KEY } from '../lib/types';
-
-const DRAFT_KEY = `${SESSION_KEY}-draft`;
+import {
+    BUILD_RESULT_KEY,
+    CURATE_MODEL_KEY,
+    DRAFT_KEY,
+    LAST_DELIVERY_KEY,
+    SESSION_KEY
+} from '../lib/session-keys';
 
 const LOCALE_OPTIONS: {
     id: Locale;
@@ -146,6 +152,9 @@ function startOver() {
     try {
         sessionStorage.removeItem(SESSION_KEY);
         sessionStorage.removeItem(DRAFT_KEY);
+        sessionStorage.removeItem(CURATE_MODEL_KEY);
+        sessionStorage.removeItem(LAST_DELIVERY_KEY);
+        sessionStorage.removeItem(BUILD_RESULT_KEY);
         clearRejectedQuestions();
         clearLlmSteps();
     } catch {}
@@ -491,38 +500,53 @@ let interviewModelCatalog: InterviewModelOption[] = [];
 async function bindInterviewModelDropdown() {
     const dropdown = document.getElementById('interview-model-dropdown');
     const trigger = document.getElementById('interview-model-trigger');
-    if (!dropdown || !trigger || dropdown.dataset.bound === 'true') return;
-    dropdown.dataset.bound = 'true';
+    if (!dropdown || !trigger) return;
 
-    const data = await loadInterviewModels();
-    const picked = pickInterviewModelOption(data, readInterviewModel());
-    if (picked) saveInterviewModel(picked.id);
+    if (dropdown.dataset.bound !== 'true') {
+        dropdown.dataset.bound = 'true';
 
-    interviewModelCatalog = data.models;
-    renderInterviewModelMenu(interviewModelCatalog);
-    updateInterviewModelLabel(interviewModelCatalog);
+        trigger.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleInterviewModelMenu();
+        });
 
-    if (interviewModelCatalog.length === 0) {
-        trigger.disabled = true;
-        const labelEl = document.getElementById('interview-model-label');
-        if (labelEl) labelEl.textContent = '—';
-        return;
+        document.addEventListener('click', (event) => {
+            if (!dropdown.contains(event.target as Node)) closeInterviewModelMenu();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') closeInterviewModelMenu();
+        });
     }
 
+    const catalogData = {
+        models: CATALOG_INTERVIEW_MODELS,
+        defaultModel: CATALOG_INTERVIEW_MODELS[0]?.id ?? null,
+        llmConfigured: false
+    };
+    const catalogPicked = pickInterviewModelOption(catalogData, readInterviewModel());
+    if (catalogPicked) saveInterviewModel(catalogPicked.id);
+
+    interviewModelCatalog = CATALOG_INTERVIEW_MODELS;
+    renderInterviewModelMenu(interviewModelCatalog);
+    updateInterviewModelLabel(interviewModelCatalog);
     trigger.disabled = false;
 
-    trigger.addEventListener('click', (event) => {
-        event.stopPropagation();
-        toggleInterviewModelMenu();
-    });
+    try {
+        const data = await fetchInterviewModels();
+        if (!data?.llmConfigured || data.models.length === 0) return;
 
-    document.addEventListener('click', (event) => {
-        if (!dropdown.contains(event.target as Node)) closeInterviewModelMenu();
-    });
+        const picked = pickInterviewModelOption(data, readInterviewModel());
+        if (picked) saveInterviewModel(picked.id);
 
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') closeInterviewModelMenu();
-    });
+        if (!sameModelIds(data.models, interviewModelCatalog)) {
+            interviewModelCatalog = data.models;
+            renderInterviewModelMenu(interviewModelCatalog);
+            updateInterviewModelLabel(interviewModelCatalog);
+        }
+    } catch {
+        // Keep static catalog on network failure.
+    }
 }
 
 function updateLastResultLink() {
@@ -539,6 +563,7 @@ function updateLastResultLink() {
 }
 
 let lastDeliveryListenerBound = false;
+let resizeListenerBound = false;
 
 export async function initAppToolbar() {
     const locale = readLocale();
@@ -551,7 +576,10 @@ export async function initAppToolbar() {
     bindInterviewAlgorithmDropdown();
     updateLastResultLink();
     syncToolbarPanelVisibility();
-    window.addEventListener('resize', syncToolbarPanelVisibility);
+    if (!resizeListenerBound) {
+        resizeListenerBound = true;
+        window.addEventListener('resize', syncToolbarPanelVisibility);
+    }
 
     if (!lastDeliveryListenerBound) {
         lastDeliveryListenerBound = true;
@@ -559,7 +587,6 @@ export async function initAppToolbar() {
     }
 }
 
-void initAppToolbar();
 document.addEventListener('astro:page-load', () => {
     void initAppToolbar();
 });

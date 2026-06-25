@@ -1,17 +1,11 @@
 import { getApiBaseUrl, hasDevHostMismatch, isApiConfigured } from '../lib/api-config';
 import {
     curateModelLabel,
-    currentLocale,
-    pickCurateModelOption,
-    readCurateModel,
-    saveCurateModel,
-    type CurateModelOption,
-    type CurateModelsResponse
+    resolveCurateModelId
 } from '../lib/curate-model';
-import { isValidAnswers } from '../lib/build-prompt';
+import { readLocale } from '../lib/locale';
 import { saveBuildResult, saveLastDelivery } from '../lib/last-delivery';
-import type { InterviewAnswers } from '../lib/types';
-import { SESSION_KEY } from '../lib/types';
+import { readStoredInterviewAnswers } from '../lib/session-answers';
 
 type MeResponse =
     | { authenticated: false }
@@ -72,15 +66,7 @@ type PublishResponse = {
     skipped: Array<{ proposed: string; reason: string }>;
 };
 
-function readInterviewAnswers(): InterviewAnswers | null {
-    try {
-        const stored = sessionStorage.getItem(SESSION_KEY);
-        const raw = stored ? JSON.parse(stored) : null;
-        return isValidAnswers(raw) ? raw : null;
-    } catch {
-        return null;
-    }
-}
+const abortByRoot = new WeakMap<HTMLElement, AbortController>();
 
 function readUrlFlag(name: string): string | null {
     return new URLSearchParams(window.location.search).get(name);
@@ -98,31 +84,6 @@ function escapeHtml(value: string): string {
         .replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;');
-}
-
-const abortByRoot = new WeakMap<HTMLElement, AbortController>();
-
-async function fetchCurateModels(api: string): Promise<CurateModelsResponse> {
-    const response = await fetch(`${api}/api/curate/models`);
-    if (!response.ok) {
-        throw new Error('Could not load curation models from the API');
-    }
-    return (await response.json()) as CurateModelsResponse;
-}
-
-async function resolveBuildModel(api: string): Promise<CurateModelOption> {
-    const data = await fetchCurateModels(api);
-    const stored = readCurateModel();
-    const resolved = pickCurateModelOption(data, stored);
-    if (!resolved) {
-        throw new Error(
-            'LLM not configured on this server — set OPENAI_API_KEY or ANTHROPIC_API_KEY on the API'
-        );
-    }
-    if (stored !== resolved.id) {
-        saveCurateModel(resolved.id);
-    }
-    return resolved;
 }
 
 export function initBuildPage() {
@@ -158,11 +119,14 @@ export function initBuildPage() {
 
     if (!missingEl || !contentEl) return;
 
-    const answers = readInterviewAnswers();
+    const answers = readStoredInterviewAnswers();
     const hasAnswers = Boolean(answers);
     missingEl.hidden = hasAnswers;
     contentEl.hidden = !hasAnswers;
     if (!hasAnswers || !answers) return;
+
+    saveLastDelivery('build');
+    document.dispatchEvent(new CustomEvent('last-delivery-changed'));
 
     const error = readUrlFlag('error');
     const connected = readUrlFlag('connected');
@@ -186,9 +150,9 @@ export function initBuildPage() {
     async function syncCurateModelLabel() {
         if (!modelLabelEl || !api || signal.aborted) return;
         try {
-            const resolved = await resolveBuildModel(api);
+            const resolved = await resolveCurateModelId(signal);
             if (signal.aborted) return;
-            modelLabelEl.textContent = curateModelLabel(resolved, currentLocale());
+            modelLabelEl.textContent = curateModelLabel(resolved, readLocale());
             modelLabelEl.hidden = false;
             if (startBtn) startBtn.disabled = false;
             if (statusEl?.dataset.modelError === 'true') {
@@ -251,6 +215,7 @@ export function initBuildPage() {
     }
 
     function renderResults(data: PublishResponse) {
+        if (signal.aborted) return;
         if (!resultsEl || !resultsSummary || !resultsOrder || !resultsSkipped) return;
 
         resultsSummary.innerHTML = `
@@ -311,9 +276,9 @@ export function initBuildPage() {
         }
 
         try {
-            const model = await resolveBuildModel(api);
+            const model = await resolveCurateModelId(signal);
             if (signal.aborted) return;
-            const curateLabel = curateModelLabel(model, currentLocale());
+            const curateLabel = curateModelLabel(model, readLocale());
             if (modelLabelEl) {
                 modelLabelEl.textContent = curateLabel;
                 modelLabelEl.hidden = false;
@@ -327,13 +292,16 @@ export function initBuildPage() {
                 body: JSON.stringify({
                     answers,
                     model: model.id
-                })
+                }),
+                signal
             });
+            if (signal.aborted) return;
             if (!curateResponse.ok) {
                 const err = (await curateResponse.json().catch(() => null)) as { error?: string } | null;
                 throw new Error(err?.error ?? 'Curate failed');
             }
             const curated = (await curateResponse.json()) as CurateResponse;
+            if (signal.aborted) return;
 
             setProgress(`Step 2.2.4–2.2.5: verifying ${curated.proposedCount} lines on Spotify…`);
             const verifyResponse = await fetch(`${api}/api/verify`, {
@@ -343,16 +311,20 @@ export function initBuildPage() {
                 body: JSON.stringify({
                     lines: curated.lines,
                     brief: curated.brief
-                })
+                }),
+                signal
             });
+            if (signal.aborted) return;
             if (!verifyResponse.ok) {
                 const err = (await verifyResponse.json().catch(() => null)) as { error?: string } | null;
                 throw new Error(err?.error ?? 'Verify failed');
             }
             const verified = (await verifyResponse.json()) as VerifyResponse;
+            if (signal.aborted) return;
 
             if (verified.offerPromptFallback || verified.tracks.length < 10) {
                 hideProgress();
+                if (signal.aborted) return;
                 if (fallbackEl) fallbackEl.hidden = false;
                 if (statusEl) {
                     statusEl.textContent = `Only ${verified.okCount} of ${verified.proposedCount} lines verified (${Math.round(verified.successRate * 100)}%).`;
@@ -369,21 +341,25 @@ export function initBuildPage() {
                 body: JSON.stringify({
                     brief: curated.brief,
                     answers,
-                    locale: currentLocale(),
+                    locale: readLocale(),
                     sequenceIntent: curated.sequenceIntent,
                     proposedCount: curated.proposedCount,
                     tracks: verified.tracks,
                     skipped: verified.skipped
-                })
+                }),
+                signal
             });
+            if (signal.aborted) return;
             if (!publishResponse.ok) {
                 const err = (await publishResponse.json().catch(() => null)) as { error?: string } | null;
                 throw new Error(err?.error ?? 'Publish failed');
             }
             const published = (await publishResponse.json()) as PublishResponse;
+            if (signal.aborted) return;
             hideProgress();
             renderResults(published);
         } catch (buildError) {
+            if (signal.aborted) return;
             hideProgress();
             if (statusEl) {
                 statusEl.textContent =
@@ -399,7 +375,8 @@ export function initBuildPage() {
 
     async function loadSession() {
         try {
-            const response = await fetch(`${api}/api/me`, { credentials: 'include' });
+            const response = await fetch(`${api}/api/me`, { credentials: 'include', signal });
+            if (signal.aborted) return;
             if (!response.ok) {
                 await showConnect();
                 return;

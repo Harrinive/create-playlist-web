@@ -1,7 +1,7 @@
 import type { BilingualInterviewStep } from './interview-i18n';
-import { SESSION_KEY } from './types';
+import { LLM_STEPS_KEY } from './session-keys';
 
-export const LLM_STEPS_KEY = `${SESSION_KEY}-llm-steps`;
+export { LLM_STEPS_KEY };
 
 export function readLlmSteps(): BilingualInterviewStep[] {
     try {

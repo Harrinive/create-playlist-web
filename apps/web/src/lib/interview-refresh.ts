@@ -1,4 +1,6 @@
-import { SESSION_KEY } from './types';
+import { REJECTED_KEY } from './session-keys';
+
+export { REJECTED_KEY };
 
 export type RejectedQuestion = {
     stepId: string;
@@ -7,8 +9,6 @@ export type RejectedQuestion = {
     dimension: string;
     rejectedAt: number;
 };
-
-export const REJECTED_KEY = `${SESSION_KEY}-interview-rejected`;
 
 export function readRejectedQuestions(): RejectedQuestion[] {
     try {

@@ -1,25 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import InterviewMissing from '../components/InterviewMissing.astro';
 ---
 
 <BaseLayout title="Your prompt">
     <section id="prompt-page">
-        <div id="prompt-missing" hidden>
-            <h1 class="page-title">
-                <span data-locale="en">No interview yet</span>
-                <span data-locale="zh" hidden>还没有访谈</span>
-            </h1>
-            <p class="intro-lead">
-                <span data-locale="en">Complete the interview first — we'll remember your answers for this browser session.</span>
-                <span data-locale="zh" hidden>请先完成访谈 — 答案会保存在当前浏览器会话中。</span>
-            </p>
-            <div class="actions-row">
-                <a class="text-link-button text-link-button--primary" href="/interview">
-                    <span data-locale="en">Start interview</span>
-                    <span data-locale="zh" hidden>开始访谈</span>
-                </a>
-            </div>
-        </div>
+        <InterviewMissing id="prompt-missing" />
 
         <div id="prompt-content" hidden>
             <p class="page-kicker">Spotify Prompted Playlist</p>
@@ -68,10 +54,5 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 <script>
     import { initPromptPage } from '../scripts/prompt-page.ts';
 
-    function bootPrompt() {
-        initPromptPage();
-    }
-
-    bootPrompt();
-    document.addEventListener('astro:page-load', bootPrompt);
+    document.addEventListener('astro:page-load', () => initPromptPage());
 </script>

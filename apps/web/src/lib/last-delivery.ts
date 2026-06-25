@@ -1,5 +1,6 @@
-export const LAST_DELIVERY_KEY = 'create-playlist-last-delivery';
-export const BUILD_RESULT_KEY = 'create-playlist-build-result';
+import { BUILD_RESULT_KEY, LAST_DELIVERY_KEY } from './session-keys';
+
+export { BUILD_RESULT_KEY, LAST_DELIVERY_KEY };
 
 export type LastDelivery = 'prompt' | 'build';
 

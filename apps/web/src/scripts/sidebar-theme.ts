@@ -92,7 +92,6 @@ const bootTheme = () => {
     initTheme();
 };
 
-bootTheme();
 document.addEventListener('astro:page-load', bootTheme);
 document.addEventListener('locale-changed', () => applyTheme(resolveTheme(activeThemeMode), activeThemeMode));
 
