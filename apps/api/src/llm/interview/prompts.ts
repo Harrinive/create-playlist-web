@@ -122,7 +122,8 @@ Poetic main line first; add a short **gloss** in parentheses ONLY when the main 
 - M3 energy: main is bodily image only → gloss names pace (e.g. main about feet/steps → gloss hints unhurried vs driving)
 - M5 texture: main is very metaphorical → gloss names felt sound (close, wide, dark weight, sparse…)
 - M2 emotion: main is opaque symbol → gloss names the feeling color
-- M1 / M4: rarely — scene and avoid labels are usually clear enough
+- M1: rarely — scene labels are usually clear enough
+- **M4 avoid: gloss required on poetic options** — see § M4 avoid gloss (injected on M4 turns). Users must decode reject clusters, not solve a metaphor quiz.
 
 ### Fail
 - Gloss on every option "by default"
@@ -146,7 +147,7 @@ Poetic main line first; add a short **gloss** in parentheses ONLY when the main 
         'M5 (sound/质感): felt-first sonic qualities — how sound should FEEL in the scene (close/far, weight, brightness, density, organic sway vs machine pulse, production wear). NOT instrument gear menus. NOT random visual/tactile props (mist, jacket, grit, glass, iron, crowd) unless each clearly encodes a different **felt sound** axis. Stem may use a scene hook; options must answer sonic feel. One option per axis slot — never two "close/near/whisper" options.',
 
     m4Avoid:
-        'M4 (avoid): multi-select negatives; MUST include id "none" with open/surprise-me meaning.',
+        'M4 (avoid): multi-select negatives; MUST include id "none" with open/surprise-me meaning. Poetic main lines are fine — add glossEn/glossZh on every non-"none" option that does not already name the reject plainly (see M4 avoid gloss block).',
 
     q1Draft:
         'Q1: use 6–8 options when plan lists ≥5 q1RegionsToCover; each option maps to a distinct region — include kinetic-high and social-mid scenes, not only quiet/intimate. Each chip = unique scene × social heat × energy cell — no two quiet-solo domestic variants. Include ≥1 non-domestic scene (transit, street, venue, nature).',
@@ -180,7 +181,7 @@ Self-check (private, mandatory — fail any → rewrite before output):
 9. Stem–option fit — every option must live inside the stem's implied world (rain/night stem → no sun highway, no unrelated packed club unless wet-transit plausible)
 10. Music-mood bridge — each option changes scene/emotion/pace/**felt sonic**/avoid; no pure scenery props (especially M5)
 11. Option overlap — pairwise test; no two options share the same axis slot
-12. Optional gloss — omit by default; add glossEn/glossZh only on cryptic lines; gloss clearer + shorter than main`,
+12. Optional gloss — omit by default on M1–M3/M5; add glossEn/glossZh only on cryptic lines; gloss clearer + shorter than main. **M4:** every non-"none" poetic option needs gloss naming the reject cluster`,
 
     draftFollowPlan:
         'Follow the provided turn plan (axis, scene beat, filter drops, q1RegionsToCover) exactly.',
@@ -305,9 +306,10 @@ Paired check: same discriminant in both languages? If either side sounds transla
 16. Spoken rhythm — natural aloud; fail EN >12 words per chip; ZH instruction-manual tone
 17. EN/ZH alignment — same scene/axis; each side independently composed — fail calque either direction
 18. Hints (if present) — poetic fragment only (e.g. "A room, a pulse, a little afterglow." / "一间屋，一点脉搏，余光还在。"); fail UX commands like "Choose the scene that feels closest" / "选那一幕" / "Pick the first scene"
-19. Optional gloss — omit by default. Fail gloss on every option; gloss longer than main; gloss repeats main; dry manual gloss. Pass: gloss only on genuinely cryptic lines, clearer + slightly poetic
+19. Optional gloss — omit by default on M1–M3/M5. Fail gloss on every option; gloss longer than main; gloss repeats main; dry manual gloss. Pass: gloss only on genuinely cryptic lines, clearer + slightly poetic
+20. M4 avoid gloss — on M4 turns: fail any non-"none" option with a poetic/metaphorical main line that lacks glossEn + glossZh. Gloss must decode the **reject cluster** in plain language (gym hype, slick polish, shrill brightness, sad-acoustic cliché, trailer swell…), not repeat the metaphor. Pass plain main lines without gloss; pass "none" without gloss
 
-Be strict on copy quality — a logically correct but ugly or ungrammatical question should fail. List specific fixes per field (stemEn, stemZh, option id, hintZh, etc.).`,
+Be strict on copy quality — a logically correct but ugly or ungrammatical question should fail. List specific fixes per field (stemEn, stemZh, option id, glossEn, glossZh, hintZh, etc.).`,
 
     draftOutputSchema: `{
   "stemEn": "...",
@@ -367,7 +369,7 @@ const DIMENSION_LINES: Record<string, string> = {
     m2: 'M2 Emotion — what should the music mainly feel like? Options = emotional color in images (bittersweet, charged, tender) — each a different feeling, not decorative scenery.',
     m3: 'M3 Energy / tempo — how fast should the pace be? Options = body tempo/groove in images — each a different motion feel, not static scene props.',
     m5: 'M5 Sonic texture — how should sound FEEL (close/far, weight, density, sway vs pulse, warmth/dark)? Options = felt sonic qualities — NOT random visual props (mist, jacket, grit, glass). Stem hook OK; options answer sound.',
-    m4: 'M4 Hard avoids — multi-select negatives. Include "none" for open/surprise me. Skip obvious false positives.'
+    m4: 'M4 Hard avoids — multi-select negatives. Include "none" for open/surprise me. Skip obvious false positives. Poetic chip wording OK — gloss required on each non-"none" option unless the main line already states the reject plainly.'
 };
 
 export function dimensionGuidance(stepIndex: number): string {
@@ -387,6 +389,43 @@ export function isQ1Step(stepIndex: number): boolean {
 
 export function isM5Step(stepIndex: number): boolean {
     return interviewStepMeta(stepIndex)?.id === 'm5';
+}
+
+export function isM4Step(stepIndex: number): boolean {
+    return interviewStepMeta(stepIndex)?.id === 'm4';
+}
+
+export function m4AvoidGlossBlock(): string {
+    return `## M4 avoid gloss (mandatory on poetic options — default elsewhere: omit)
+M4 asks what the playlist must **not** feel like. Prior turns already used poetic chips; M4 options often stay metaphorical — that is fine, but users must not guess what each reject means.
+
+### Rule
+- **Default (M1–M3, M5):** no gloss unless a line is genuinely cryptic
+- **M4:** every non-"none" option with a poetic or metaphorical main line → **must** include glossEn + glossZh
+- **M4 "none":** no gloss (already clear: open / surprise me)
+- **M4 plain main line** (already names the trap, e.g. "Gym workout hype", "Sad-acoustic cliché") → gloss optional / omit
+
+### Gloss job
+Decode the **reject cluster** in plain, decodable language — what kind of wrong vibe or production sin to avoid. Shorter and clearer than the main line; slightly poetic OK, not survey UI.
+
+Private test per option: "If I only read labelEn/labelZh with no music background, do I know what to avoid?" → if no, add gloss.
+
+### Reject clusters gloss may name (invent fresh wording — examples show shape only)
+- Gym / workout hype · party / club / EDM drops · aggressive or angry energy
+- Sad-acoustic cliché · corporate elevator polish · overly cinematic / trailer swell
+- Glossy hyper-produced pop · generic lo-fi study beats · algorithm rabbit-hole sameness
+- Aesthetic production sins when mood could still match by accident: slick fake cheer, shrill piercing highs, claustrophobic nagging repeat, airless held tension, grating abrasive texture
+
+### Shape (same as optional gloss)
+- labelEn / labelZh = poetic main only
+- glossEn / glossZh = plain decoder in separate JSON fields
+- EN gloss in ASCII parens voice; ZH gloss composed natively, not calqued
+
+### Fail
+- M4 turn with poetic non-"none" options and missing gloss fields
+- Gloss on "none"
+- Gloss that restates the metaphor instead of naming the reject
+- Gloss longer than the main line`;
 }
 
 export function m5FeltAxesBlock(): string {
@@ -647,6 +686,7 @@ export function buildDraftUserPrompt(
               ? q1CoverageBlock()
               : '';
     const m5Block = isM5Step(stepIndex) ? m5FeltAxesBlock() : '';
+    const m4Block = isM4Step(stepIndex) ? m4AvoidGlossBlock() : '';
 
     return joinSections(
         turnLabel(stepIndex),
@@ -655,6 +695,7 @@ export function buildDraftUserPrompt(
         `## Turn plan (private — follow closely)\n${planJson}`,
         q1Block,
         m5Block,
+        m4Block,
         priorContextBlock(priorAnswers, rejectedStems),
         `Provide ${optionCount} options. Return JSON only.`
     );
@@ -673,6 +714,7 @@ export function buildFastUserPrompt(
         priorContextBlock(priorAnswers, rejectedStems),
         isQ1Step(stepIndex) ? q1CoverageBlock() : '',
         isM5Step(stepIndex) ? m5FeltAxesBlock() : '',
+        isM4Step(stepIndex) ? m4AvoidGlossBlock() : '',
         'Return JSON only.'
     );
 }
@@ -689,7 +731,9 @@ export function buildVerifyUserPrompt(
             ? q1VerifyContextBlock()
             : isM5Step(stepIndex)
               ? `## M5 verification focus\nRun music-mood bridge + felt sonic axis partition + pairwise overlap.\n\n${m5FeltAxesBlock()}`
-              : '## Verification focus\nQ2–Q5 — run caption test, partition check, music-mood bridge, and pairwise overlap.',
+              : isM4Step(stepIndex)
+                ? `## M4 verification focus\nRun avoid-cluster partition + M4 gloss rule on every poetic non-"none" option.\n\n${m4AvoidGlossBlock()}`
+                : '## Verification focus\nQ2–Q4 — run caption test, partition check, music-mood bridge, and pairwise overlap.',
         `## Turn plan\n${planJson}`,
         `## Draft to verify\n${draftJson}`,
         `## Prior answers\n${formatPriorAnswers(priorAnswers)}`,
