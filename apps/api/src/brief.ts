@@ -77,16 +77,16 @@ const PACE_PHRASES_ZH: Record<string, string> = {
 const SONIC_PHRASES_ZH: Record<string, string> = {
     acoustic: '近距木吉他与拨弦',
     piano: '稀疏钢琴、留白多',
-    synth: '柔软的 Synth 铺底、空间宽',
-    groove: '暖低音与紧 groove',
+    synth: '柔软铺底、空间宽',
+    groove: '暖低音与稳拍',
     vocals: '远处人声、亲密不喊'
 };
 
 const AVOID_PHRASES_ZH: Record<string, string> = {
     edm: 'EDM drop 与夜店感',
-    'gym-pop': '激进健身 pop',
+    'gym-pop': '激进健身流行',
     distorted: '过响的失真吉他',
-    radio: '过于 slick 的电台味'
+    radio: '过于精修的电台感'
 };
 
 /** Short evocative fragments for playlist titles (zh). */
@@ -101,10 +101,34 @@ const NAME_SCENE_ZH: Record<string, string> = {
 const NAME_SONIC_ZH: Record<string, string> = {
     acoustic: '木吉他与弦',
     piano: '留白钢琴',
-    synth: 'Synth 宽景',
-    groove: '低音 groove',
+    synth: '宽景铺底',
+    groove: '暖低音',
     vocals: '远处人声'
 };
+
+function hasCjk(text: string): boolean {
+    return /[\u4e00-\u9fff\u3400-\u4dbf]/.test(text);
+}
+
+/** Prefer Chinese main line; fall back to Chinese gloss when main is English-only. */
+function chineseFromLabel(label: string): string {
+    const trimmed = label.trim();
+    if (!trimmed) return trimmed;
+
+    const match = trimmed.match(/^(.*?)(?:\s*[（(]([^）)]+)[）)])\s*$/);
+    if (match) {
+        const main = match[1].trim();
+        const gloss = match[2].trim();
+        if (hasCjk(main)) return main;
+        if (hasCjk(gloss)) return gloss;
+    }
+
+    return trimmed;
+}
+
+export function metadataContainsLatinWords(text: string): boolean {
+    return /[a-zA-Z]{2,}/.test(text);
+}
 
 function sanitizeLabel(label: string, locale: ContentLocale): string {
     const trimmed = label.trim();
@@ -135,6 +159,12 @@ function phrase(
 
 function phraseEn(map: Record<string, string>, id: string, fallback: string): string {
     return phrase('en', map, {}, id, fallback);
+}
+
+function phraseZh(zhMap: Record<string, string>, id: string, fallbackLabel: string): string {
+    const fromMap = zhMap[id];
+    if (fromMap) return fromMap;
+    return chineseFromLabel(fallbackLabel);
 }
 
 function buildCooldownText(cooldown: CooldownSets): string | undefined {
@@ -226,18 +256,18 @@ export function buildPlaylistMetadata(
     }
 
     const scene =
-        NAME_SCENE_ZH[answers.m1.id] ?? sanitizeLabel(answers.m1.label, 'zh').slice(0, 12);
+        NAME_SCENE_ZH[answers.m1.id] ?? chineseFromLabel(answers.m1.label).slice(0, 12);
     const sonicShort =
-        NAME_SONIC_ZH[answers.m5.id] ?? sanitizeLabel(answers.m5.label, 'zh').slice(0, 12);
+        NAME_SONIC_ZH[answers.m5.id] ?? chineseFromLabel(answers.m5.label).slice(0, 12);
     const name = `${scene} — ${sonicShort}`;
 
-    const anchor = phrase('zh', SCENE_PHRASES, SCENE_PHRASES_ZH, answers.m1.id, answers.m1.label);
-    const emotion = phrase('zh', EMOTION_PHRASES, EMOTION_PHRASES_ZH, answers.m2.id, answers.m2.label);
-    const pace = phrase('zh', PACE_PHRASES, PACE_PHRASES_ZH, answers.m3.id, answers.m3.label);
-    const sonic = phrase('zh', SONIC_PHRASES, SONIC_PHRASES_ZH, answers.m5.id, answers.m5.label);
+    const anchor = phraseZh(SCENE_PHRASES_ZH, answers.m1.id, answers.m1.label);
+    const emotion = phraseZh(EMOTION_PHRASES_ZH, answers.m2.id, answers.m2.label);
+    const pace = phraseZh(PACE_PHRASES_ZH, answers.m3.id, answers.m3.label);
+    const sonic = phraseZh(SONIC_PHRASES_ZH, answers.m5.id, answers.m5.label);
     const reject = answers.m4
         .filter((item) => item.id !== 'none')
-        .map((item) => phrase('zh', AVOID_PHRASES, AVOID_PHRASES_ZH, item.id, item.label));
+        .map((item) => phraseZh(AVOID_PHRASES_ZH, item.id, item.label));
 
     const rejectClause = reject.length > 0 ? `避开${reject.slice(0, 2).join('、')}。` : '';
     const description = `为${anchor}而选。感受${emotion}，节奏${pace}，以${sonic}为质感。${rejectClause}`.slice(

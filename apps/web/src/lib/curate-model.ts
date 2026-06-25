@@ -8,6 +8,8 @@ export type CurateModelOption = {
     id: string;
     labelEn: string;
     labelZh: string;
+    shortLabelEn: string;
+    shortLabelZh: string;
 };
 
 export type CurateModelsResponse = {
@@ -37,7 +39,11 @@ export async function fetchCurateModels(signal?: AbortSignal): Promise<CurateMod
     try {
         const response = await fetch(`${api}/api/curate/models`, { signal });
         if (!response.ok) return null;
-        return (await response.json()) as CurateModelsResponse;
+        const data = (await response.json()) as CurateModelsResponse;
+        return {
+            ...data,
+            models: data.models.map((model) => enrichCurateModel(model))
+        };
     } catch {
         return null;
     }
@@ -69,6 +75,34 @@ export function saveCurateModel(modelId: string) {
 
 export function curateModelLabel(option: CurateModelOption, locale: 'en' | 'zh'): string {
     return locale === 'zh' ? option.labelZh : option.labelEn;
+}
+
+export function curateModelShortLabel(option: CurateModelOption, locale: 'en' | 'zh'): string {
+    const direct = locale === 'zh' ? option.shortLabelZh : option.shortLabelEn;
+    if (direct?.trim()) return direct.trim();
+
+    const catalog = CATALOG_CURATE_MODELS.find((m) => m.id === option.id);
+    const fromCatalog = locale === 'zh' ? catalog?.shortLabelZh : catalog?.shortLabelEn;
+    if (fromCatalog?.trim()) return fromCatalog.trim();
+
+    const curationLabel = locale === 'zh' ? option.labelZh : option.labelEn;
+    const parsed = parseShortFromCurationLabel(curationLabel, locale);
+    if (parsed) return parsed;
+
+    return curateModelLabel(option, locale);
+}
+
+function parseShortFromCurationLabel(label: string, locale: 'en' | 'zh'): string | null {
+    const trimmed = label.trim();
+    if (!trimmed) return null;
+
+    if (locale === 'zh') {
+        const match = trimmed.match(/^用\s+(.+?)\s+生成曲目列表$/);
+        return match?.[1]?.trim() ?? null;
+    }
+
+    const match = trimmed.match(/^Generate tracklist by\s+(.+)$/i);
+    return match?.[1]?.trim() ?? null;
 }
 
 /** Pick a server-allowed model; ignores stale or catalog-only session values. */
@@ -105,8 +139,20 @@ export async function resolveCurateModelId(signal?: AbortSignal): Promise<Curate
             'LLM not configured on this server — set OPENAI_API_KEY or ANTHROPIC_API_KEY on the API'
         );
     }
-    if (stored !== resolved.id) {
-        saveCurateModel(resolved.id);
+    const enriched = enrichCurateModel(resolved);
+    if (stored !== enriched.id) {
+        saveCurateModel(enriched.id);
     }
-    return resolved;
+    return enriched;
+}
+
+function enrichCurateModel(model: CurateModelOption): CurateModelOption {
+    const catalog = CATALOG_CURATE_MODELS.find((m) => m.id === model.id);
+    return {
+        id: model.id,
+        labelEn: model.labelEn || catalog?.labelEn || model.id,
+        labelZh: model.labelZh || catalog?.labelZh || model.id,
+        shortLabelEn: model.shortLabelEn || catalog?.shortLabelEn || '',
+        shortLabelZh: model.shortLabelZh || catalog?.shortLabelZh || ''
+    };
 }

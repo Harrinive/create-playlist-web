@@ -10,8 +10,12 @@ import {
 
 export type CurateModelOption = {
     id: string;
+    /** Long label for /delivery cards */
     labelEn: string;
     labelZh: string;
+    /** Short model name for progress lines */
+    shortLabelEn: string;
+    shortLabelZh: string;
     provider: 'openai' | 'anthropic' | 'cursor';
 };
 
@@ -22,6 +26,8 @@ export function listCurateModels(env: Env): CurateModelOption[] {
             id: entry.id,
             labelEn: entry.curationLabelEn,
             labelZh: entry.curationLabelZh,
+            shortLabelEn: entry.labelEn,
+            shortLabelZh: entry.labelZh,
             provider: entry.provider
         }));
 }

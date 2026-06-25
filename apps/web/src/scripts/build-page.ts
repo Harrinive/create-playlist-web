@@ -10,12 +10,14 @@ import {
 } from '../lib/build-copy';
 import {
     curateModelLabel,
+    curateModelShortLabel,
     resolveCurateModelId
 } from '../lib/curate-model';
 import { readLocale } from '../lib/locale';
+import { localizeApiError, localizeBuildError, localizeOAuthError } from '../lib/localized-errors';
 import { saveBuildResult, saveLastDelivery } from '../lib/last-delivery';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
-import { appearOnMount, crossFadePanels, revealPanel } from '../lib/motion';
+import { crossFadePanels, revealPanel } from '../lib/motion';
 
 type MeResponse =
     | { authenticated: false }
@@ -72,6 +74,23 @@ type PublishResponse = {
 };
 
 const abortByRoot = new WeakMap<HTMLElement, AbortController>();
+
+type BuildStatusState =
+    | { kind: 'oauth'; code: string }
+    | { kind: 'api'; raw: string }
+    | { kind: 'devHost' }
+    | { kind: 'apiUnreachable' }
+    | {
+          kind: 'verifyFallback';
+          okCount: number;
+          proposedCount: number;
+          successRate: number;
+      };
+
+type BuildProgressState =
+    | { kind: 'curating'; modelShort: string }
+    | { kind: 'verifying'; count: number }
+    | { kind: 'publishing'; count: number };
 
 function readUrlFlag(name: string): string | null {
     return new URLSearchParams(window.location.search).get(name);
@@ -136,13 +155,71 @@ export function initBuildPage() {
     saveLastDelivery('build');
     document.dispatchEvent(new CustomEvent('last-delivery-changed'));
 
+    let lastStatus: BuildStatusState | null = null;
+    let lastProgress: BuildProgressState | null = null;
+
+    function renderStatus() {
+        if (!statusEl || !lastStatus) return;
+        const locale = readLocale();
+        switch (lastStatus.kind) {
+            case 'oauth':
+                statusEl.textContent = localizeBuildError('connectionFailed', locale, {
+                    error: localizeOAuthError(lastStatus.code, locale)
+                });
+                break;
+            case 'api':
+                statusEl.textContent = localizeApiError(lastStatus.raw, locale, 'build');
+                break;
+            case 'devHost':
+                statusEl.textContent = localizeBuildError('devHostMismatch', locale);
+                break;
+            case 'apiUnreachable':
+                statusEl.textContent = localizeBuildError('apiUnreachable', locale);
+                break;
+            case 'verifyFallback':
+                statusEl.textContent = buildVerifyFallbackMessage(
+                    locale,
+                    lastStatus.okCount,
+                    lastStatus.proposedCount,
+                    lastStatus.successRate
+                );
+                break;
+        }
+        statusEl.hidden = false;
+    }
+
+    function renderProgress() {
+        if (!progressEl || !lastProgress) return;
+        const locale = readLocale();
+        switch (lastProgress.kind) {
+            case 'curating':
+                progressEl.textContent = buildProgressCurating(locale, lastProgress.modelShort);
+                break;
+            case 'verifying':
+                progressEl.textContent = buildProgressVerifying(locale, lastProgress.count);
+                break;
+            case 'publishing':
+                progressEl.textContent = buildProgressPublishing(locale, lastProgress.count);
+                break;
+        }
+        progressEl.hidden = false;
+    }
+
+    document.addEventListener(
+        'locale-changed',
+        () => {
+            if (lastStatus) renderStatus();
+            if (lastProgress && !progressEl?.hidden) renderProgress();
+        },
+        { signal }
+    );
+
     const error = readUrlFlag('error');
-    const connected = readUrlFlag('connected');
-    if (error || connected) clearUrlParams();
+    if (error) clearUrlParams();
 
     if (statusEl && error) {
-        statusEl.textContent = `Connection failed: ${error}`;
-        statusEl.hidden = false;
+        lastStatus = { kind: 'oauth', code: error };
+        renderStatus();
     }
 
     if (!isApiConfigured()) {
@@ -170,12 +247,13 @@ export function initBuildPage() {
             modelLabelEl.hidden = true;
             if (startBtn) startBtn.disabled = true;
             if (statusEl) {
-                statusEl.textContent =
+                const raw =
                     modelError instanceof Error
                         ? modelError.message
                         : 'Curation model unavailable on this server';
+                lastStatus = { kind: 'api', raw };
                 statusEl.dataset.modelError = 'true';
-                statusEl.hidden = false;
+                renderStatus();
             }
         }
     }
@@ -185,19 +263,18 @@ export function initBuildPage() {
 
     if (hasDevHostMismatch()) {
         if (statusEl) {
-            statusEl.textContent =
-                'Open this site at http://127.0.0.1:4321 (not localhost) so Spotify login can keep your session.';
-            statusEl.hidden = false;
+            lastStatus = { kind: 'devHost' };
+            renderStatus();
         }
     }
 
-    function setProgress(message: string) {
-        if (!progressEl) return;
-        progressEl.textContent = message;
-        progressEl.hidden = false;
+    function setProgress(state: BuildProgressState) {
+        lastProgress = state;
+        renderProgress();
     }
 
     function hideProgress() {
+        lastProgress = null;
         if (progressEl) progressEl.hidden = true;
     }
 
@@ -212,10 +289,10 @@ export function initBuildPage() {
             userLabel.textContent = user.displayName ?? user.spotifyUserId;
         }
         if (userSubtitleEl) userSubtitleEl.hidden = false;
-        if (statusEl && connected) {
-            statusEl.textContent = 'Spotify connected.';
-            statusEl.hidden = false;
-            appearOnMount(statusEl);
+        if (statusEl && statusEl.dataset.modelError !== 'true') {
+            statusEl.hidden = true;
+            statusEl.textContent = '';
+            lastStatus = null;
         }
     }
 
@@ -290,7 +367,10 @@ export function initBuildPage() {
                 modelLabelEl.hidden = false;
             }
 
-            setProgress(buildProgressCurating(readLocale(), curateLabel));
+            setProgress({
+                kind: 'curating',
+                modelShort: curateModelShortLabel(model, readLocale())
+            });
             const curateResponse = await fetch(`${api}/api/curate`, {
                 method: 'POST',
                 credentials: 'include',
@@ -309,7 +389,7 @@ export function initBuildPage() {
             const curated = (await curateResponse.json()) as CurateResponse;
             if (signal.aborted) return;
 
-            setProgress(buildProgressVerifying(readLocale(), curated.proposedCount));
+            setProgress({ kind: 'verifying', count: curated.proposedCount });
             const verifyResponse = await fetch(`${api}/api/verify`, {
                 method: 'POST',
                 credentials: 'include',
@@ -335,19 +415,18 @@ export function initBuildPage() {
                     crossFadePanels(fallbackEl, [resultsEl!, flowEl!].filter(Boolean) as HTMLElement[]);
                 }
                 if (statusEl) {
-                    statusEl.textContent = buildVerifyFallbackMessage(
-                        readLocale(),
-                        verified.okCount,
-                        verified.proposedCount,
-                        verified.successRate
-                    );
-                    statusEl.hidden = false;
-                    appearOnMount(statusEl);
+                    lastStatus = {
+                        kind: 'verifyFallback',
+                        okCount: verified.okCount,
+                        proposedCount: verified.proposedCount,
+                        successRate: verified.successRate
+                    };
+                    renderStatus();
                 }
                 return;
             }
 
-            setProgress(buildProgressPublishing(readLocale(), verified.tracks.length));
+            setProgress({ kind: 'publishing', count: verified.tracks.length });
             const publishResponse = await fetch(`${api}/api/publish`, {
                 method: 'POST',
                 credentials: 'include',
@@ -376,9 +455,10 @@ export function initBuildPage() {
             if (signal.aborted) return;
             hideProgress();
             if (statusEl) {
-                statusEl.textContent =
+                const raw =
                     buildError instanceof Error ? buildError.message : 'Build failed — try again.';
-                statusEl.hidden = false;
+                lastStatus = { kind: 'api', raw };
+                renderStatus();
             }
         } finally {
             if (!signal.aborted && startBtn) {
@@ -403,8 +483,8 @@ export function initBuildPage() {
             }
         } catch {
             if (statusEl) {
-                statusEl.textContent = 'Could not reach the API. Is it running?';
-                statusEl.hidden = false;
+                lastStatus = { kind: 'apiUnreachable' };
+                renderStatus();
             }
             await showConnect();
         }

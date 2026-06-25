@@ -21,5 +21,7 @@ export const CATALOG_INTERVIEW_MODELS = interviewCatalogEntries().map((entry) =>
 export const CATALOG_CURATE_MODELS = curationCatalogEntries().map((entry) => ({
     id: entry.id,
     labelEn: entry.curationLabelEn,
-    labelZh: entry.curationLabelZh
+    labelZh: entry.curationLabelZh,
+    shortLabelEn: entry.labelEn,
+    shortLabelZh: entry.labelZh
 }));

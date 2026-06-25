@@ -8,8 +8,8 @@ function pick(locale: Locale, copy: Copy): string {
 
 export function buildProgressCurating(locale: Locale, modelLabel: string): string {
     return pick(locale, {
-        en: `Curating your tracklist with ${modelLabel}…`,
-        zh: `正在用 ${modelLabel} 策展曲目…`
+        en: `Generating your tracklist with ${modelLabel}…`,
+        zh: `正在用 ${modelLabel} 生成曲目…`
     });
 }
 

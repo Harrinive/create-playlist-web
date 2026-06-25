@@ -3,10 +3,12 @@ import { z } from 'zod';
 import {
     buildCompactBrief,
     buildPlaylistMetadata,
+    metadataContainsLatinWords,
     formatBriefBlock
 } from '../brief.js';
 import type { Env } from '../config.js';
 import { curateTracklist } from '../llm/curate.js';
+import { translateProseToChinese } from '../llm/translate-prose.js';
 import {
     findCurateModel,
     isAllowedCurateModel,
@@ -217,10 +219,36 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
         }
 
         const accessToken = await getValidAccessToken(ctx.env, ctx.store, user);
-        const { name, description } = buildPlaylistMetadata(
+        let { name, description } = buildPlaylistMetadata(
             body.data.answers as InterviewAnswers,
             body.data.locale
         );
+
+        if (body.data.locale === 'zh') {
+            if (metadataContainsLatinWords(name)) {
+                try {
+                    name = await translateProseToChinese(ctx.env, name);
+                } catch {
+                    // Keep template name if translation fails.
+                }
+            }
+            if (metadataContainsLatinWords(description)) {
+                try {
+                    description = await translateProseToChinese(ctx.env, description);
+                } catch {
+                    // Keep template description if translation fails.
+                }
+            }
+        }
+
+        let sequenceIntent = body.data.sequenceIntent?.trim() ?? '';
+        if (body.data.locale === 'zh' && sequenceIntent) {
+            try {
+                sequenceIntent = await translateProseToChinese(ctx.env, sequenceIntent);
+            } catch {
+                // Keep English sequence text if translation fails.
+            }
+        }
 
         try {
             const playlist = await createPlaylist(accessToken, { name, description, public: false });
@@ -250,7 +278,7 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
                 },
                 trackCount: body.data.tracks.length,
                 proposedCount: body.data.proposedCount ?? body.data.tracks.length,
-                sequenceIntent: body.data.sequenceIntent ?? '',
+                sequenceIntent,
                 tracks: body.data.tracks,
                 skipped: body.data.skipped ?? []
             };
