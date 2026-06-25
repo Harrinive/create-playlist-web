@@ -5,8 +5,12 @@ import { fetchInterviewNext } from '../lib/interview-api';
 import { bilingualStepToDisplay, fillInterviewBilingual, fillInterviewLineWithGloss } from '../lib/interview-i18n';
 import { combineLabelWithGloss } from '../lib/interview-label';
 import {
+    clearAnsweredSteps,
     clearLlmSteps,
+    pinAnsweredStep,
+    readAnsweredSteps,
     readLlmSteps,
+    truncateAnsweredSteps,
     truncateLlmSteps,
     upsertLlmStep
 } from '../lib/interview-llm-cache';
@@ -87,19 +91,44 @@ function clearAnswersFromIndex(draft: Draft, fromIndex: number) {
 }
 
 function displayStepFromCache(stepIndex: number, locale: Locale): InterviewStep | null {
+    const answered = readAnsweredSteps()[stepIndex];
+    if (answered) {
+        return bilingualStepToDisplay(answered, locale) as InterviewStep;
+    }
     const cached = readLlmSteps()[stepIndex];
     if (!cached) return null;
     return bilingualStepToDisplay(cached, locale) as InterviewStep;
 }
 
-function buildDraftAnswers(draft: Draft): Partial<InterviewAnswers> {
+/** Answers for steps strictly before stepIndex (used when fetching that step from the API). */
+function buildPriorAnswersBeforeStep(draft: Draft, stepIndex: number): Partial<InterviewAnswers> {
     const answers: Partial<InterviewAnswers> = {};
-    if (draft.m1) answers.m1 = draft.m1;
-    if (draft.m2) answers.m2 = draft.m2;
-    if (draft.m3) answers.m3 = draft.m3;
-    if (draft.m5) answers.m5 = draft.m5;
-    if (draft.m4?.length) answers.m4 = draft.m4;
+    for (let i = 0; i < stepIndex; i += 1) {
+        const stepId = INTERVIEW_STEP_IDS[i];
+        if (stepId === 'm4') {
+            if (draft.m4?.length) answers.m4 = draft.m4;
+        } else {
+            const value = draft[stepId];
+            if (value) answers[stepId] = value;
+        }
+    }
     return answers;
+}
+
+function optionMatchesAnswer(
+    option: InterviewOption,
+    selected: InterviewOption,
+    locale: Locale
+): boolean {
+    if (selected.id === option.id) return true;
+    const displayed = combineLabelWithGloss(option.label, option.gloss, locale).trim();
+    return displayed === selected.label.trim();
+}
+
+/** Keep the question the user answered in the LLM step cache (resume must show the same options). */
+function pinAnsweredStepToCache(stepIndex: number) {
+    const step = readLlmSteps()[stepIndex];
+    if (step) pinAnsweredStep(stepIndex, step);
 }
 
 async function loadLlmStep(
@@ -110,20 +139,24 @@ async function loadLlmStep(
     signal?: AbortSignal
 ): Promise<InterviewStep> {
     if (!refresh) {
-        const cached = displayStepFromCache(stepIndex, locale);
-        if (cached) return cached;
+        const cached = readLlmSteps()[stepIndex];
+        if (cached) return bilingualStepToDisplay(cached, locale) as InterviewStep;
     }
 
     const draft = getDraft();
     const response = await fetchInterviewNext({
         stepIndex,
-        priorAnswers: buildDraftAnswers(draft),
+        priorAnswers: buildPriorAnswersBeforeStep(draft, stepIndex),
         rejectedStems: rejectedStemsForStep(INTERVIEW_STEP_IDS[stepIndex] ?? 'm1'),
         refresh,
         model: modelId,
         algorithmMode: readInterviewAlgorithmMode(),
         signal
     });
+
+    if (signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+    }
 
     upsertLlmStep(stepIndex, response.step);
     return bilingualStepToDisplay(response.step, locale) as InterviewStep;
@@ -415,6 +448,7 @@ export async function initInterviewWizard() {
             delete (draft as Record<string, unknown>)[step.id];
             saveDraft(draft);
         }
+        truncateAnsweredSteps(stepIndex);
 
         loading = true;
         setRefreshLoading(block, true);
@@ -492,7 +526,9 @@ export async function initInterviewWizard() {
             btn.type = 'button';
             btn.className = 'chip-option';
             fillInterviewLineWithGloss(btn, option.label, option.gloss, option.labelEn, locale);
-            if (selected?.id === option.id) btn.classList.add('is-selected');
+            if (selected && optionMatchesAnswer(option, selected, locale)) {
+                btn.classList.add('is-selected');
+            }
 
             btn.addEventListener(
                 'click',
@@ -552,6 +588,7 @@ export async function initInterviewWizard() {
         if (hasDownstreamAnswers) {
             clearAnswersFromIndex(draft, stepIndex + 1);
             truncateLlmSteps(stepIndex + 1);
+            truncateAnsweredSteps(stepIndex + 1);
             saveDraft(draft);
             await renderStack();
             await advanceFromStep(stepIndex);
@@ -560,6 +597,7 @@ export async function initInterviewWizard() {
 
         demoteStepToAnswered(block);
         block.dataset.committedIds = currentIds.join(',');
+        pinAnsweredStepToCache(stepIndex);
         await advanceFromStep(stepIndex);
     }
 
@@ -596,7 +634,9 @@ export async function initInterviewWizard() {
         (draft as Record<string, InterviewOption>)[step.id] = optionForAnswer(option);
         if (isRetro) clearAnswersFromIndex(draft, stepIndex + 1);
         if (isRetro) truncateLlmSteps(stepIndex + 1);
+        if (isRetro) truncateAnsweredSteps(stepIndex + 1);
         saveDraft(draft);
+        pinAnsweredStepToCache(stepIndex);
 
         if (isRetro) {
             await renderStack();
@@ -659,12 +699,12 @@ export async function initInterviewWizard() {
         const allComplete = isInterviewComplete(draft);
 
         for (let i = 0; i < completed; i += 1) {
-            let step = steps[i];
+            let step = displayStepFromCache(i, locale) ?? steps[i];
             if (!step) {
                 step = await loadLlmStep(i, locale, false, interviewModelId, signal);
                 if (!isActive()) return;
                 steps = resolveStepsForLocale(locale);
-                step = steps[i];
+                step = displayStepFromCache(i, locale) ?? steps[i];
             }
             if (!step) continue;
 
@@ -739,6 +779,7 @@ export async function initInterviewWizard() {
             clearDraft();
             clearRejectedQuestions();
             clearLlmSteps();
+            clearAnsweredSteps();
             steps = resolveStepsForLocale(locale);
             void renderStack(true).then(() => {
                 if (!isActive()) return;
@@ -755,6 +796,7 @@ export async function initInterviewWizard() {
             clearDraft();
             clearRejectedQuestions();
             clearLlmSteps();
+            clearAnsweredSteps();
             steps = resolveStepsForLocale(locale);
             void renderStack(true).then(() => {
                 if (!isActive()) return;

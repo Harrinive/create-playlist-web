@@ -1,6 +1,7 @@
 export const SESSION_KEY = 'create-playlist-answers';
 export const DRAFT_KEY = `${SESSION_KEY}-draft`;
 export const LLM_STEPS_KEY = `${SESSION_KEY}-llm-steps`;
+export const ANSWERED_STEPS_KEY = `${SESSION_KEY}-answered-steps`;
 export const REJECTED_KEY = `${SESSION_KEY}-interview-rejected`;
 export const CURATE_MODEL_KEY = 'create-playlist-curate-model';
 export const INTERVIEW_MODEL_KEY = 'create-playlist-interview-model';
