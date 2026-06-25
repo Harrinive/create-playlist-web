@@ -1,0 +1,23 @@
+import { clearRejectedQuestions } from './interview-refresh';
+import { clearLlmSteps } from './interview-llm-cache';
+import {
+    BUILD_RESULT_KEY,
+    CURATE_MODEL_KEY,
+    DRAFT_KEY,
+    LAST_DELIVERY_KEY,
+    SESSION_KEY
+} from './session-keys';
+import { navigateTo } from './navigate';
+
+export function performStartOver() {
+    try {
+        sessionStorage.removeItem(SESSION_KEY);
+        sessionStorage.removeItem(DRAFT_KEY);
+        sessionStorage.removeItem(CURATE_MODEL_KEY);
+        sessionStorage.removeItem(LAST_DELIVERY_KEY);
+        sessionStorage.removeItem(BUILD_RESULT_KEY);
+        clearRejectedQuestions();
+        clearLlmSteps();
+    } catch {}
+    navigateTo('/interview');
+}

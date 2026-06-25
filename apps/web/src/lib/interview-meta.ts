@@ -34,8 +34,6 @@ export const INTERVIEW_STEP_COUNT = INTERVIEW_STEP_IDS.length;
 export const WIZARD_LABELS: Record<
     Locale,
     {
-        continue: string;
-        chooseDelivery: string;
         question: (n: number, dim: string) => string;
         pleaseWait: string;
         preparingQuestion: string;
@@ -43,13 +41,13 @@ export const WIZARD_LABELS: Record<
         done: string;
         refreshQuestion: string;
         refreshingQuestion: string;
+        startOver: string;
+        chooseDelivery: string;
         apiUnavailable: string;
         apiUnreachable: string;
     }
 > = {
     en: {
-        continue: 'Continue',
-        chooseDelivery: 'Choose delivery',
         question: (n, dim) => `Question ${n} · ${dim}`,
         pleaseWait: 'Please wait…',
         preparingQuestion: 'Preparing your next question',
@@ -58,13 +56,13 @@ export const WIZARD_LABELS: Record<
         done: 'Done',
         refreshQuestion: 'New question',
         refreshingQuestion: 'Finding another question…',
+        startOver: 'Start over',
+        chooseDelivery: 'Choose delivery',
         apiUnavailable: 'Interview needs the API — check PUBLIC_API_URL and LLM keys on the server.',
         apiUnreachable:
             'Could not reach the API. Start the server with `npm run dev` in apps/api (http://127.0.0.1:3001).'
     },
     zh: {
-        continue: '继续',
-        chooseDelivery: '选择交付方式',
         question: (n, dim) => `第 ${n} 题 · ${dim}`,
         pleaseWait: '请稍候…',
         preparingQuestion: '正在准备下一题',
@@ -72,6 +70,8 @@ export const WIZARD_LABELS: Record<
         done: '完成',
         refreshQuestion: '换一题',
         refreshingQuestion: '正在换一题…',
+        startOver: '重新开始',
+        chooseDelivery: '选择交付方式',
         apiUnavailable: '访谈需要 API — 请检查 PUBLIC_API_URL 及服务器上的 LLM 密钥。',
         apiUnreachable:
             '无法连接 API。请在 apps/api 目录运行 `npm run dev` 启动服务（http://127.0.0.1:3001）。'

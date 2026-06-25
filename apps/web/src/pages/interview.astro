@@ -4,7 +4,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
 <BaseLayout title="Interview">
     <section id="interview-wizard">
-        <div id="interview-stack" class="interview-stack"></div>
+        <div id="interview-stack" class="interview-stack">
+            <div class="interview-loading" data-interview-boot>
+                <p class="interview-loading__text">
+                    <span data-locale="en">Please wait…</span>
+                    <span data-locale="zh" hidden>请稍候…</span>
+                </p>
+                <p class="interview-loading__hint">
+                    <span data-locale="en">Preparing your next question</span>
+                    <span data-locale="zh" hidden>正在准备下一题</span>
+                </p>
+            </div>
+        </div>
     </section>
 </BaseLayout>
 

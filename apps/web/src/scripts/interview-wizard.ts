@@ -20,8 +20,12 @@ import {
     rejectedStemsForStep
 } from '../lib/interview-refresh';
 import { readLocale, type Locale } from '../lib/locale';
+import { localizeApiError } from '../lib/localized-errors';
 import { DRAFT_KEY, SESSION_KEY } from '../lib/session-keys';
-import { appearOnMount, fadeOut, staggerAppear } from '../lib/motion';
+import { readStoredInterviewAnswers } from '../lib/session-answers';
+import { performStartOver } from '../lib/start-over';
+import { navigateTo } from '../lib/navigate';
+import { staggerAppear } from '../lib/motion';
 
 type Draft = Partial<InterviewAnswers>;
 
@@ -43,6 +47,17 @@ function saveDraft(draft: Draft) {
 
 function clearDraft() {
     sessionStorage.removeItem(DRAFT_KEY);
+}
+
+function restoreDraftFromSessionIfNeeded() {
+    const draft = getDraft();
+    if (countCompletedSteps(draft) > 0) return;
+    const stored = readStoredInterviewAnswers();
+    if (stored) saveDraft(stored);
+}
+
+function isInterviewComplete(draft: Draft): boolean {
+    return countCompletedSteps(draft) >= INTERVIEW_STEP_COUNT;
 }
 
 function getSelectedMulti(draft: Draft): InterviewOption[] {
@@ -119,7 +134,7 @@ function interviewLoadError(error: unknown, locale: Locale): string {
         if (error.message === 'Failed to fetch') {
             return WIZARD_LABELS[locale].apiUnreachable;
         }
-        return error.message;
+        return localizeApiError(error.message, locale, 'interview');
     }
     return WIZARD_LABELS[locale].apiUnavailable;
 }
@@ -145,20 +160,12 @@ export async function initInterviewWizard() {
         return wizardSession === session && abortByRoot.get(root) === controller;
     }
 
-    stackEl.innerHTML = '';
-    const bootLoading = mountInterviewLoading(localeForError, readInterviewAlgorithmMode());
-    stackEl.appendChild(bootLoading.element);
-
     let interviewModelId = await resolveInterviewModelId(signal);
     if (!isActive()) return;
     if (!interviewModelId) {
-        bootLoading.stop();
         stackEl.innerHTML = `<p class="help-line">${WIZARD_LABELS[localeForError].apiUnavailable}</p>`;
         return;
     }
-
-    bootLoading.stop();
-    stackEl.innerHTML = '';
 
     let locale: Locale = readLocale();
     let steps = resolveStepsForLocale(locale);
@@ -189,10 +196,7 @@ export async function initInterviewWizard() {
             m4: draft.m4!
         };
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(answers));
-        clearDraft();
-        clearRejectedQuestions();
-        clearLlmSteps();
-        window.location.assign('/delivery');
+        navigateTo('/delivery');
     }
 
     function createLoadingBlock(): HTMLElement {
@@ -200,6 +204,43 @@ export async function initInterviewWizard() {
         const handle = mountInterviewLoading(locale, readInterviewAlgorithmMode());
         activeLoading = handle;
         return handle.element;
+    }
+
+    function prepareLoadingBlock(): HTMLElement {
+        const boot = stackEl.querySelector<HTMLElement>('[data-interview-boot]');
+        if (boot) {
+            const mode = readInterviewAlgorithmMode();
+            if (mode === 'fast') {
+                boot.removeAttribute('data-interview-boot');
+                return boot;
+            }
+            const handle = mountInterviewLoading(locale, mode);
+            activeLoading = handle;
+            boot.replaceWith(handle.element);
+            return handle.element;
+        }
+
+        const existing = stackEl.querySelector<HTMLElement>('.interview-loading');
+        if (existing) return existing;
+
+        const loadingEl = createLoadingBlock();
+        stackEl.appendChild(loadingEl);
+        return loadingEl;
+    }
+
+    function swapLoadingForStep(loadingEl: HTMLElement, block: HTMLElement) {
+        loadingEl.replaceWith(block);
+        dismissLoading();
+    }
+
+    function removeRefreshActions(block: HTMLElement) {
+        block.querySelector('.interview-step__actions--refresh')?.remove();
+    }
+
+    function demoteStepToAnswered(block: HTMLElement) {
+        block.classList.remove('interview-step--active');
+        block.classList.add('interview-step--answered');
+        removeRefreshActions(block);
     }
 
     function createStepBlock(step: InterviewStep, stepIndex: number, mode: 'active' | 'answered'): HTMLElement {
@@ -237,12 +278,19 @@ export async function initInterviewWizard() {
             refreshBtn.type = 'button';
             refreshBtn.className = 'text-link-button interview-step__refresh';
             refreshBtn.dataset.role = 'refresh';
-            refreshBtn.innerHTML = `<span class="interview-step__refresh-icon" aria-hidden="true">↻</span><span>${labels().refreshQuestion}</span>`;
+            refreshBtn.textContent = labels().refreshQuestion;
             refreshActions.appendChild(refreshBtn);
+
+            const startOverBtn = document.createElement('button');
+            startOverBtn.type = 'button';
+            startOverBtn.className = 'text-link-button';
+            startOverBtn.dataset.role = 'start-over';
+            startOverBtn.textContent = labels().startOver;
+            refreshActions.appendChild(startOverBtn);
             block.appendChild(refreshActions);
         }
 
-        if (step.multi) {
+        if (step.multi && mode === 'active') {
             const actions = document.createElement('div');
             actions.className = 'interview-step__actions actions-row';
             const doneBtn = document.createElement('button');
@@ -283,10 +331,40 @@ export async function initInterviewWizard() {
         }
     }
 
+    function removeContinueActions() {
+        stackEl.querySelectorAll('[data-role="continue-delivery"]').forEach((el) => el.remove());
+    }
+
+    function renderContinueActions() {
+        removeContinueActions();
+        const lastStep = stackEl.querySelector<HTMLElement>('.interview-step:last-of-type');
+        if (!lastStep) return;
+
+        const row = document.createElement('div');
+        row.className = 'interview-step__actions actions-row';
+        row.dataset.role = 'continue-delivery';
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'text-link-button text-link-button--primary';
+        btn.textContent = labels().chooseDelivery;
+        btn.addEventListener('click', () => navigateTo('/delivery'), { signal });
+        row.appendChild(btn);
+        lastStep.appendChild(row);
+    }
+
     function bindStackActions() {
         stackEl.addEventListener(
             'click',
             (event) => {
+                const startOverBtn = (event.target as HTMLElement).closest<HTMLButtonElement>(
+                    '[data-role="start-over"]'
+                );
+                if (startOverBtn && !startOverBtn.disabled) {
+                    performStartOver();
+                    return;
+                }
+
                 const refreshBtn = (event.target as HTMLElement).closest<HTMLButtonElement>(
                     '[data-role="refresh"]'
                 );
@@ -310,12 +388,12 @@ export async function initInterviewWizard() {
     function setRefreshLoading(block: HTMLElement, active: boolean) {
         block.classList.toggle('is-refreshing', active);
         const refreshBtn = block.querySelector<HTMLButtonElement>('[data-role="refresh"]');
-        if (!refreshBtn) return;
-        refreshBtn.disabled = active;
-        const label = refreshBtn.querySelector('span:last-child');
-        if (label) {
-            label.textContent = active ? labels().refreshingQuestion : labels().refreshQuestion;
+        const startOverBtn = block.querySelector<HTMLButtonElement>('[data-role="start-over"]');
+        if (refreshBtn) {
+            refreshBtn.disabled = active;
+            refreshBtn.textContent = active ? labels().refreshingQuestion : labels().refreshQuestion;
         }
+        if (startOverBtn) startOverBtn.disabled = active;
     }
 
     async function handleRefreshQuestion(step: InterviewStep, stepIndex: number, block: HTMLElement) {
@@ -355,7 +433,12 @@ export async function initInterviewWizard() {
         }
     }
 
-    function renderOptions(block: HTMLElement, step: InterviewStep, stepIndex: number) {
+    function renderOptions(
+        block: HTMLElement,
+        step: InterviewStep,
+        stepIndex: number,
+        animateOptions = false
+    ) {
         const optionsEl = block.querySelector('.interview-step__options');
         const doneBtn = block.querySelector<HTMLButtonElement>('[data-role="done"]');
         if (!optionsEl) return;
@@ -399,7 +482,7 @@ export async function initInterviewWizard() {
                     { signal }
                 );
             }
-            staggerAppear(optionsEl, '.chip-option');
+            if (animateOptions) staggerAppear(optionsEl, '.chip-option');
             return;
         }
 
@@ -423,7 +506,7 @@ export async function initInterviewWizard() {
             optionsEl.appendChild(btn);
         });
 
-        staggerAppear(optionsEl, '.chip-option');
+        if (animateOptions) staggerAppear(optionsEl, '.chip-option');
     }
 
     async function handleMultiToggle(
@@ -475,8 +558,7 @@ export async function initInterviewWizard() {
             return;
         }
 
-        block.classList.remove('interview-step--active');
-        block.classList.add('interview-step--answered');
+        demoteStepToAnswered(block);
         block.dataset.committedIds = currentIds.join(',');
         await advanceFromStep(stepIndex);
     }
@@ -522,8 +604,7 @@ export async function initInterviewWizard() {
             return;
         }
 
-        block.classList.remove('interview-step--active');
-        block.classList.add('interview-step--answered');
+        demoteStepToAnswered(block);
         block.dataset.committedIds = option.id;
         renderOptions(block, step, stepIndex);
         await advanceFromStep(stepIndex);
@@ -546,16 +627,17 @@ export async function initInterviewWizard() {
 
             const nextStep = await loadLlmStep(nextIndex, locale, false, interviewModelId, signal);
             if (!isActive()) return;
-            await fadeOut(loadingEl);
             dismissLoading();
 
-            if (!nextStep) return;
+            if (!nextStep) {
+                loadingEl.remove();
+                return;
+            }
 
             const block = createStepBlock(nextStep, nextIndex, 'active');
-            stackEl.appendChild(block);
-            appearOnMount(block);
+            renderOptions(block, nextStep, nextIndex, true);
+            swapLoadingForStep(loadingEl, block);
             loading = false;
-            renderOptions(block, nextStep, nextIndex);
             block.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } finally {
             loading = false;
@@ -563,15 +645,18 @@ export async function initInterviewWizard() {
         }
     }
 
-    async function renderStack() {
-        stackEl.innerHTML = '';
+    async function renderStack(fullReset = false) {
+        if (fullReset) {
+            stackEl.innerHTML = '';
+        } else {
+            stackEl
+                .querySelectorAll('.interview-step, .interview-loading')
+                .forEach((el) => el.remove());
+            removeContinueActions();
+        }
         const draft = getDraft();
         const completed = countCompletedSteps(draft);
-
-        if (completed >= INTERVIEW_STEP_COUNT) {
-            finishInterview();
-            return;
-        }
+        const allComplete = isInterviewComplete(draft);
 
         for (let i = 0; i < completed; i += 1) {
             let step = steps[i];
@@ -593,47 +678,40 @@ export async function initInterviewWizard() {
             }
             stackEl.appendChild(block);
             renderOptions(block, step, i);
-            appearOnMount(block);
         }
+
+        if (allComplete) renderContinueActions();
     }
 
     async function ensureActiveQuestion() {
         const draft = getDraft();
         const completed = countCompletedSteps(draft);
 
-        if (completed >= INTERVIEW_STEP_COUNT) {
-            finishInterview();
-            return;
-        }
+        if (isInterviewComplete(draft)) return;
 
-        const hasTail = stackEl.querySelector('.interview-step--active, .interview-loading');
-        if (hasTail) return;
+        const hasActive = stackEl.querySelector('.interview-step--active');
+        if (hasActive) return;
 
         loading = true;
-        const loadingEl = createLoadingBlock();
-        stackEl.appendChild(loadingEl);
+        const loadingEl = prepareLoadingBlock();
         loadingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         try {
             const activeStep = await loadLlmStep(completed, locale, false, interviewModelId, signal);
             if (!isActive()) return;
             steps = resolveStepsForLocale(locale);
-            await fadeOut(loadingEl);
-            dismissLoading();
             const block = createStepBlock(activeStep, completed, 'active');
-            stackEl.appendChild(block);
-            appearOnMount(block);
-            renderOptions(block, activeStep, completed);
+            renderOptions(block, activeStep, completed, true);
+            swapLoadingForStep(loadingEl, block);
         } catch (error) {
             if (!isActive()) return;
-            await fadeOut(loadingEl);
+            loadingEl.remove();
             dismissLoading();
             const message = interviewLoadError(error, locale);
             const err = document.createElement('p');
             err.className = 'help-line';
             err.textContent = message;
             stackEl.appendChild(err);
-            appearOnMount(err);
         } finally {
             loading = false;
             dismissLoading();
@@ -661,9 +739,8 @@ export async function initInterviewWizard() {
             clearDraft();
             clearRejectedQuestions();
             clearLlmSteps();
-            stackEl.innerHTML = '';
             steps = resolveStepsForLocale(locale);
-            void renderStack().then(() => {
+            void renderStack(true).then(() => {
                 if (!isActive()) return;
                 return ensureActiveQuestion();
             });
@@ -678,9 +755,8 @@ export async function initInterviewWizard() {
             clearDraft();
             clearRejectedQuestions();
             clearLlmSteps();
-            stackEl.innerHTML = '';
             steps = resolveStepsForLocale(locale);
-            void renderStack().then(() => {
+            void renderStack(true).then(() => {
                 if (!isActive()) return;
                 return ensureActiveQuestion();
             });
@@ -689,6 +765,8 @@ export async function initInterviewWizard() {
     );
 
     bindStackActions();
+
+    restoreDraftFromSessionIfNeeded();
 
     void renderStack().then(() => {
         if (!isActive()) return;
