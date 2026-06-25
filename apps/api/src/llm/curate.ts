@@ -29,7 +29,9 @@ One line: which tags appear on each line (e.g. "energy · cue · role (sparse) �
 Each line:
 N. Artist — Title · [energy: low|low-med|med|med-high|high] · [cue: 2–4 brief-aligned felt words] · [optional role: opener|turn|peak|breather|closer—sparse; only when FLOW has shape] · [optional extra axis value—only if declared]
 
-Energy + cue REQUIRED every line. Cues = felt qualities from the brief (live pocket, warm low, close breath)—not genre labels. Roles on opener, turn, peak, closer—not every line.`;
+Energy + cue REQUIRED every line. Cues = felt qualities from the brief (live pocket, warm low, close breath)—not genre labels. Roles on opener, turn, peak, closer—not every line.
+
+When HYPOTHESES lists multiple clusters: allocate ≥2–4 tracks per cluster across ~26 lines; Sequence intent must name all clusters; no silent collapse to one subgenre.`;
 
 export type CurateResult = {
     sequenceIntent: string;
@@ -98,12 +100,18 @@ export function parseCurateResponse(raw: string): CurateResult {
 export async function curateTracklist(
     env: Env,
     brief: CompactBrief,
-    model?: string
+    model?: string,
+    hypotheses?: string[]
 ): Promise<CurateResult> {
+    const hypothesesBlock =
+        hypotheses && hypotheses.length > 1
+            ? `\nHYPOTHESES: ${hypotheses.join(' · ')}\nBreadth mandate: ≥2–4 tracks per cluster; weave in Sequence intent.`
+            : '';
+
     const userPrompt = `${TASK_PROMPT_STARTER}
 
 BRIEF:
-${formatBriefBlock(brief)}
+${formatBriefBlock(brief)}${hypothesesBlock}
 
 ${TASK_RULES}`;
 

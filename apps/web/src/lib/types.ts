@@ -11,7 +11,8 @@ export type InterviewAnswers = {
     m1: InterviewOption;
     m2: InterviewOption;
     m3: InterviewOption;
-    m5: InterviewOption;
+    m5?: InterviewOption;
+    m_clarify?: InterviewOption;
     m4: InterviewOption[];
 };
 

@@ -10,7 +10,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:verify": "node --import tsx --test src/llm/interview/__tests__/verify-deterministic.test.ts"
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.21",

@@ -187,12 +187,15 @@ function buildCooldownText(cooldown: CooldownSets): string | undefined {
 
 export function buildCompactBrief(
     answers: InterviewAnswers,
-    cooldown?: CooldownSets
+    cooldown?: CooldownSets,
+    inferredSonic?: string
 ): CompactBrief {
     const anchor = phraseEn(SCENE_PHRASES, answers.m1.id, answers.m1.label);
     const emotion = phraseEn(EMOTION_PHRASES, answers.m2.id, answers.m2.label);
     const pace = phraseEn(PACE_PHRASES, answers.m3.id, answers.m3.label);
-    const sonic = phraseEn(SONIC_PHRASES, answers.m5.id, answers.m5.label);
+    const sonic = answers.m5
+        ? phraseEn(SONIC_PHRASES, answers.m5.id, answers.m5.label)
+        : inferredSonic ?? 'warm intimate air with room for varied timbres';
     const flow = phraseEn(FLOW_PHRASES, answers.m3.id, answers.m3.label);
 
     const reject = answers.m4
@@ -258,13 +261,16 @@ export function buildPlaylistMetadata(
     const scene =
         NAME_SCENE_ZH[answers.m1.id] ?? chineseFromLabel(answers.m1.label).slice(0, 12);
     const sonicShort =
-        NAME_SONIC_ZH[answers.m5.id] ?? chineseFromLabel(answers.m5.label).slice(0, 12);
+        NAME_SONIC_ZH[answers.m5?.id ?? ''] ??
+        (answers.m5 ? chineseFromLabel(answers.m5.label).slice(0, 12) : '多样质感');
     const name = `${scene} — ${sonicShort}`;
 
     const anchor = phraseZh(SCENE_PHRASES_ZH, answers.m1.id, answers.m1.label);
     const emotion = phraseZh(EMOTION_PHRASES_ZH, answers.m2.id, answers.m2.label);
     const pace = phraseZh(PACE_PHRASES_ZH, answers.m3.id, answers.m3.label);
-    const sonic = phraseZh(SONIC_PHRASES_ZH, answers.m5.id, answers.m5.label);
+    const sonic = answers.m5
+        ? phraseZh(SONIC_PHRASES_ZH, answers.m5.id, answers.m5.label)
+        : '温暖留白、质感可多样';
     const reject = answers.m4
         .filter((item) => item.id !== 'none')
         .map((item) => phraseZh(AVOID_PHRASES_ZH, item.id, item.label));

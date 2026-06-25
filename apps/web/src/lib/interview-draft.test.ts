@@ -47,10 +47,9 @@ describe('countCompletedSteps', () => {
             m1: { id: 'a', label: 'A' },
             m2: { id: 'b', label: 'B' },
             m3: { id: 'c', label: 'C' },
-            m5: { id: 'e', label: 'E' },
             m4: [{ id: '', label: 'bad' }]
         };
-        expect(countCompletedSteps(draft)).toBe(4);
+        expect(countCompletedSteps(draft)).toBe(3);
     });
 });
 

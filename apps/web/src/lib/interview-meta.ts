@@ -3,7 +3,7 @@ import type { InterviewOption } from './types';
 
 export type InterviewStep =
     | {
-          id: 'm1' | 'm2' | 'm3' | 'm5';
+          id: 'm1' | 'm2' | 'm3' | 'm5' | 'm_clarify';
           dimension: string;
           stem: string;
           stemEn?: string;
@@ -27,9 +27,12 @@ export type InterviewStep =
           options: InterviewOption[];
       };
 
-/** Fixed interview order (m4 avoid is last). */
-export const INTERVIEW_STEP_IDS = ['m1', 'm2', 'm3', 'm5', 'm4'] as const;
+/** v3 default order — no user m5. */
+export const INTERVIEW_STEP_IDS = ['m1', 'm2', 'm3', 'm4'] as const;
 export const INTERVIEW_STEP_COUNT = INTERVIEW_STEP_IDS.length;
+
+/** Legacy sequence including user m5 (old sessions). */
+export const LEGACY_INTERVIEW_STEP_IDS = ['m1', 'm2', 'm3', 'm5', 'm4'] as const;
 
 export const WIZARD_LABELS: Record<
     Locale,

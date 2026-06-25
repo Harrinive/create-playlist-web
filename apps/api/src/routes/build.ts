@@ -8,6 +8,8 @@ import {
 } from '../brief.js';
 import type { Env } from '../config.js';
 import { curateTracklist } from '../llm/curate.js';
+import { inferSonic, answersWithInferredM5 } from '../llm/infer-sonic.js';
+import { interviewPlannerStateSchema, parsePlannerState } from '../types/interview-planner.js';
 import { translateProseToChinese } from '../llm/translate-prose.js';
 import {
     findCurateModel,
@@ -35,7 +37,8 @@ const interviewAnswersSchema = z.object({
     m1: interviewOptionSchema,
     m2: interviewOptionSchema,
     m3: interviewOptionSchema,
-    m5: interviewOptionSchema,
+    m5: interviewOptionSchema.optional(),
+    m_clarify: interviewOptionSchema.optional(),
     m4: z.array(interviewOptionSchema).min(1)
 });
 
@@ -94,7 +97,8 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
         const body = z
             .object({
                 answers: interviewAnswersSchema,
-                model: z.string().optional()
+                model: z.string().optional(),
+                plannerState: interviewPlannerStateSchema.nullish()
             })
             .safeParse(request.body);
 
@@ -119,14 +123,36 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
 
         const memory = await ctx.store.getPlaylistMemory(user.id);
         const cooldown = deriveCooldownSets(memory);
-        const brief = buildCompactBrief(body.data.answers as InterviewAnswers, cooldown);
+        const plannerState = body.data.plannerState
+            ? parsePlannerState(body.data.plannerState)
+            : null;
+
+        let answers = body.data.answers as InterviewAnswers;
+        let inferredProse: string | undefined;
+        if (!answers.m5?.id) {
+            const inferred = await inferSonic(
+                ctx.env,
+                answers,
+                plannerState,
+                body.data.model
+            );
+            answers = answersWithInferredM5(answers, inferred);
+            inferredProse = inferred.prose;
+        }
+
+        const brief = buildCompactBrief(answers, cooldown, inferredProse);
 
         try {
             const model =
                 normalizeCurateModelId(ctx.env, body.data.model) ??
                 resolveCurateDefaultModel(ctx.env) ??
                 undefined;
-            const curated = await curateTracklist(ctx.env, brief, model);
+            const curated = await curateTracklist(
+                ctx.env,
+                brief,
+                model,
+                plannerState?.hypotheses
+            );
             const modelInfo = model ? findCurateModel(ctx.env, model) : null;
             return {
                 brief,

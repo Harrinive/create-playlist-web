@@ -1,5 +1,6 @@
-import { clearRejectedQuestions } from './interview-refresh';
+import { clearInterviewSessionMeta } from './interview-session';
 import { clearLlmSteps, clearAnsweredSteps } from './interview-llm-cache';
+import { clearRejectedQuestions } from './interview-refresh';
 import {
     BUILD_RESULT_KEY,
     CURATE_MODEL_KEY,
@@ -23,6 +24,7 @@ export function performStartOver() {
         clearRejectedQuestions();
         clearLlmSteps();
         clearAnsweredSteps();
+        clearInterviewSessionMeta();
     } catch {}
     navigateTo('/interview');
 }

@@ -1,11 +1,13 @@
 import type { Env } from '../../config.js';
 import { completeChat } from '../../llm-router/index.js';
-import { interviewStepMeta } from '../../types/interview-step.js';
 import {
     buildDraftUserPrompt,
     buildReviseUserPrompt,
-    draftSystemPrompt
+    draftSystemPrompt,
+    reviseCopySystemPrompt
 } from './prompts.js';
+import { resolveTurnConfig } from './turn-config.js';
+import { resolveInterviewStep, stepMetaForId } from './resolve-step.js';
 import {
     extractJson,
     llmStepSchema,
@@ -20,15 +22,27 @@ export async function draftInterviewStep(
     plan: TurnPlan,
     model?: string
 ): Promise<LlmStepDraft> {
-    const meta = interviewStepMeta(ctx.stepIndex);
-    const optionCount = meta ? `${meta.optionMin}–${meta.optionMax}` : '4–6';
+    const resolved = resolveInterviewStep(
+        ctx.stepIndex,
+        ctx.priorAnswers,
+        ctx.plannerState,
+        ctx.openingContext
+    );
+    const stepId = ctx.stepId ?? resolved.stepId;
+    const meta = stepMetaForId(stepId);
+    const optionCount = `${meta.optionMin}–${meta.optionMax}`;
+    const turnConfig = resolveTurnConfig(stepId, plan, ctx.priorAnswers);
+    const totalSteps = ctx.plannerState?.stepIds?.length ?? resolved.totalSteps;
+
     const userPrompt = buildDraftUserPrompt(
         ctx.stepIndex,
+        stepId,
         ctx.priorAnswers,
         ctx.rejectedStems,
         ctx.refresh,
         JSON.stringify(plan, null, 2),
         optionCount,
+        turnConfig.draftBlocks,
         plan.q1RegionsToCover
     );
 
@@ -36,7 +50,10 @@ export async function draftInterviewStep(
         env,
         [
             { role: 'system', content: draftSystemPrompt() },
-            { role: 'user', content: userPrompt }
+            { role: 'user', content: userPrompt.replace(
+                `Question ${ctx.stepIndex + 1} of 5`,
+                `Question ${ctx.stepIndex + 1} of ${totalSteps}`
+            ) }
         ],
         { model }
     );
@@ -55,7 +72,8 @@ export async function reviseInterviewStep(
     plan: TurnPlan,
     draft: LlmStepDraft,
     failures: string[],
-    model?: string
+    model?: string,
+    kind: 'all' | 'logic' | 'copy' = 'all'
 ): Promise<LlmStepDraft> {
     const userPrompt = buildReviseUserPrompt(
         ctx.priorAnswers,
@@ -65,10 +83,12 @@ export async function reviseInterviewStep(
         failures
     );
 
+    const systemPrompt = kind === 'copy' ? reviseCopySystemPrompt() : draftSystemPrompt();
+
     const raw = await completeChat(
         env,
         [
-            { role: 'system', content: draftSystemPrompt() },
+            { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
         ],
         { model }

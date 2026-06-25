@@ -1,66 +1,82 @@
-import { INTERVIEW_STEP_COUNT, INTERVIEW_STEP_IDS } from './interview-meta';
 import { combineLabelWithGloss } from './interview-label';
 import type { Locale } from './locale';
 import type { InterviewAnswers, InterviewOption } from './types';
+import { DEFAULT_STEP_IDS } from './interview-session';
 
 export type Draft = Partial<InterviewAnswers>;
+
+export { DEFAULT_STEP_IDS };
 
 export function getSelectedMulti(draft: Draft): InterviewOption[] {
     return Array.isArray(draft.m4) ? draft.m4 : [];
 }
 
-export function isStepIdComplete(stepId: (typeof INTERVIEW_STEP_IDS)[number], draft: Draft): boolean {
+export function isStepIdComplete(stepId: string, draft: Draft): boolean {
     if (stepId === 'm4') {
         const selected = getSelectedMulti(draft);
         return selected.length > 0 && selected.every((o) => Boolean(o?.id));
     }
-    const value = draft[stepId];
-    return Boolean(value && typeof value === 'object' && value.id);
+    if (stepId === 'm_clarify') {
+        return Boolean(draft.m_clarify?.id);
+    }
+    const key = stepId as keyof Draft;
+    const value = draft[key];
+    if (!value || Array.isArray(value)) return false;
+    return Boolean(value && typeof value === 'object' && 'id' in value && value.id);
 }
 
-export function countCompletedSteps(draft: Draft): number {
+export function countCompletedSteps(draft: Draft, stepIds: readonly string[] = DEFAULT_STEP_IDS): number {
     let count = 0;
-    for (const stepId of INTERVIEW_STEP_IDS) {
+    for (const stepId of stepIds) {
         if (!isStepIdComplete(stepId, draft)) break;
         count += 1;
     }
     return count;
 }
 
-export function isInterviewComplete(draft: Draft): boolean {
-    return countCompletedSteps(draft) >= INTERVIEW_STEP_COUNT;
+export function isInterviewComplete(draft: Draft, stepIds: readonly string[] = DEFAULT_STEP_IDS): boolean {
+    return countCompletedSteps(draft, stepIds) >= stepIds.length;
 }
 
-export function clearAnswersFromIndex(draft: Draft, fromIndex: number): void {
-    for (let i = fromIndex; i < INTERVIEW_STEP_COUNT; i += 1) {
-        const stepId = INTERVIEW_STEP_IDS[i];
+export function clearAnswersFromIndex(
+    draft: Draft,
+    fromIndex: number,
+    stepIds: readonly string[] = DEFAULT_STEP_IDS
+): void {
+    for (let i = fromIndex; i < stepIds.length; i += 1) {
+        const stepId = stepIds[i];
         if (stepId === 'm4') draft.m4 = undefined;
+        else if (stepId === 'm_clarify') draft.m_clarify = undefined;
         else delete (draft as Record<string, unknown>)[stepId];
     }
 }
 
-/** True when draft has answer keys but none form a valid consecutive prefix from m1. */
-export function hasOrphanDraftAnswers(draft: Draft): boolean {
-    if (countCompletedSteps(draft) > 0) return false;
-    return INTERVIEW_STEP_IDS.some((stepId) => {
+export function hasOrphanDraftAnswers(draft: Draft, stepIds: readonly string[] = DEFAULT_STEP_IDS): boolean {
+    if (countCompletedSteps(draft, stepIds) > 0) return false;
+    return stepIds.some((stepId) => {
         if (stepId === 'm4') return getSelectedMulti(draft).length > 0;
-        return draft[stepId] !== undefined;
+        if (stepId === 'm_clarify') return draft.m_clarify !== undefined;
+        return draft[stepId as keyof Draft] !== undefined;
     });
 }
 
-/** Answers for steps strictly before stepIndex (used when fetching that step from the API). */
 export function buildPriorAnswersBeforeStep(
     draft: Draft,
-    stepIndex: number
+    stepIndex: number,
+    stepIds: readonly string[] = DEFAULT_STEP_IDS
 ): Partial<InterviewAnswers> {
     const answers: Partial<InterviewAnswers> = {};
     for (let i = 0; i < stepIndex; i += 1) {
-        const stepId = INTERVIEW_STEP_IDS[i];
+        const stepId = stepIds[i];
         if (stepId === 'm4') {
             if (draft.m4?.length) answers.m4 = draft.m4;
+        } else if (stepId === 'm_clarify') {
+            if (draft.m_clarify) answers.m_clarify = draft.m_clarify;
         } else {
-            const value = draft[stepId];
-            if (value) answers[stepId] = value;
+            const value = draft[stepId as keyof Draft];
+            if (value && !Array.isArray(value)) {
+                (answers as Record<string, InterviewOption>)[stepId] = value as InterviewOption;
+            }
         }
     }
     return answers;

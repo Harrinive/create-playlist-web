@@ -35,6 +35,21 @@ export const Q1_COVERAGE_REGIONS = [
         id: 'restless-charged',
         territory: 'solo but wired — can\'t sleep, angry walk, pre-show hallway, night run',
         genreReach: 'alt-rock, charged R&B, post-punk energy, restless electronic'
+    },
+    {
+        id: 'rhythm-social',
+        territory: 'block party on sidewalk · kitchen everyone moving · parade drum two streets away',
+        genreReach: 'reggae, ska, afrobeat, latin social dance mood, funk'
+    },
+    {
+        id: 'edge-charged',
+        territory: 'basement door bass in chest · parking lot after show · hallway before something breaks',
+        genreReach: 'punk, metal-adjacent drive, post-punk, noise-rock'
+    },
+    {
+        id: 'elsewhere-transit',
+        territory: 'bus in unfamiliar city · night market alley · airport gate 5am',
+        genreReach: 'world lounge, city-pop mood, travel ambient, global pop'
     }
 ] as const;
 
@@ -150,10 +165,10 @@ Poetic main line first; add a short **gloss** in parentheses ONLY when the main 
         'M4 (avoid): multi-select negatives; MUST include id "none" with open/surprise-me meaning. Poetic main lines are fine — add glossEn/glossZh on every non-"none" option that does not already name the reject plainly (see M4 avoid gloss block).',
 
     q1Draft:
-        'Q1: use 6–8 options when plan lists ≥5 q1RegionsToCover; each option maps to a distinct region — include kinetic-high and social-mid scenes, not only quiet/intimate. Each chip = unique scene × social heat × energy cell — no two quiet-solo domestic variants. Include ≥1 non-domestic scene (transit, street, venue, nature).',
+        'Q1: use 8–10 options when plan lists ≥5 q1RegionsToCover; each option maps to a distinct region — include kinetic-high and social-mid scenes, not only quiet/intimate. Each chip = unique scene × social heat × energy cell — no two quiet-solo domestic variants. Include ≥1 non-domestic scene (transit, street, venue, nature).',
 
     q1Fast:
-        'Q1 (scene): 6–8 options partitioning hypothesis space — neutral stem preferred. Cover intimate-still, bittersweet-mid, focus-flow, social-mid, kinetic-high, restless-charged unless prior answers ruled regions out. Include at least one high body-energy / crowd scene; passive ambience ≠ kinetic-high. Each chip = unique scene × social × energy; ≥1 non-domestic (transit, street, outdoor). Before output: privately assign each option to exactly one region id — no two options in the same region; must hit all six regions on a fresh interview.',
+        'Q1 (scene): 8–10 options partitioning hypothesis space — neutral stem preferred. Cover all nine regions unless prior answers ruled regions out. Include at least one high body-energy / crowd scene; passive ambience ≠ kinetic-high. Each chip = unique scene × social × energy; ≥1 non-domestic (transit, street, outdoor). Before output: privately assign each option to exactly one region id — no two options in the same region; must hit all nine regions on a fresh interview.',
 
     q2to4Count: 'Q2–Q4: 4–6 options.',
 
@@ -276,8 +291,9 @@ Paired check: same discriminant in both languages? If either side sounds transla
 5. Draft guidance — stemGuidance + optionGuidance for the draft step. Q1: each option must map to a distinct hypothesis region (partition, not decorate). Q2–M5: each option maps to a distinct cell on the turn's music/mood axis; run pairwise overlap test.`,
 
     planQ1Rules: `Q1 rules:
-- q1RegionsToCover MUST list every major region still plausible — default all six: intimate-still, bittersweet-mid, focus-flow, social-mid, kinetic-high, restless-charged — minus any explicitly ruled out by opening/prior answers.
-- Failure mode to prevent: five low-intimate scenes (kitchen, ferry, corridor ×5) with zero kinetic-high or social-mid → pop/EDM/gym dead before Q2.`,
+- q1RegionsToCover MUST list every major region still plausible — default all nine: intimate-still, bittersweet-mid, focus-flow, social-mid, kinetic-high, restless-charged, rhythm-social, edge-charged, elsewhere-transit — minus any explicitly ruled out by opening/prior answers.
+- Failure mode to prevent: five low-intimate scenes with zero kinetic-high or social-mid → pop/EDM/gym dead before Q2.
+- Output plannedOptionIds (one per region on fresh interview) and optionSlots with regionId per option.`,
 
     planOtherRules: `Other rules:
 - At least one turn per interview should use a lateral hook (color, film mood, texture, memory, object) — set lateralHook true when this turn should.
@@ -323,14 +339,25 @@ Be strict on copy quality — a logically correct but ugly or ungrammatical ques
 
     planOutputSchema: `{
   "gaps": ["m1"],
-  "hypotheses": ["intimate-still", "social-mid", "kinetic-high", "focus-flow", "bittersweet-mid", "restless-charged"],
+  "hypotheses": ["indie folk intimate", "cool jazz lounge", "trip-hop dusk"],
   "axis": "scene x social heat x body energy",
   "sceneBeat": "private 10s film beat — one new sensory detail",
   "lateralHook": false,
   "filterDrops": ["gym-pop motivation", "club drop energy"],
-  "q1RegionsToCover": ["intimate-still", "bittersweet-mid", "focus-flow", "social-mid", "kinetic-high", "restless-charged"],
-  "stemGuidance": "neutral stem — one fresh sensory frame; options carry energy span; do not lock night/quiet unless all options share frame",
-  "optionGuidance": "6–8 immersive scenes; each rules in a different region; include at least one high body-energy / crowd scene"
+  "q1RegionsToCover": ["intimate-still", "bittersweet-mid", "focus-flow", "social-mid", "kinetic-high", "restless-charged", "rhythm-social", "edge-charged", "elsewhere-transit"],
+  "stemGuidance": "neutral stem — one fresh sensory frame; options carry energy span",
+  "optionGuidance": "8–10 immersive scenes; each rules in a different region; include at least one high body-energy / crowd scene",
+  "questionMode": "SceneFeeling (exact enum — NOT dimension names like Emotion or Scene)",
+  "plannedOptionIds": ["porch-rain", "club-door", "..."],
+  "optionSlots": {
+    "porch-rain": { "regionId": "bittersweet-mid" },
+    "club-door": { "regionId": "kinetic-high" }
+  },
+  "coverageRisk": false,
+  "needsGrooveGrain": false,
+  "needsClarification": false,
+  "lastQuestionMode": "avoid (omit on M1–M3; never use \"none\")",
+  "inferredM5Draft": "optional draft sonic floor when hypotheses plural"
 }`,
 
     verifyOutputSchema: `{ "passed": true, "failures": [] }
@@ -372,27 +399,125 @@ const DIMENSION_LINES: Record<string, string> = {
     m4: 'M4 Hard avoids — multi-select negatives. Include "none" for open/surprise me. Skip obvious false positives. Poetic chip wording OK — gloss required on each non-"none" option unless the main line already states the reject plainly.'
 };
 
-export function dimensionGuidance(stepIndex: number): string {
-    const meta = interviewStepMeta(stepIndex);
+export function dimensionGuidance(stepIndex: number, stepId?: string): string {
+    const meta = stepId
+        ? { id: stepId, dimension: { en: stepId }, optionMin: 4, optionMax: 6 }
+        : interviewStepMeta(stepIndex);
     if (!meta) return 'Unknown step';
-    const line = DIMENSION_LINES[meta.id] ?? '';
-    return `${meta.id.toUpperCase()} (${meta.dimension.en}): ${line} Target ${meta.optionMin}–${meta.optionMax} options.`;
+    const line = DIMENSION_LINES[meta.id as keyof typeof DIMENSION_LINES] ?? '';
+    const fullMeta = interviewStepMeta(stepIndex);
+    const min = fullMeta?.optionMin ?? (stepId === 'm1' ? 8 : 4);
+    const max = fullMeta?.optionMax ?? (stepId === 'm1' ? 10 : 6);
+    const dimEn =
+        fullMeta?.dimension.en ??
+        (stepId === 'm_clarify'
+            ? 'Moment'
+            : stepId === 'm5'
+              ? 'Sound'
+              : String(meta.id).toUpperCase());
+    return `${String(meta.id).toUpperCase()} (${dimEn}): ${line} Target ${min}–${max} options.`;
 }
 
-export function turnLabel(stepIndex: number): string {
-    return `Question ${stepIndex + 1} of 5 — ${dimensionGuidance(stepIndex)}`;
+export function turnLabel(stepIndex: number, stepId?: string, totalSteps = 5): string {
+    const id = stepId ?? interviewStepMeta(stepIndex)?.id ?? 'm1';
+    return `Question ${stepIndex + 1} of ${totalSteps} — ${dimensionGuidance(stepIndex, id)}`;
 }
 
 export function isQ1Step(stepIndex: number): boolean {
     return interviewStepMeta(stepIndex)?.id === 'm1';
 }
 
-export function isM5Step(stepIndex: number): boolean {
-    return interviewStepMeta(stepIndex)?.id === 'm5';
+export function isM5Step(_stepIndex: number, stepId?: string): boolean {
+    return stepId === 'm5';
 }
 
 export function isM4Step(stepIndex: number): boolean {
     return interviewStepMeta(stepIndex)?.id === 'm4';
+}
+
+export function sceneFeelingBlock(): string {
+    return `## SceneFeeling mode (M1, M2, M3, m_clarify)
+User copy = concrete film-stills — "that's me here". Never hybrid with ClearDiscriminant or LogicalDecision on the same turn.
+- Stem: one scene beat; options answer the turn axis with sensory images
+- Never put planner slot names on chips (Calm, Restless, Hold, Low energy, Upbeat)
+- User test: can I point at this without translating mood theory or music production?`;
+}
+
+export function concreteM2Block(): string {
+    return `## M2 Emotion — concrete in M1 scene
+Ask: what's true for you **in that place** right now?
+- Stem: advance one beat from M1; same world (night/rain/etc.); not "what's your mood?"
+- Options: sensory micro-moments or small behaviors — one film-still each
+- Planner: distinct emotionSlot + function (validate | challenge | neutral) per option in optionSlots
+- Never put slot names on chips (calm, restless, wistful, etc.)`;
+}
+
+export function concreteM3Block(): string {
+    return `## M3 Energy — body in same scene
+Ask: what is your **body doing** here?
+- Options = body motion in the scene (rocking slow, toe tapping, standing up with keys)
+- Planner: distinct tempoSlot per option (still, sway, walk, drive, on-grid, offbeat)
+- Never tempo labels on chips (Low energy, Upbeat, medium pace)`;
+}
+
+export function logicalDecisionBlock(): string {
+    return `## M3 LogicalDecision — groove grain (needsGrooveGrain)
+Body move main line + mandatory gloss + you-decide / 你来定 option.
+- Example: Heel on the step, steady (even pulse) · Weight shifting side to side (loose sway)
+- Never name reggae, dembow, or genre
+- Must include option id "you-decide" with labelEn "You decide" / labelZh "你来定" — no gloss on you-decide
+- All other options must have glossEn + glossZh decoding groove feel`;
+}
+
+export function clearDiscriminantBlock(): string {
+    return `## ClearDiscriminant mode (M4 avoid, late discriminant)
+- Multi-select negatives for M4; include id "none" for open/surprise me
+- Allowed axes: pace · groove grain · space · vocal presence · avoid
+- Forbidden: poetic sonic stems without gloss · instruments · genre names
+- Prefer scene-grounded copy; include you-decide when discriminant turn`;
+}
+
+export function logicVerifySystemPrompt(): string {
+    return joinSections(
+        'You verify interview LOGIC only — scene frame, partition, slot collision, mode rules, Q1 coverage.',
+        'Output JSON only. Be strict. Cite exact field(s) to fix.',
+        '## Logic checks',
+        `1. Consistency — stem frame matches every option
+2. Advance the scene — stem does NOT caption user's last pick
+3. Partition — each option yields different brief; distinct slots per optionSlots
+4. Q1 — each q1RegionsToCover region has ≥1 option; kinetic-high and non-domestic present
+5. M2/M3 — concrete in scene; no abstract mood/tempo chips
+6. LogicalDecision — you-decide + gloss on others
+7. M4 — includes "none"; gloss on poetic non-none options
+8. Filter drops — no option matches filterDrops`,
+        '## Output',
+        SECTION.verifyOutputSchema
+    );
+}
+
+export function copyVerifySystemPrompt(): string {
+    return joinSections(
+        'You verify bilingual COPY quality only — grammar, poeticity, calque, rhythm, gloss discipline.',
+        'Output JSON only. Be strict. Cite exact field(s) to fix.',
+        '## Copy checks',
+        SECTION.verifyChecks.split('### Copy quality')[1] ?? SECTION.verifyChecks,
+        '## Reference — bilingual copy bar',
+        buildBilingualCopyRules(),
+        '## Output',
+        SECTION.verifyOutputSchema
+    );
+}
+
+export function reviseCopySystemPrompt(): string {
+    return joinSections(
+        'You revise interview question COPY only — fix grammar, calque, rhythm, gloss issues.',
+        'Keep the same dimension, option ids, and interview logic. Return revised JSON only.',
+        '## Bilingual copy',
+        buildBilingualCopyRules(),
+        '## Output',
+        'Respond with JSON only (no markdown fences):',
+        SECTION.draftOutputSchema
+    );
 }
 
 export function m4AvoidGlossBlock(): string {
@@ -649,10 +774,12 @@ export function verifySystemPrompt(): string {
 
 export function buildPlanUserPrompt(
     stepIndex: number,
+    stepId: string,
     priorAnswers: Partial<InterviewAnswers>,
     rejectedStems: string[],
     refresh: boolean,
-    filterHints: string[]
+    filterHints: string[],
+    totalSteps = 4
 ): string {
     const filterBlock =
         filterHints.length > 0
@@ -660,39 +787,47 @@ export function buildPlanUserPrompt(
             : '';
 
     return joinSections(
-        turnLabel(stepIndex),
+        turnLabel(stepIndex, stepId, totalSteps),
         refreshLine(refresh, 'plan'),
         freshInterviewBlock(priorAnswers),
         priorContextBlock(priorAnswers, rejectedStems),
         filterBlock,
-        isQ1Step(stepIndex) ? q1PlanContextBlock() : '',
+        stepId === 'm1' ? q1PlanContextBlock() : '',
         'Return JSON only.'
     );
 }
 
 export function buildDraftUserPrompt(
     stepIndex: number,
+    stepId: string,
     priorAnswers: Partial<InterviewAnswers>,
     rejectedStems: string[],
     refresh: boolean,
     planJson: string,
     optionCount: string,
+    draftBlocks: string[],
     q1RegionsToCover?: string[]
 ): string {
     const q1Block =
-        isQ1Step(stepIndex) && q1RegionsToCover?.length
+        stepId === 'm1' && q1RegionsToCover?.length
             ? q1DraftContextBlock(q1RegionsToCover)
-            : isQ1Step(stepIndex)
+            : stepId === 'm1'
               ? q1CoverageBlock()
               : '';
-    const m5Block = isM5Step(stepIndex) ? m5FeltAxesBlock() : '';
-    const m4Block = isM4Step(stepIndex) ? m4AvoidGlossBlock() : '';
+    const m5Block = stepId === 'm5' ? m5FeltAxesBlock() : '';
+    const m4Block = stepId === 'm4' ? m4AvoidGlossBlock() : '';
+    const plannedIds =
+        planJson.includes('plannedOptionIds')
+            ? `\n## Planned option ids (use exactly these ids)\nExtract plannedOptionIds from the turn plan and use them verbatim.`
+            : '';
 
     return joinSections(
-        turnLabel(stepIndex),
+        turnLabel(stepIndex, stepId),
         refreshLine(refresh, 'draft'),
         freshInterviewBlock(priorAnswers),
         `## Turn plan (private — follow closely)\n${planJson}`,
+        plannedIds,
+        ...draftBlocks,
         q1Block,
         m5Block,
         m4Block,
@@ -719,25 +854,64 @@ export function buildFastUserPrompt(
     );
 }
 
+export function buildLogicVerifyUserPrompt(
+    stepIndex: number,
+    stepId: string,
+    priorAnswers: Partial<InterviewAnswers>,
+    planJson: string,
+    draftJson: string,
+    logicVerifyIntro: string
+): string {
+    const focus =
+        stepId === 'm1'
+            ? q1VerifyContextBlock()
+            : stepId === 'm5'
+              ? `## M5 verification focus\nRun music-mood bridge + felt sonic axis partition.\n\n${m5FeltAxesBlock()}`
+              : stepId === 'm4'
+                ? `## M4 verification focus\nRun avoid-cluster partition + M4 gloss rule.\n\n${m4AvoidGlossBlock()}`
+                : logicVerifyIntro;
+
+    return joinSections(
+        turnLabel(stepIndex, stepId),
+        focus,
+        `## Turn plan\n${planJson}`,
+        `## Draft to verify\n${draftJson}`,
+        `## Prior answers\n${formatPriorAnswers(priorAnswers)}`,
+        'Return JSON only.'
+    );
+}
+
+export function buildCopyVerifyUserPrompt(
+    stepIndex: number,
+    stepId: string,
+    priorAnswers: Partial<InterviewAnswers>,
+    draftJson: string,
+    copyVerifyIntro: string
+): string {
+    return joinSections(
+        turnLabel(stepIndex, stepId),
+        copyVerifyIntro,
+        `## Draft to verify\n${draftJson}`,
+        `## Prior answers\n${formatPriorAnswers(priorAnswers)}`,
+        'Return JSON only.'
+    );
+}
+
+/** @deprecated Use buildLogicVerifyUserPrompt + buildCopyVerifyUserPrompt */
 export function buildVerifyUserPrompt(
     stepIndex: number,
     priorAnswers: Partial<InterviewAnswers>,
     planJson: string,
     draftJson: string
 ): string {
-    return joinSections(
-        turnLabel(stepIndex),
-        isQ1Step(stepIndex)
-            ? q1VerifyContextBlock()
-            : isM5Step(stepIndex)
-              ? `## M5 verification focus\nRun music-mood bridge + felt sonic axis partition + pairwise overlap.\n\n${m5FeltAxesBlock()}`
-              : isM4Step(stepIndex)
-                ? `## M4 verification focus\nRun avoid-cluster partition + M4 gloss rule on every poetic non-"none" option.\n\n${m4AvoidGlossBlock()}`
-                : '## Verification focus\nQ2–Q4 — run caption test, partition check, music-mood bridge, and pairwise overlap.',
-        `## Turn plan\n${planJson}`,
-        `## Draft to verify\n${draftJson}`,
-        `## Prior answers\n${formatPriorAnswers(priorAnswers)}`,
-        'Return JSON only.'
+    const stepId = interviewStepMeta(stepIndex)?.id ?? 'm1';
+    return buildLogicVerifyUserPrompt(
+        stepIndex,
+        stepId,
+        priorAnswers,
+        planJson,
+        draftJson,
+        '## Verification focus\nRun caption test, partition check, music-mood bridge.'
     );
 }
 

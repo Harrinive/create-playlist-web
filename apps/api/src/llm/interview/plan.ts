@@ -1,21 +1,35 @@
 import type { Env } from '../../config.js';
 import { completeChat } from '../../llm-router/index.js';
 import { buildFilterHints } from './filter.js';
-import { buildPlanUserPrompt, planSystemPrompt } from './prompts.js';
+import { buildPlanUserPrompt, planSystemPrompt, Q1_REGION_IDS } from './prompts.js';
+import { resolveInterviewStep } from './resolve-step.js';
 import { extractJson, turnPlanSchema, type InterviewTurnContext, type TurnPlan } from './shared.js';
+
+function defaultQ1Regions(): string[] {
+    return [...Q1_REGION_IDS];
+}
 
 export async function planInterviewTurn(
     env: Env,
     ctx: InterviewTurnContext,
     model?: string
 ): Promise<TurnPlan> {
-    const filterHints = buildFilterHints(ctx.stepIndex, ctx.priorAnswers);
+    const resolved = resolveInterviewStep(
+        ctx.stepIndex,
+        ctx.priorAnswers,
+        ctx.plannerState,
+        ctx.openingContext
+    );
+    const stepId = ctx.stepId ?? resolved.stepId;
+    const filterHints = buildFilterHints(stepId, ctx.priorAnswers, ctx.plannerState);
     const userPrompt = buildPlanUserPrompt(
         ctx.stepIndex,
+        stepId,
         ctx.priorAnswers,
         ctx.rejectedStems,
         ctx.refresh,
-        filterHints
+        filterHints,
+        resolved.totalSteps
     );
 
     const raw = await completeChat(
@@ -33,5 +47,24 @@ export async function planInterviewTurn(
     }
 
     const mergedDrops = [...new Set([...parsed.data.filterDrops, ...filterHints])];
-    return { ...parsed.data, filterDrops: mergedDrops };
+    const plan: TurnPlan = {
+        ...parsed.data,
+        filterDrops: mergedDrops,
+        q1RegionsToCover:
+            stepId === 'm1'
+                ? parsed.data.q1RegionsToCover ?? defaultQ1Regions()
+                : parsed.data.q1RegionsToCover,
+        questionMode:
+            parsed.data.questionMode ??
+            (stepId === 'm4' ? 'ClearDiscriminant' : 'SceneFeeling'),
+        needsGrooveGrain:
+            parsed.data.needsGrooveGrain ??
+            (ctx.plannerState?.needsGrooveGrain && stepId === 'm3')
+    };
+
+    if (stepId === 'm3' && plan.needsGrooveGrain) {
+        plan.questionMode = 'LogicalDecision';
+    }
+
+    return plan;
 }

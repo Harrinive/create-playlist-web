@@ -1,6 +1,14 @@
 import type { Env } from '../../config.js';
+import { resolveInterviewDefaultModel } from '../interview-models.js';
 import { completeChat } from '../../llm-router/index.js';
-import { buildVerifyUserPrompt, verifySystemPrompt } from './prompts.js';
+import {
+    buildCopyVerifyUserPrompt,
+    buildLogicVerifyUserPrompt,
+    copyVerifySystemPrompt,
+    logicVerifySystemPrompt
+} from './prompts.js';
+import { resolveTurnConfig } from './turn-config.js';
+import { resolveInterviewStep } from './resolve-step.js';
 import {
     extractJson,
     verifyResultSchema,
@@ -10,6 +18,85 @@ import {
     type VerifyResult
 } from './shared.js';
 
+function resolveStepId(ctx: InterviewTurnContext): string {
+    if (ctx.stepId) return ctx.stepId;
+    return resolveInterviewStep(
+        ctx.stepIndex,
+        ctx.priorAnswers,
+        ctx.plannerState,
+        ctx.openingContext
+    ).stepId;
+}
+
+function resolveVerifyModel(env: Env, model?: string): string | undefined {
+    return env.INTERVIEW_VERIFY_MODEL ?? model ?? resolveInterviewDefaultModel(env) ?? undefined;
+}
+
+async function runVerifyLlm(
+    env: Env,
+    systemPrompt: string,
+    userPrompt: string,
+    model?: string
+): Promise<VerifyResult> {
+    const verifyModel = resolveVerifyModel(env, model);
+    const raw = await completeChat(
+        env,
+        [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ],
+        { model: verifyModel }
+    );
+
+    const parsed = verifyResultSchema.safeParse(extractJson(raw));
+    if (!parsed.success) {
+        return { passed: false, failures: ['verify JSON parse error'] };
+    }
+
+    return parsed.data;
+}
+
+export async function verifyLogicInterviewStep(
+    env: Env,
+    ctx: InterviewTurnContext,
+    plan: TurnPlan,
+    draft: LlmStepDraft,
+    model?: string
+): Promise<VerifyResult> {
+    const stepId = resolveStepId(ctx);
+    const turnConfig = resolveTurnConfig(stepId, plan, ctx.priorAnswers);
+    const userPrompt = buildLogicVerifyUserPrompt(
+        ctx.stepIndex,
+        stepId,
+        ctx.priorAnswers,
+        JSON.stringify(plan, null, 2),
+        JSON.stringify(draft, null, 2),
+        turnConfig.logicVerifyIntro
+    );
+
+    return runVerifyLlm(env, logicVerifySystemPrompt(), userPrompt, model);
+}
+
+export async function verifyCopyInterviewStep(
+    env: Env,
+    ctx: InterviewTurnContext,
+    draft: LlmStepDraft,
+    model?: string
+): Promise<VerifyResult> {
+    const stepId = resolveStepId(ctx);
+    const turnConfig = resolveTurnConfig(stepId, {} as TurnPlan, ctx.priorAnswers);
+    const userPrompt = buildCopyVerifyUserPrompt(
+        ctx.stepIndex,
+        stepId,
+        ctx.priorAnswers,
+        JSON.stringify(draft, null, 2),
+        turnConfig.copyVerifyIntro
+    );
+
+    return runVerifyLlm(env, copyVerifySystemPrompt(), userPrompt, model);
+}
+
+/** @deprecated Use verifyLogicInterviewStep + verifyCopyInterviewStep */
 export async function verifyInterviewStep(
     env: Env,
     ctx: InterviewTurnContext,
@@ -17,26 +104,25 @@ export async function verifyInterviewStep(
     draft: LlmStepDraft,
     model?: string
 ): Promise<VerifyResult> {
-    const userPrompt = buildVerifyUserPrompt(
-        ctx.stepIndex,
-        ctx.priorAnswers,
-        JSON.stringify(plan, null, 2),
-        JSON.stringify(draft, null, 2)
-    );
+    const logic = await verifyLogicInterviewStep(env, ctx, plan, draft, model);
+    if (!logic.passed) return logic;
+    return verifyCopyInterviewStep(env, ctx, draft, model);
+}
 
-    const raw = await completeChat(
-        env,
-        [
-            { role: 'system', content: verifySystemPrompt() },
-            { role: 'user', content: userPrompt }
-        ],
-        { model }
-    );
+export type CombinedVerifyResult = {
+    passed: boolean;
+    failures: string[];
+    logicFailures: string[];
+    copyFailures: string[];
+    deterministicFailures: string[];
+};
 
-    const parsed = verifyResultSchema.safeParse(extractJson(raw));
-    if (!parsed.success) {
-        return { passed: true, failures: [] };
-    }
-
-    return parsed.data;
+export function classifyReviseKind(
+    deterministicFailures: string[],
+    logicFailures: string[],
+    copyFailures: string[]
+): 'all' | 'logic' | 'copy' {
+    if (deterministicFailures.length > 0 || logicFailures.length > 0) return 'all';
+    if (copyFailures.length > 0) return 'copy';
+    return 'all';
 }

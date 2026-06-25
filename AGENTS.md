@@ -16,14 +16,14 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 
 ---
 
-## Current status (2026-06-24)
+## Current status (2026-06-25)
 
 | Item | State |
 |------|-------|
 | Repo / git | **Public** — `Harrinive/create-playlist-web`, `main` |
-| Phase | **Phase 4 complete** — LLM interview + bilingual UX |
+| Phase | **Phase 4 + Interview v3** — LLM interview v3 pipeline + full mode upgrade |
 | Frontend | `apps/web/` — Astro 6, Whono-style UI |
-| Interview | LLM-generated questions (sidebar model picker); EN + 中文; **New question** refresh via API |
+| Interview | v3 dynamic 4–6 steps; scene-grounded M2/M3; **inferred M5**; nine-region Q1; full mode: plan → draft → deterministic + split verify → revise loop |
 | Delivery | `/delivery` — Prompt + per-model tracklist options (Step 2.2.3) |
 | Prompt | Client-side Step 2.1 (`build-prompt.ts`) |
 | Build path | `/build` — OAuth + curate → verify → publish UI |
@@ -89,13 +89,26 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 
 **Phase 4 exit criteria:** met — LLM interview E2E on production with model picker.
 
+### Interview v3 (implemented locally — deploy to verify production)
+
+| Item | Status |
+|------|--------|
+| Dynamic steps `m1→m2→m3→[m_clarify]→m4` (no user M5) | Done — `resolve-step.ts` |
+| Nine-region Q1 (8–10 options) | Done — `prompts.ts` |
+| Turn-config router + scene anchors | Done — `turn-config.ts`, `scene-anchor.ts` |
+| Full mode: deterministic verify + logic/copy LLM verify + revise loop (max 3) | Done — `generate.ts`, `verify-deterministic.ts` |
+| Opaque `plannerState` (sessionStorage) | Done — API + web |
+| Inferred M5 | Done — `infer-sonic.ts`; `/api/interview/complete`, `/api/prompt`, `/api/curate` |
+| Curate hypotheses breadth mandate | Done — `curate.ts` |
+| Tests | Done — `npm run test:verify`, `scripts/test-interview-v3-fixtures.ts` |
+
 ### Next recommended work
 
-1. **Interview redesign** — implement [docs/INTERVIEW-STRATEGY-v3.md](./docs/INTERVIEW-STRATEGY-v3.md) (v2: [INTERVIEW-STRATEGY-v2.md](./docs/INTERVIEW-STRATEGY-v2.md); v1: [INTERVIEW-STRATEGY.md](./docs/INTERVIEW-STRATEGY.md); not yet implemented)
-2. Link from dychen.net nav
-3. Spotify app review for public users (beyond allowlist)
-4. Optional: extract Node `llm-router` to toolbox npm when a second Node consumer exists
-5. Optional: tune interview verify rules or `interview/filter.ts` heuristics
+1. Production smoke test after deploy (v3 interview + inferred M5 curate path)
+2. Opening path UI (API accepts `openingContext`; UI phase 2)
+3. Link from dychen.net nav
+4. Spotify app review for public users (beyond allowlist)
+5. Optional: extract Node `llm-router` to toolbox npm when a second Node consumer exists
 
 ---
 
@@ -106,7 +119,7 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 3. **[docs/PROGRESS.md](./docs/PROGRESS.md)** — shipped work and bug fixes
 4. **[docs/INTERVIEW-STRATEGY.md](./docs/INTERVIEW-STRATEGY.md)** — interview design v1 baseline (implementation pending)
 5. **[docs/INTERVIEW-STRATEGY-v2.md](./docs/INTERVIEW-STRATEGY-v2.md)** — interview v2 (coverage, regions, curate)
-6. **[docs/INTERVIEW-STRATEGY-v3.md](./docs/INTERVIEW-STRATEGY-v3.md)** — interview v3 (**implement this** — concrete scene-grounded M2/M3 + internal slots)
+6. **[docs/INTERVIEW-STRATEGY-v3.md](./docs/INTERVIEW-STRATEGY-v3.md)** — interview v3 (**implemented** — see Interview v3 section above)
 7. **[docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md)** — CF / Fly / Spotify / GitHub settings
 8. **Skill router:** `~/.cursor/skills/create-playlist/SKILL.md`
 9. **For Step 2.2 API mapping:** `step-2-2-mcp-fallback.md` (direct Spotify Web API, not MCP)

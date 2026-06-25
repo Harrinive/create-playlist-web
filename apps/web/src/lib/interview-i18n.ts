@@ -12,7 +12,7 @@ export type BilingualInterviewOption = {
 };
 
 export type BilingualInterviewStep = {
-    id: 'm1' | 'm2' | 'm3' | 'm4' | 'm5';
+    id: 'm1' | 'm2' | 'm3' | 'm4' | 'm5' | 'm_clarify';
     dimension: BilingualText;
     stem: BilingualText;
     stemGloss?: BilingualText;

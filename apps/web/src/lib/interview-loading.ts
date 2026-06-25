@@ -1,34 +1,56 @@
 import type { InterviewAlgorithmMode } from './interview-algorithm-mode';
 import type { Locale } from './locale';
 
-const FULL_STAGE_MS = [2800, 3500, 4500] as const;
-const FULL_PROGRESS = [18, 48, 78, 92] as const;
+type LoadingProfile = {
+    stages: string[];
+    /** Delay (ms) before advancing from stage i to stage i + 1 */
+    stageDelaysMs: number[];
+    /** Progress % at each stage index (same length as stages) */
+    progressAtStage: number[];
+};
 
 type LoadingCopy = {
     badge: string;
     title: string;
-    subtitle: string;
-    stages: [string, string, string, string];
     fastTitle: string;
     fastSubtitle: string;
+    fullModeProfile: LoadingProfile;
 };
 
 const LOADING_COPY: Record<Locale, LoadingCopy> = {
     en: {
         badge: 'Full mode',
         title: 'Crafting your question',
-        subtitle: 'Plan → draft → verify — usually 20–40 seconds.',
-        stages: ['Planning this turn…', 'Writing stem and options…', 'Checking quality…', 'Almost ready…'],
         fastTitle: 'Please wait…',
-        fastSubtitle: 'Preparing your next question'
+        fastSubtitle: 'Preparing your next question',
+        fullModeProfile: {
+            stages: [
+                'Planning this turn…',
+                'Writing stem and options…',
+                'Checking logic and coverage…',
+                'Revising if needed…',
+                'Finishing up…'
+            ],
+            stageDelaysMs: [8000, 20000, 40000, 65000],
+            progressAtStage: [12, 28, 48, 68, 85]
+        }
     },
     zh: {
         badge: '完整模式',
         title: '正在打磨题目',
-        subtitle: '规划 → 出题 → 校验，大约需要 20–40 秒。',
-        stages: ['规划这一题…', '撰写题干与选项…', '校验质量…', '即将完成…'],
         fastTitle: '请稍候…',
-        fastSubtitle: '正在准备下一题'
+        fastSubtitle: '正在准备下一题',
+        fullModeProfile: {
+            stages: [
+                '规划这一题…',
+                '撰写题干与选项…',
+                '校验逻辑与覆盖…',
+                '必要时修订…',
+                '即将完成…'
+            ],
+            stageDelaysMs: [8000, 20000, 40000, 65000],
+            progressAtStage: [12, 28, 48, 68, 85]
+        }
     }
 };
 
@@ -53,10 +75,11 @@ export function mountInterviewLoading(
         return { element: block, stop: () => {} };
     }
 
+    const profile = copy.fullModeProfile;
+
     block.innerHTML = `
         <p class="interview-loading__badge">${copy.badge}</p>
         <p class="interview-loading__text">${copy.title}</p>
-        <p class="interview-loading__hint">${copy.subtitle}</p>
         <div
             class="interview-loading__progress"
             role="progressbar"
@@ -67,7 +90,7 @@ export function mountInterviewLoading(
         >
             <div class="interview-loading__progress-bar"></div>
         </div>
-        <p class="interview-loading__stage" aria-live="polite">${copy.stages[0]}</p>
+        <p class="interview-loading__stage" aria-live="polite">${profile.stages[0]}</p>
     `;
 
     const progress = block.querySelector<HTMLElement>('.interview-loading__progress');
@@ -78,41 +101,53 @@ export function mountInterviewLoading(
     }
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let stageIndex = 0;
-    let progressPct = FULL_PROGRESS[0];
+    let progressPct = profile.progressAtStage[0];
     const timeouts: ReturnType<typeof setTimeout>[] = [];
+    let creepInterval: ReturnType<typeof setInterval> | null = null;
 
     function setProgress(pct: number) {
-        progressPct = pct;
-        progress.setAttribute('aria-valuenow', String(pct));
-        bar.style.width = `${pct}%`;
+        progressPct = Math.min(pct, 96);
+        progress.setAttribute('aria-valuenow', String(progressPct));
+        bar.style.width = `${progressPct}%`;
     }
 
     function setStage(index: number) {
-        stageIndex = index;
-        stageEl.textContent = copy.stages[Math.min(index, copy.stages.length - 1)];
-        setProgress(FULL_PROGRESS[Math.min(index, FULL_PROGRESS.length - 1)]);
+        const clamped = Math.min(index, profile.stages.length - 1);
+        stageEl.textContent = profile.stages[clamped];
+        setProgress(profile.progressAtStage[clamped] ?? progressPct);
     }
 
     setStage(0);
 
     if (!reducedMotion) {
-        for (let i = 0; i < FULL_STAGE_MS.length; i += 1) {
-            const delay = FULL_STAGE_MS.slice(0, i + 1).reduce((sum, ms) => sum + ms, 0);
+        let cumulative = 0;
+        for (let i = 0; i < profile.stageDelaysMs.length; i += 1) {
+            cumulative += profile.stageDelaysMs[i];
+            const stageTarget = i + 1;
             timeouts.push(
                 setTimeout(() => {
-                    setStage(i + 1);
-                }, delay)
+                    setStage(stageTarget);
+                }, cumulative)
             );
         }
+
+        const creepStartMs = profile.stageDelaysMs.reduce((a, b) => a + b, 0) + 2000;
+        timeouts.push(
+            setTimeout(() => {
+                creepInterval = setInterval(() => {
+                    if (progressPct < 96) setProgress(progressPct + 1);
+                }, 4000);
+            }, creepStartMs)
+        );
     }
 
     return {
         element: block,
         stop: () => {
             for (const id of timeouts) clearTimeout(id);
+            if (creepInterval) clearInterval(creepInterval);
             setProgress(100);
-            stageEl.textContent = copy.stages[copy.stages.length - 1];
+            stageEl.textContent = profile.stages[profile.stages.length - 1];
         }
     };
 }

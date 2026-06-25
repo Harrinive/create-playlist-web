@@ -12,7 +12,7 @@ export type BilingualInterviewOption = {
 
 /** LLM-generated interview step — always includes both languages for instant locale switching. */
 export type BilingualInterviewStep = {
-    id: 'm1' | 'm2' | 'm3' | 'm4' | 'm5';
+    id: 'm1' | 'm2' | 'm3' | 'm4' | 'm5' | 'm_clarify';
     dimension: BilingualText;
     stem: BilingualText;
     stemGloss?: BilingualText;
@@ -21,7 +21,47 @@ export type BilingualInterviewStep = {
     options: BilingualInterviewOption[];
 };
 
+/** v3 default sequence — no user-facing m5. */
 export const INTERVIEW_STEP_SEQUENCE = [
+    {
+        id: 'm1' as const,
+        dimension: { en: 'Scene', zh: '场景' },
+        multi: false,
+        optionMin: 8,
+        optionMax: 10
+    },
+    {
+        id: 'm2' as const,
+        dimension: { en: 'Emotion', zh: '情绪' },
+        multi: false,
+        optionMin: 4,
+        optionMax: 6
+    },
+    {
+        id: 'm3' as const,
+        dimension: { en: 'Energy', zh: '能量' },
+        multi: false,
+        optionMin: 4,
+        optionMax: 6
+    },
+    {
+        id: 'm_clarify' as const,
+        dimension: { en: 'Moment', zh: '一刻' },
+        multi: false,
+        optionMin: 4,
+        optionMax: 6
+    },
+    {
+        id: 'm4' as const,
+        dimension: { en: 'Avoid', zh: '避开' },
+        multi: true,
+        optionMin: 4,
+        optionMax: 6
+    }
+] as const;
+
+/** Legacy 5-step sequence including user m5 (backward compat). */
+export const LEGACY_INTERVIEW_STEP_SEQUENCE = [
     {
         id: 'm1' as const,
         dimension: { en: 'Scene', zh: '场景' },
@@ -61,4 +101,8 @@ export const INTERVIEW_STEP_SEQUENCE = [
 
 export function interviewStepMeta(stepIndex: number) {
     return INTERVIEW_STEP_SEQUENCE[stepIndex] ?? null;
+}
+
+export function legacyInterviewStepMeta(stepIndex: number) {
+    return LEGACY_INTERVIEW_STEP_SEQUENCE[stepIndex] ?? null;
 }

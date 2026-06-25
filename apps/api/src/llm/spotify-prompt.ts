@@ -3,6 +3,7 @@ import type { Env } from '../config.js';
 import { completeChat } from '../llm-router/index.js';
 import { resolveInterviewDefaultModel } from './interview-models.js';
 import { extractJson } from './interview/shared.js';
+import type { InterviewPlannerState } from '../types/interview-planner.js';
 
 export type PromptInterviewOption = {
     id: string;
@@ -14,7 +15,8 @@ export type PromptInterviewAnswers = {
     m1: PromptInterviewOption;
     m2: PromptInterviewOption;
     m3: PromptInterviewOption;
-    m5: PromptInterviewOption;
+    m5?: PromptInterviewOption;
+    m_clarify?: PromptInterviewOption;
     m4: PromptInterviewOption[];
 };
 
@@ -28,7 +30,8 @@ Rules (mandatory):
 - English only — translate any non-English interview answers into natural, idiomatic English
 - 4–8 sentences forming one coherent paragraph — flowing prose, NOT a fill-in template, NOT bullet points, NOT labeled fields like "Scene:" or "Emotion:"
 - ~500 characters when possible (Spotify beta limit); never exceed 800 characters
-- Must include: scene or activity anchor (M1), primary emotional texture (M2), energy or tempo (M3), concrete sonic/timbre cues (M5), explicit avoid clause (M4 when present)
+- Must include: scene or activity anchor (M1), primary emotional texture (M2), energy or tempo (M3), concrete sonic/timbre cues (M5 inferred), explicit avoid clause (M4 when present)
+- When plural hypotheses are given, say the playlist is open to those clusters — not one genre lane only
 - Preserve the user's evocative metaphors and sensory detail after translating — use their phrasing where it reads naturally in English
 - Sonic cues must be concrete (instruments, texture, space) — not vague "good vibes"
 - No filler ("perfect playlist", "vibes only", "curated for you")
@@ -42,7 +45,7 @@ const DIMENSION_LABELS: Record<string, string> = {
     m1: 'Scene / activity (M1)',
     m2: 'Emotional texture (M2)',
     m3: 'Energy / tempo (M3)',
-    m5: 'Sonic texture (M5)',
+    m5: 'Sonic texture (M5 inferred)',
     m4: 'Avoid (M4)'
 };
 
@@ -56,9 +59,16 @@ function formatAnswersBlock(answers: PromptInterviewAnswers): string {
     const lines = [
         `${DIMENSION_LABELS.m1}: ${englishLine(answers.m1)}`,
         `${DIMENSION_LABELS.m2}: ${englishLine(answers.m2)}`,
-        `${DIMENSION_LABELS.m3}: ${englishLine(answers.m3)}`,
-        `${DIMENSION_LABELS.m5}: ${englishLine(answers.m5)}`
+        `${DIMENSION_LABELS.m3}: ${englishLine(answers.m3)}`
     ];
+
+    if (answers.m5) {
+        lines.push(`${DIMENSION_LABELS.m5}: ${englishLine(answers.m5)}`);
+    }
+
+    if (answers.m_clarify) {
+        lines.push(`Clarifying moment: ${englishLine(answers.m_clarify)}`);
+    }
 
     const avoids = answers.m4
         .filter((item) => item.id !== 'none')
@@ -83,6 +93,7 @@ function normalizeParagraph(text: string): string {
 export async function generateSpotifyPrompt(
     env: Env,
     answers: PromptInterviewAnswers,
+    plannerState?: InterviewPlannerState | null,
     model?: string
 ): Promise<string> {
     const resolvedModel = model ?? resolveInterviewDefaultModel(env);
@@ -90,9 +101,14 @@ export async function generateSpotifyPrompt(
         throw new Error('No interview model configured on this server');
     }
 
+    const hypothesesBlock =
+        plannerState?.hypotheses?.length && plannerState.hypotheses.length > 1
+            ? `\nHypotheses (keep playlist open to all): ${plannerState.hypotheses.join(', ')}`
+            : '';
+
     const userPrompt = `Write one Spotify Prompted Playlist paragraph from these interview answers.
 
-${formatAnswersBlock(answers)}
+${formatAnswersBlock(answers)}${hypothesesBlock}
 
 Weave the dimensions into natural sentences — not a checklist. Output JSON only.`;
 

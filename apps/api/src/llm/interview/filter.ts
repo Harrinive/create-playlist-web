@@ -1,5 +1,5 @@
 import type { InterviewAnswers } from '../../types/interview.js';
-import { INTERVIEW_STEP_SEQUENCE } from '../../types/interview-step.js';
+import type { InterviewPlannerState } from '../../types/interview-planner.js';
 
 function labelBlob(prior: Partial<InterviewAnswers>): string {
     const parts: string[] = [];
@@ -17,12 +17,10 @@ function hasAny(blob: string, needles: string[]): boolean {
 
 /** Deterministic filter hints from skill § Contextual option filtering (heuristic). */
 export function buildFilterHints(
-    stepIndex: number,
-    prior: Partial<InterviewAnswers>
+    stepId: string,
+    prior: Partial<InterviewAnswers>,
+    planner?: InterviewPlannerState | null
 ): string[] {
-    const meta = INTERVIEW_STEP_SEQUENCE[stepIndex];
-    if (!meta) return [];
-
     const blob = labelBlob(prior);
     const hints: string[] = [];
     const intimate = hasAny(blob, [
@@ -68,7 +66,13 @@ export function buildFilterHints(
     ]);
     const melancholy = hasAny(blob, ['melanchol', 'sad', 'wistful', 'lonely', '怅', '孤独', '伤感']);
 
-    if (meta.id === 'm3') {
+    const m1Region = planner?.m1RegionId ?? '';
+    const edgeCharged =
+        m1Region === 'edge-charged' ||
+        m1Region === 'restless-charged' ||
+        hasAny(blob, ['basement', 'parking lot', 'after show', '地下', '停车场']);
+
+    if (stepId === 'm3') {
         if (intimate || calm) {
             hints.push('Drop restless / need-motion / high-forward-push energy options.');
         }
@@ -80,7 +84,7 @@ export function buildFilterHints(
         }
     }
 
-    if (meta.id === 'm2') {
+    if (stepId === 'm2') {
         if (calm || intimate) {
             hints.push('Drop defiant / charged / hot-urgent emotion options.');
         }
@@ -92,15 +96,19 @@ export function buildFilterHints(
         }
     }
 
-    if (meta.id === 'm1' && hasAny(blob, ['solo', 'sleep', 'intimate', '独处', '睡'])) {
+    if (stepId === 'm1' && hasAny(blob, ['solo', 'sleep', 'intimate', '独处', '睡'])) {
         hints.push('Drop crowded house-party / club-door scene options unless opening widened the frame.');
     }
 
-    if (meta.id === 'm4') {
-        if (intimate || calm) {
+    if (stepId === 'm4') {
+        if (edgeCharged) {
+            hints.push(
+                'Do NOT drop aggressive / distortion / loud avoids — edge-charged or restless-charged scene may still need them.'
+            );
+        } else if (intimate || calm || m1Region === 'intimate-still') {
             hints.push('Drop gym / club / aggressive workout avoids — already implied by calm intimate scene.');
         }
-        if (!kinetic) {
+        if (!kinetic && !edgeCharged) {
             hints.push('Keep M4 avoids discriminating — drop options that are already ruled out by prior picks.');
         }
         hints.push(
