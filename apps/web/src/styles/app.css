@@ -350,6 +350,13 @@
     font-family: var(--font-copy);
 }
 
+/* U+2192 is outside self-hosted LXGW/Noto subsets — use a system face for arrows. */
+.symbol-arrow {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
 .intro-lead {
     margin: 0 0 24px;
     color: var(--muted);

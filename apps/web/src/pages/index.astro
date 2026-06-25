@@ -5,8 +5,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
 <BaseLayout>
     <p class="page-kicker">
-        <span data-locale="en">Mood → music</span>
-        <span data-locale="zh" hidden>氛围 → 音乐</span>
+        <span data-locale="en">Mood <span class="symbol-arrow" aria-hidden="true">→</span> music</span>
+        <span data-locale="zh" hidden>氛围 <span class="symbol-arrow" aria-hidden="true">→</span> 音乐</span>
     </p>
     <h1 class="page-title">
         <span data-locale="en">{siteConfig.homeHeading.en}</span>
