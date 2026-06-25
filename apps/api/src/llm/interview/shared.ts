@@ -4,12 +4,16 @@ import type { InterviewAnswers } from '../../types/interview.js';
 export const llmOptionSchema = z.object({
     id: z.string().min(1),
     labelEn: z.string().min(1),
-    labelZh: z.string().min(1)
+    labelZh: z.string().min(1),
+    glossEn: z.string().min(1).optional(),
+    glossZh: z.string().min(1).optional()
 });
 
 export const llmStepSchema = z.object({
     stemEn: z.string().min(1),
     stemZh: z.string().min(1),
+    stemGlossEn: z.string().min(1).optional(),
+    stemGlossZh: z.string().min(1).optional(),
     hintEn: z.string().optional(),
     hintZh: z.string().optional(),
     options: z.array(llmOptionSchema).min(3)

@@ -110,15 +110,13 @@ function sanitizeLabel(label: string, locale: ContentLocale): string {
     const trimmed = label.trim();
     if (!trimmed) return trimmed;
 
-    if (locale === 'zh') {
-        const paren = trimmed.indexOf(' (');
-        if (paren > 0) return trimmed.slice(0, paren).trim();
-        return trimmed;
+    const match = trimmed.match(/^(.*?)(?:\s*[（(]([^）)]+)[）)])\s*$/);
+    if (match) {
+        const gloss = match[2].trim();
+        if (gloss) return locale === 'en' ? gloss.toLowerCase() : gloss;
     }
 
-    const trailingEn = trimmed.match(/\(([^)]+)\)\s*$/);
-    if (trailingEn) return trailingEn[1].trim();
-    return trimmed;
+    return locale === 'en' ? trimmed.toLowerCase() : trimmed;
 }
 
 function phrase(

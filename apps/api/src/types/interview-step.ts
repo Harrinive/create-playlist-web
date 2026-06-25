@@ -6,6 +6,8 @@ export type BilingualText = {
 export type BilingualInterviewOption = {
     id: string;
     label: BilingualText;
+    /** Optional clarifier — shown in parentheses when main line is cryptic. */
+    gloss?: BilingualText;
 };
 
 /** LLM-generated interview step — always includes both languages for instant locale switching. */
@@ -13,6 +15,7 @@ export type BilingualInterviewStep = {
     id: 'm1' | 'm2' | 'm3' | 'm4' | 'm5';
     dimension: BilingualText;
     stem: BilingualText;
+    stemGloss?: BilingualText;
     hint?: BilingualText;
     multi: boolean;
     options: BilingualInterviewOption[];

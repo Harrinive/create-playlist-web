@@ -1,4 +1,5 @@
 import type { InterviewAnswers } from './types';
+import { labelForBrief } from './interview-label';
 
 const SCENE_PHRASES: Record<string, string> = {
     hallway: 'standing in a quiet hallway with keys just set down',
@@ -40,7 +41,7 @@ const AVOID_PHRASES: Record<string, string> = {
 };
 
 function phrase(map: Record<string, string>, id: string, fallback: string): string {
-    return map[id] ?? fallback.toLowerCase();
+    return map[id] ?? labelForBrief(fallback, 'en');
 }
 
 /**

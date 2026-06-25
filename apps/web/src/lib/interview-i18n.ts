@@ -8,12 +8,14 @@ export type BilingualText = {
 export type BilingualInterviewOption = {
     id: string;
     label: BilingualText;
+    gloss?: BilingualText;
 };
 
 export type BilingualInterviewStep = {
     id: 'm1' | 'm2' | 'm3' | 'm4' | 'm5';
     dimension: BilingualText;
     stem: BilingualText;
+    stemGloss?: BilingualText;
     hint?: BilingualText;
     multi: boolean;
     options: BilingualInterviewOption[];
@@ -41,6 +43,34 @@ export function fillInterviewBilingual(
     el.innerHTML = `<span class="interview-bilingual__primary">${escapeHtml(primary)}</span><span class="interview-bilingual__secondary">${escapeHtml(secondaryEn)}</span>`;
 }
 
+function glossWrapper(locale: Locale, gloss: string): string {
+    return locale === 'zh' ? `（${gloss}）` : ` (${gloss})`;
+}
+
+/** Poetic main + optional muted parenthetical gloss; optional EN secondary in zh mode. */
+export function fillInterviewLineWithGloss(
+    el: HTMLElement,
+    primary: string,
+    gloss: string | undefined,
+    secondaryEn: string | undefined,
+    locale: Locale
+): void {
+    const glossHtml = gloss?.trim()
+        ? `<span class="interview-option-gloss">${escapeHtml(glossWrapper(locale, gloss.trim()))}</span>`
+        : '';
+
+    if (locale === 'en' || !secondaryEn) {
+        if (glossHtml) {
+            el.innerHTML = `<span class="interview-bilingual__primary">${escapeHtml(primary)}</span>${glossHtml}`;
+        } else {
+            el.textContent = primary;
+        }
+        return;
+    }
+
+    el.innerHTML = `<span class="interview-bilingual__primary">${escapeHtml(primary)}${glossHtml}</span><span class="interview-bilingual__secondary">${escapeHtml(secondaryEn)}</span>`;
+}
+
 export function toDisplayInterviewStep(
     step: BilingualInterviewStep,
     locale: Locale
@@ -49,23 +79,33 @@ export function toDisplayInterviewStep(
     dimension: string;
     stem: string;
     stemEn?: string;
+    stemGloss?: string;
+    stemGlossEn?: string;
     hint?: string;
     hintEn?: string;
     multi: boolean;
-    options: Array<{ id: string; label: string; labelEn?: string }>;
+    options: Array<{ id: string; label: string; labelEn?: string; gloss?: string; glossEn?: string }>;
 } {
     return {
         id: step.id,
         dimension: locale === 'zh' ? step.dimension.zh : step.dimension.en,
         stem: locale === 'en' ? step.stem.en : step.stem.zh,
         stemEn: locale === 'zh' ? step.stem.en : undefined,
+        stemGloss: step.stemGloss
+            ? locale === 'en'
+                ? step.stemGloss.en
+                : step.stemGloss.zh
+            : undefined,
+        stemGlossEn: step.stemGloss && locale === 'zh' ? step.stemGloss.en : undefined,
         hint: step.hint ? (locale === 'en' ? step.hint.en : step.hint.zh) : undefined,
         hintEn: step.hint && locale === 'zh' ? step.hint.en : undefined,
         multi: step.multi,
         options: step.options.map((option) => ({
             id: option.id,
             label: locale === 'en' ? option.label.en : option.label.zh,
-            labelEn: locale === 'zh' ? option.label.en : undefined
+            labelEn: locale === 'zh' ? option.label.en : undefined,
+            gloss: option.gloss ? (locale === 'en' ? option.gloss.en : option.gloss.zh) : undefined,
+            glossEn: option.gloss && locale === 'zh' ? option.gloss.en : undefined
         }))
     };
 }

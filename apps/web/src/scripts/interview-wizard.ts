@@ -2,7 +2,8 @@ import type { InterviewAnswers, InterviewOption } from '../lib/types';
 import type { InterviewStep } from '../lib/interview-meta';
 import { WIZARD_LABELS, INTERVIEW_STEP_COUNT, INTERVIEW_STEP_IDS } from '../lib/interview-meta';
 import { fetchInterviewNext } from '../lib/interview-api';
-import { bilingualStepToDisplay, fillInterviewBilingual } from '../lib/interview-i18n';
+import { bilingualStepToDisplay, fillInterviewBilingual, fillInterviewLineWithGloss } from '../lib/interview-i18n';
+import { combineLabelWithGloss } from '../lib/interview-label';
 import {
     clearLlmSteps,
     readLlmSteps,
@@ -12,6 +13,7 @@ import {
 import { isApiConfigured } from '../lib/api-config';
 import { resolveInterviewModelId } from '../lib/interview-model';
 import { readInterviewAlgorithmMode } from '../lib/interview-algorithm-mode';
+import { mountInterviewLoading, type InterviewLoadingHandle } from '../lib/interview-loading';
 import {
     clearRejectedQuestions,
     recordRejectedQuestion,
@@ -133,26 +135,29 @@ export async function initInterviewWizard() {
     }
 
     stackEl.innerHTML = '';
-    const bootLoading = document.createElement('div');
-    bootLoading.className = 'interview-loading';
-    bootLoading.innerHTML = `
-        <p class="interview-loading__text">${WIZARD_LABELS[localeForError].pleaseWait}</p>
-        <p class="interview-loading__hint">${WIZARD_LABELS[localeForError].preparingQuestion}</p>
-    `;
-    stackEl.appendChild(bootLoading);
+    const bootLoading = mountInterviewLoading(localeForError, readInterviewAlgorithmMode());
+    stackEl.appendChild(bootLoading.element);
 
     let interviewModelId = await resolveInterviewModelId(signal);
     if (!isActive()) return;
     if (!interviewModelId) {
+        bootLoading.stop();
         stackEl.innerHTML = `<p class="help-line">${WIZARD_LABELS[localeForError].apiUnavailable}</p>`;
         return;
     }
 
+    bootLoading.stop();
     stackEl.innerHTML = '';
 
     let locale: Locale = readLocale();
     let steps = resolveStepsForLocale(locale);
     let loading = false;
+    let activeLoading: InterviewLoadingHandle | null = null;
+
+    function dismissLoading() {
+        activeLoading?.stop();
+        activeLoading = null;
+    }
 
     function resolveStepsForLocale(nextLocale: Locale): InterviewStep[] {
         const cached = readLlmSteps();
@@ -180,13 +185,10 @@ export async function initInterviewWizard() {
     }
 
     function createLoadingBlock(): HTMLElement {
-        const block = document.createElement('div');
-        block.className = 'interview-loading';
-        block.innerHTML = `
-            <p class="interview-loading__text">${labels().pleaseWait}</p>
-            <p class="interview-loading__hint">${labels().preparingQuestion}</p>
-        `;
-        return block;
+        dismissLoading();
+        const handle = mountInterviewLoading(locale, readInterviewAlgorithmMode());
+        activeLoading = handle;
+        return handle.element;
     }
 
     function createStepBlock(step: InterviewStep, stepIndex: number, mode: 'active' | 'answered'): HTMLElement {
@@ -200,7 +202,7 @@ export async function initInterviewWizard() {
 
         const stem = document.createElement('h2');
         stem.className = 'interview-step__stem page-title';
-        fillInterviewBilingual(stem, step.stem, step.stemEn, locale);
+        fillInterviewLineWithGloss(stem, step.stem, step.stemGloss, step.stemEn, locale);
 
         block.append(header, stem);
 
@@ -251,7 +253,7 @@ export async function initInterviewWizard() {
         const hint = block.querySelector('.interview-step__hint');
 
         if (label) label.textContent = labels().question(stepIndex + 1, step.dimension);
-        if (stem) fillInterviewBilingual(stem as HTMLElement, step.stem, step.stemEn, locale);
+        if (stem) fillInterviewLineWithGloss(stem as HTMLElement, step.stem, step.stemGloss, step.stemEn, locale);
 
         if (hint) {
             if (step.hint) {
@@ -358,7 +360,7 @@ export async function initInterviewWizard() {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'chip-option';
-                fillInterviewBilingual(btn, option.label, option.labelEn, locale);
+                fillInterviewLineWithGloss(btn, option.label, option.gloss, option.labelEn, locale);
                 if (selectedIds.has(option.id)) btn.classList.add('is-selected');
 
                 btn.addEventListener(
@@ -394,7 +396,7 @@ export async function initInterviewWizard() {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'chip-option';
-            fillInterviewBilingual(btn, option.label, option.labelEn, locale);
+            fillInterviewLineWithGloss(btn, option.label, option.gloss, option.labelEn, locale);
             if (selected?.id === option.id) btn.classList.add('is-selected');
 
             btn.addEventListener(
@@ -465,6 +467,21 @@ export async function initInterviewWizard() {
         await advanceFromStep(stepIndex);
     }
 
+    function optionForAnswer(option: InterviewOption): InterviewOption {
+        const answer: InterviewOption = {
+            id: option.id,
+            label: combineLabelWithGloss(option.label, option.gloss, locale)
+        };
+        if (locale === 'zh' && option.labelEn) {
+            answer.labelEn = combineLabelWithGloss(
+                option.labelEn,
+                option.glossEn,
+                'en'
+            );
+        }
+        return answer;
+    }
+
     async function handleSingleSelect(
         step: InterviewStep,
         stepIndex: number,
@@ -480,7 +497,7 @@ export async function initInterviewWizard() {
 
         if (isRetro && !window.confirm(labels().changeConfirm)) return;
 
-        (draft as Record<string, InterviewOption>)[step.id] = option;
+        (draft as Record<string, InterviewOption>)[step.id] = optionForAnswer(option);
         if (isRetro) clearAnswersFromIndex(draft, stepIndex + 1);
         if (isRetro) truncateLlmSteps(stepIndex + 1);
         saveDraft(draft);
@@ -516,6 +533,7 @@ export async function initInterviewWizard() {
             const nextStep = await loadLlmStep(nextIndex, locale, false, interviewModelId, signal);
             if (!isActive()) return;
             loadingEl.remove();
+            dismissLoading();
 
             if (!nextStep) return;
 
@@ -526,6 +544,7 @@ export async function initInterviewWizard() {
             block.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } finally {
             loading = false;
+            dismissLoading();
         }
     }
 
@@ -584,12 +603,14 @@ export async function initInterviewWizard() {
             if (!isActive()) return;
             steps = resolveStepsForLocale(locale);
             loadingEl.remove();
+            dismissLoading();
             const block = createStepBlock(activeStep, completed, 'active');
             stackEl.appendChild(block);
             renderOptions(block, activeStep, completed);
         } catch (error) {
             if (!isActive()) return;
             loadingEl.remove();
+            dismissLoading();
             const message = error instanceof Error ? error.message : 'Could not load question';
             const err = document.createElement('p');
             err.className = 'help-line';
@@ -597,6 +618,7 @@ export async function initInterviewWizard() {
             stackEl.appendChild(err);
         } finally {
             loading = false;
+            dismissLoading();
         }
     }
 

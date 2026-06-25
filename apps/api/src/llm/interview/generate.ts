@@ -25,10 +25,16 @@ function toBilingualStep(stepIndex: number, parsed: LlmStepDraft): BilingualInte
         throw new Error(`Invalid step index ${stepIndex}`);
     }
 
-    let options = parsed.options.map((option) => ({
-        id: option.id,
-        label: { en: option.labelEn.trim(), zh: option.labelZh.trim() }
-    }));
+    let options = parsed.options.map((option) => {
+        const entry: BilingualInterviewStep['options'][number] = {
+            id: option.id,
+            label: { en: option.labelEn.trim(), zh: option.labelZh.trim() }
+        };
+        if (option.glossEn?.trim() && option.glossZh?.trim()) {
+            entry.gloss = { en: option.glossEn.trim(), zh: option.glossZh.trim() };
+        }
+        return entry;
+    });
 
     if (meta.multi) {
         const hasNone = options.some((o) => o.id === 'none');
@@ -53,6 +59,10 @@ function toBilingualStep(stepIndex: number, parsed: LlmStepDraft): BilingualInte
 
     if (parsed.hintEn?.trim() && parsed.hintZh?.trim()) {
         step.hint = { en: parsed.hintEn.trim(), zh: parsed.hintZh.trim() };
+    }
+
+    if (parsed.stemGlossEn?.trim() && parsed.stemGlossZh?.trim()) {
+        step.stemGloss = { en: parsed.stemGlossEn.trim(), zh: parsed.stemGlossZh.trim() };
     }
 
     return step;

@@ -7,6 +7,8 @@ export type InterviewStep =
           dimension: string;
           stem: string;
           stemEn?: string;
+          stemGloss?: string;
+          stemGlossEn?: string;
           hint?: string;
           hintEn?: string;
           multi: false;
@@ -17,6 +19,8 @@ export type InterviewStep =
           dimension: string;
           stem: string;
           stemEn?: string;
+          stemGloss?: string;
+          stemGlossEn?: string;
           hint?: string;
           hintEn?: string;
           multi: true;
