@@ -4,7 +4,6 @@ import {
     type CurateModelOption
 } from '../lib/curate-model';
 import { DELIVERY_COPY } from '../lib/delivery-copy';
-import { saveLastDelivery } from '../lib/last-delivery';
 import { applyLocaleToDocument, readLocale } from '../lib/locale';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
 import { navigateTo } from '../lib/navigate';
@@ -131,15 +130,11 @@ export async function initDeliveryPage() {
             const choice = btn.dataset.delivery;
             const model = btn.dataset.model;
             if (choice === 'prompt') {
-                saveLastDelivery('prompt');
-                document.dispatchEvent(new CustomEvent('last-delivery-changed'));
                 navigateTo('/prompt');
                 return;
             }
             if (choice === 'build') {
                 if (model) saveCurateModel(model);
-                saveLastDelivery('build');
-                document.dispatchEvent(new CustomEvent('last-delivery-changed'));
                 navigateTo('/build');
             }
         },

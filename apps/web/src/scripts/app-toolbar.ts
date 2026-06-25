@@ -17,7 +17,6 @@ import {
     readInterviewAlgorithmMode,
     saveInterviewAlgorithmMode
 } from '../lib/interview-algorithm-mode';
-import { lastResultHref, readLastDelivery } from '../lib/last-delivery';
 import { openOverlay, openWithFade, closeInstant, closeWithTransition } from '../lib/motion';
 
 const LOCALE_OPTIONS: {
@@ -61,7 +60,6 @@ function setLocale(locale: Locale) {
     refreshInterviewModelMenuLabels(interviewModelCatalog);
     updateInterviewAlgorithmLabel();
     refreshInterviewAlgorithmMenuLabels();
-    updateLastResultLink();
     closeMobileToolbar();
     document.dispatchEvent(new CustomEvent('locale-changed', { detail: { locale } }));
 }
@@ -529,20 +527,6 @@ async function bindInterviewModelDropdown() {
     }
 }
 
-function updateLastResultLink() {
-    const link = document.getElementById('last-result-link') as HTMLAnchorElement | null;
-    if (!link) return;
-
-    const delivery = readLastDelivery() ?? 'prompt';
-    link.href = lastResultHref();
-
-    link.querySelectorAll('[data-last-label]').forEach((node) => {
-        const el = node as HTMLElement;
-        el.hidden = el.dataset.lastLabel !== delivery;
-    });
-}
-
-let lastDeliveryListenerBound = false;
 let resizeListenerBound = false;
 
 export async function initAppToolbar() {
@@ -555,16 +539,10 @@ export async function initAppToolbar() {
     bindMobileToolbarMenu();
     await bindInterviewModelDropdown();
     bindInterviewAlgorithmDropdown();
-    updateLastResultLink();
     syncToolbarPanelVisibility();
     if (!resizeListenerBound) {
         resizeListenerBound = true;
         window.addEventListener('resize', syncToolbarPanelVisibility);
-    }
-
-    if (!lastDeliveryListenerBound) {
-        lastDeliveryListenerBound = true;
-        document.addEventListener('last-delivery-changed', updateLastResultLink);
     }
 }
 

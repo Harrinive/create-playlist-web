@@ -7,3 +7,5 @@ export const CURATE_MODEL_KEY = 'create-playlist-curate-model';
 export const INTERVIEW_MODEL_KEY = 'create-playlist-interview-model';
 export const LAST_DELIVERY_KEY = 'create-playlist-last-delivery';
 export const BUILD_RESULT_KEY = 'create-playlist-build-result';
+export const PROMPT_READY_KEY = 'create-playlist-prompt-ready';
+export const PROMPT_TEXT_KEY = 'create-playlist-prompt-text';

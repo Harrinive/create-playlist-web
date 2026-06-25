@@ -37,7 +37,8 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 - Landing (`/`), interview wizard (`/interview`), delivery choice (`/delivery`), prompt (`/prompt`)
 - Session storage for answers; draft resume via `sessionStorage`
 - Bilingual interview labels (Chinese mode); **English prompt output** always
-- Sidebar utilities: language + interview model dropdowns, mobile Menu panel, Start over (interview), Last prompt/result, theme (light / dark / system)
+- Sidebar utilities: language + interview model + algorithm dropdowns, mobile Settings panel, theme (light / dark / system)
+- Home (`/`): progress hub — continue interview, start over, resume last prompt/result (when available)
 - Deployed to Cloudflare Pages (Git connect, root `apps/web`, output `dist`)
 
 ### Phase 2 (complete)

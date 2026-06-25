@@ -15,7 +15,7 @@ import {
 } from '../lib/curate-model';
 import { readLocale } from '../lib/locale';
 import { localizeApiError, localizeBuildError, localizeOAuthError } from '../lib/localized-errors';
-import { saveBuildResult, saveLastDelivery } from '../lib/last-delivery';
+import { readBuildResult, saveBuildResult, type BuildResultSnapshot } from '../lib/last-delivery';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
 import { crossFadePanels, revealPanel } from '../lib/motion';
 
@@ -151,9 +151,6 @@ export function initBuildPage() {
         return;
     }
     if (!answers) return;
-
-    saveLastDelivery('build');
-    document.dispatchEvent(new CustomEvent('last-delivery-changed'));
 
     let lastStatus: BuildStatusState | null = null;
     let lastProgress: BuildProgressState | null = null;
@@ -294,6 +291,32 @@ export function initBuildPage() {
             statusEl.textContent = '';
             lastStatus = null;
         }
+    }
+
+    function renderSavedBuildResult(snapshot: BuildResultSnapshot) {
+        if (signal.aborted) return;
+        if (!resultsEl || !resultsSummary || !resultsOrder) return;
+
+        const locale = readLocale();
+        resultsSummary.innerHTML = `
+            <dl class="build-results__meta">
+                <div class="build-results__meta-row">
+                    <dt>${escapeHtml(resultLabel(locale, 'name'))}</dt>
+                    <dd>${escapeHtml(snapshot.playlistName)}</dd>
+                </div>
+                <div class="build-results__meta-row">
+                    <dt>${escapeHtml(resultLabel(locale, 'link'))}</dt>
+                    <dd><a href="${escapeHtml(snapshot.playlistUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(snapshot.playlistUrl)}</a></dd>
+                </div>
+                <div class="build-results__meta-row">
+                    <dt>${escapeHtml(resultLabel(locale, 'tracks'))}</dt>
+                    <dd>${escapeHtml(String(snapshot.trackCount))}</dd>
+                </div>
+            </dl>
+        `;
+        resultsOrder.innerHTML = '';
+
+        crossFadePanels(resultsEl, [flowEl!, fallbackEl!].filter(Boolean) as HTMLElement[]);
     }
 
     function renderResults(data: PublishResponse) {
@@ -478,6 +501,8 @@ export function initBuildPage() {
             const data = (await response.json()) as MeResponse;
             if (data.authenticated) {
                 await showConnected(data.user);
+                const snapshot = readBuildResult();
+                if (snapshot) renderSavedBuildResult(snapshot);
             } else {
                 await showConnect();
             }

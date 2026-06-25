@@ -1,10 +1,11 @@
 import { isApiConfigured } from '../lib/api-config';
-import { saveLastDelivery } from '../lib/last-delivery';
+import { savePromptText } from '../lib/last-delivery';
 import { readLocale } from '../lib/locale';
 import { localizeApiError } from '../lib/localized-errors';
 import { resolveInterviewModelId } from '../lib/interview-model';
 import { fetchSpotifyPrompt } from '../lib/prompt-api';
 import { crossFadePanels, revealPanel } from '../lib/motion';
+import { performStartOver } from '../lib/start-over';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
 
 const COPY_OK: Record<'en' | 'zh', string> = {
@@ -126,7 +127,7 @@ export function initPromptPage() {
         paragraph = text;
         promptEl.textContent = text;
         crossFadePanels(contentEl, [loadingEl, errorEl, unconfiguredEl]);
-        saveLastDelivery('prompt');
+        savePromptText(text);
         document.dispatchEvent(new CustomEvent('last-delivery-changed'));
     }
 
@@ -173,6 +174,10 @@ export function initPromptPage() {
     );
 
     retryBtn.addEventListener('click', () => void generatePrompt(), { signal });
+
+    root.querySelectorAll<HTMLButtonElement>('[data-action="start-over"]').forEach((btn) => {
+        btn.addEventListener('click', () => performStartOver(), { signal });
+    });
 
     void generatePrompt();
 }

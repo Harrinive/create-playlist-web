@@ -2,6 +2,10 @@
 @import './app.css';
 @import './motion.css';
 
+[hidden] {
+    display: none !important;
+}
+
 @font-face {
     font-family: 'LXGW WenKai Lite';
     src: url('/fonts/lxgw-wenkai-lite-latin.woff2') format('woff2');

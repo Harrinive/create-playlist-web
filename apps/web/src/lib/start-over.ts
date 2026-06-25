@@ -5,6 +5,8 @@ import {
     CURATE_MODEL_KEY,
     DRAFT_KEY,
     LAST_DELIVERY_KEY,
+    PROMPT_READY_KEY,
+    PROMPT_TEXT_KEY,
     SESSION_KEY
 } from './session-keys';
 import { navigateTo } from './navigate';
@@ -16,6 +18,8 @@ export function performStartOver() {
         sessionStorage.removeItem(CURATE_MODEL_KEY);
         sessionStorage.removeItem(LAST_DELIVERY_KEY);
         sessionStorage.removeItem(BUILD_RESULT_KEY);
+        sessionStorage.removeItem(PROMPT_READY_KEY);
+        sessionStorage.removeItem(PROMPT_TEXT_KEY);
         clearRejectedQuestions();
         clearLlmSteps();
         clearAnsweredSteps();

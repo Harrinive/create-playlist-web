@@ -45,8 +45,8 @@ const quoteZhLines = siteConfig.quote.zh.split('\n');
                     aria-expanded="false"
                     aria-controls="app-toolbar-panel"
                 >
-                    <span data-locale="en">Menu</span>
-                    <span data-locale="zh" hidden>菜单</span>
+                    <span data-locale="en">Settings</span>
+                    <span data-locale="zh" hidden>设置</span>
                     <span class="toolbar-dropdown__caret" aria-hidden="true">▾</span>
                 </button>
             </div>
@@ -56,9 +56,9 @@ const quoteZhLines = siteConfig.quote.zh.split('\n');
             <ul
                 id="app-toolbar"
                 class="app-toolbar"
-                aria-label="App actions"
-                data-aria-en="App actions"
-                data-aria-zh="应用操作"
+                aria-label="Settings"
+                data-aria-en="Settings"
+                data-aria-zh="设置"
             >
                 <li class="app-toolbar__item app-toolbar__item--dropdown">
                     <div class="toolbar-dropdown" id="locale-dropdown">
@@ -89,8 +89,8 @@ const quoteZhLines = siteConfig.quote.zh.split('\n');
                             aria-expanded="false"
                             aria-controls="interview-model-menu"
                         >
-                            <span class="toolbar-dropdown__prefix" data-locale="en">Interview</span>
-                            <span class="toolbar-dropdown__prefix" data-locale="zh" hidden>访谈</span>
+                            <span class="toolbar-dropdown__prefix" data-locale="en">Interviewer</span>
+                            <span class="toolbar-dropdown__prefix" data-locale="zh" hidden>访谈者</span>
                             <span class="toolbar-dropdown__value" id="interview-model-label"></span>
                             <span class="toolbar-dropdown__caret" aria-hidden="true">▾</span>
                         </button>
@@ -124,15 +124,6 @@ const quoteZhLines = siteConfig.quote.zh.split('\n');
                             hidden
                         />
                     </div>
-                </li>
-
-                <li class="app-toolbar__item">
-                    <a class="app-toolbar__btn" id="last-result-link" href="/prompt">
-                        <span data-locale="en" data-last-label="prompt">Last prompt</span>
-                        <span data-locale="en" data-last-label="build" hidden>Last result</span>
-                        <span data-locale="zh" data-last-label="prompt" hidden>上次提示词</span>
-                        <span data-locale="zh" data-last-label="build" hidden>上次结果</span>
-                    </a>
                 </li>
             </ul>
         </div>

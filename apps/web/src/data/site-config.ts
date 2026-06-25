@@ -3,9 +3,9 @@ export default {
         en: 'Vibe List',
         zh: '氛围歌单'
     },
-    tagline: {
-        en: 'Five questions. One mood brief. Spotify-ready.',
-        zh: '五个选择。一种氛围。直达 Spotify。'
+    homeHeading: {
+        en: "What's the vibe?",
+        zh: '想要什么氛围？'
     },
     quote: {
         en: 'Five questions.\nOne mood brief.\nSpotify-ready.',

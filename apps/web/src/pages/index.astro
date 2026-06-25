@@ -9,8 +9,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <span data-locale="zh" hidden>氛围 → 音乐</span>
     </p>
     <h1 class="page-title">
-        <span data-locale="en">{siteConfig.tagline.en}</span>
-        <span data-locale="zh" hidden>{siteConfig.tagline.zh}</span>
+        <span data-locale="en">{siteConfig.homeHeading.en}</span>
+        <span data-locale="zh" hidden>{siteConfig.homeHeading.zh}</span>
     </h1>
     <p class="intro-lead">
         <span data-locale="en">{siteConfig.description.en}</span>
@@ -27,14 +27,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                 <span data-home-interview-label="start">开始访谈</span>
                 <span data-home-interview-label="continue" hidden>继续访谈</span>
             </span>
-        </a>
-        <button type="button" class="text-link-button" id="home-start-over" hidden>
-            <span data-locale="en">Start over</span>
-            <span data-locale="zh" hidden>重新开始</span>
-        </button>
-        <a class="text-link-button" href="/prompt">
-            <span data-locale="en">View last prompt</span>
-            <span data-locale="zh" hidden>查看上次提示词</span>
         </a>
     </div>
 

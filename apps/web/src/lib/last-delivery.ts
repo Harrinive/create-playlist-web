@@ -1,6 +1,6 @@
-import { BUILD_RESULT_KEY, LAST_DELIVERY_KEY } from './session-keys';
+import { BUILD_RESULT_KEY, LAST_DELIVERY_KEY, PROMPT_READY_KEY, PROMPT_TEXT_KEY } from './session-keys';
 
-export { BUILD_RESULT_KEY, LAST_DELIVERY_KEY };
+export { BUILD_RESULT_KEY, LAST_DELIVERY_KEY, PROMPT_READY_KEY, PROMPT_TEXT_KEY };
 
 export type LastDelivery = 'prompt' | 'build';
 
@@ -39,6 +39,27 @@ export function readBuildResult(): BuildResultSnapshot | null {
         if (parsed?.playlistUrl && typeof parsed.trackCount === 'number') return parsed;
     } catch {}
     return null;
+}
+
+export function savePromptText(paragraph: string) {
+    try {
+        sessionStorage.setItem(PROMPT_TEXT_KEY, paragraph);
+        sessionStorage.removeItem(PROMPT_READY_KEY);
+        saveLastDelivery('prompt');
+    } catch {}
+}
+
+export function readSavedPromptText(): string | null {
+    try {
+        const text = sessionStorage.getItem(PROMPT_TEXT_KEY);
+        return text?.trim() ? text : null;
+    } catch {}
+    return null;
+}
+
+/** True when a non-empty prompt paragraph was saved this session. */
+export function readPromptReady(): boolean {
+    return readSavedPromptText() !== null;
 }
 
 export function lastResultHref(): string {

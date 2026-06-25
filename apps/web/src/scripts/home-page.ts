@@ -1,23 +1,88 @@
-import { hasInterviewProgress } from '../lib/interview-progress';
+import { getHomeProgressActions } from '../lib/home-progress';
+import type { LastDelivery } from '../lib/last-delivery';
+import { applyLocaleToDocument, readLocale } from '../lib/locale';
+import { normalizeSessionState } from '../lib/session-normalize';
 import { performStartOver } from '../lib/start-over';
 
-export function initHomePage() {
+function clearDynamicHomeActions(root: HTMLElement) {
+    root.querySelectorAll('[data-home-dynamic]').forEach((el) => el.remove());
+}
+
+function mountStartOverButton(): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'text-link-button';
+    btn.dataset.homeDynamic = '';
+    btn.innerHTML = `
+        <span data-locale="en">Start over</span>
+        <span data-locale="zh" hidden>重新开始</span>
+    `;
+    btn.addEventListener('click', () => performStartOver());
+    return btn;
+}
+
+function mountLastOutputLink(href: string, kind: LastDelivery): HTMLAnchorElement {
+    const link = document.createElement('a');
+    link.className = 'text-link-button';
+    link.href = href;
+    link.dataset.homeDynamic = '';
+    link.innerHTML = `
+        <span data-locale="en">
+            <span data-last-label="prompt">View last prompt</span>
+            <span data-last-label="build" hidden>View last result</span>
+        </span>
+        <span data-locale="zh" hidden>
+            <span data-last-label="prompt">查看上次提示词</span>
+            <span data-last-label="build" hidden>查看上次结果</span>
+        </span>
+    `;
+    link.querySelectorAll<HTMLElement>('[data-last-label]').forEach((el) => {
+        el.hidden = el.dataset.lastLabel !== kind;
+    });
+    return link;
+}
+
+export function renderHomeActions() {
     const root = document.getElementById('home-interview-actions');
     if (!root) return;
 
-    const startOverBtn = document.getElementById('home-start-over') as HTMLButtonElement | null;
-    const inProgress = hasInterviewProgress();
+    normalizeSessionState();
+    const actions = getHomeProgressActions();
 
     root.querySelectorAll<HTMLElement>('[data-home-interview-label]').forEach((el) => {
-        el.hidden = el.dataset.homeInterviewLabel !== (inProgress ? 'continue' : 'start');
+        el.hidden = el.dataset.homeInterviewLabel !== actions.interviewLabel;
     });
 
-    if (startOverBtn) startOverBtn.hidden = !inProgress;
+    clearDynamicHomeActions(root);
 
-    if (startOverBtn && startOverBtn.dataset.bound !== 'true') {
-        startOverBtn.dataset.bound = 'true';
-        startOverBtn.addEventListener('click', () => performStartOver());
+    if (actions.showStartOver) {
+        root.appendChild(mountStartOverButton());
     }
+    if (actions.lastOutput) {
+        root.appendChild(mountLastOutputLink(actions.lastOutput.href, actions.lastOutput.kind));
+    }
+
+    applyLocaleToDocument(readLocale());
 }
 
-document.addEventListener('astro:page-load', () => initHomePage());
+let homeListenersBound = false;
+
+function bindHomeListeners() {
+    if (homeListenersBound) return;
+    homeListenersBound = true;
+    document.addEventListener('last-delivery-changed', renderHomeActions);
+    document.addEventListener('locale-changed', renderHomeActions);
+}
+
+export function initHomePage() {
+    if (!document.getElementById('home-interview-actions')) return;
+    renderHomeActions();
+    bindHomeListeners();
+}
+
+function onHomeNavigation() {
+    initHomePage();
+}
+
+document.addEventListener('astro:page-load', onHomeNavigation);
+document.addEventListener('astro:after-swap', onHomeNavigation);
