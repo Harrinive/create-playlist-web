@@ -10,7 +10,7 @@ export type Props = {
 const { title, description } = Astro.props;
 const pageTitle = title ? `${title} | ${siteConfig.title.en}` : siteConfig.title.en;
 const metaDescription = description ?? siteConfig.description.en;
-const faviconVersion = '2';
+const faviconVersion = '3';
 const favicon = (path: string) => `${path}?v=${faviconVersion}`;
 ---
 
