@@ -40,7 +40,7 @@ import {
     recordRejectedQuestion,
     rejectedStemsForStep
 } from '../lib/interview-refresh';
-import { readLocale, type Locale } from '../lib/locale';
+import { applyLocaleToDocument, readLocale, type Locale } from '../lib/locale';
 import { localizeApiError } from '../lib/localized-errors';
 import { safeSessionGet, safeSessionRemove, safeSessionSet } from '../lib/session-storage';
 import { DRAFT_KEY, SESSION_KEY } from '../lib/session-keys';
@@ -161,9 +161,10 @@ export async function initInterviewWizard() {
     const lastFetchedBilingual = new Map<number, BilingualInterviewStep>();
     let storageErrorShown = false;
 
-    function dismissLoading() {
-        activeLoading?.stop();
+    async function dismissLoading() {
+        const handle = activeLoading;
         activeLoading = null;
+        await handle?.stop();
     }
 
     function resolveStepsForLocale(nextLocale: Locale): InterviewStep[] {
@@ -309,7 +310,6 @@ export async function initInterviewWizard() {
 
     function swapLoadingForStep(loadingEl: HTMLElement, block: HTMLElement) {
         loadingEl.replaceWith(block);
-        dismissLoading();
     }
 
     function removeRefreshActions(block: HTMLElement) {
@@ -715,7 +715,7 @@ export async function initInterviewWizard() {
 
             const nextStep = await loadLlmStep(nextIndex, false, interviewModelId);
             if (!isActive()) return;
-            dismissLoading();
+            await dismissLoading();
 
             if (!nextStep) {
                 loadingEl.remove();
@@ -729,7 +729,7 @@ export async function initInterviewWizard() {
         } catch (error) {
             if (!isActive()) return;
             stackEl.querySelector('.interview-loading')?.remove();
-            dismissLoading();
+            await dismissLoading();
             const message = interviewLoadError(error, locale);
             const err = document.createElement('p');
             err.className = 'help-line';
@@ -737,8 +737,25 @@ export async function initInterviewWizard() {
             stackEl.appendChild(err);
         } finally {
             loading = false;
-            dismissLoading();
+            await dismissLoading();
         }
+    }
+
+    function relocalizeStackInPlace() {
+        stackEl.querySelectorAll<HTMLElement>('.interview-step').forEach((block) => {
+            const stepIndex = Number(block.dataset.stepIndex);
+            if (Number.isNaN(stepIndex)) return;
+
+            const step = displayStepFromCache(stepIndex, locale);
+            if (!step) return;
+
+            const isActive = block.classList.contains('interview-step--active');
+            updateStepContent(block, step, stepIndex);
+            renderOptions(block, step, stepIndex, false);
+            if (isActive) {
+                block.classList.add('interview-step--active');
+            }
+        });
     }
 
     async function renderStack(fullReset = false) {
@@ -783,6 +800,16 @@ export async function initInterviewWizard() {
         }
 
         if (allComplete) renderContinueActions();
+
+        if (!allComplete) {
+            const activeIndex = completed;
+            const activeStep = displayStepFromCache(activeIndex, locale);
+            if (activeStep) {
+                const block = createStepBlock(activeStep, activeIndex, 'active');
+                renderOptions(block, activeStep, activeIndex, false);
+                stackEl.appendChild(block);
+            }
+        }
     }
 
     async function ensureActiveQuestion() {
@@ -802,6 +829,7 @@ export async function initInterviewWizard() {
         try {
             const activeStep = await loadLlmStep(completed, false, interviewModelId);
             if (!isActive()) return;
+            await dismissLoading();
             steps = resolveStepsForLocale(locale);
             const block = createStepBlock(activeStep, completed, 'active');
             renderOptions(block, activeStep, completed, true);
@@ -809,7 +837,7 @@ export async function initInterviewWizard() {
         } catch (error) {
             if (!isActive()) return;
             loadingEl.remove();
-            dismissLoading();
+            await dismissLoading();
             const message = interviewLoadError(error, locale);
             const err = document.createElement('p');
             err.className = 'help-line';
@@ -817,7 +845,7 @@ export async function initInterviewWizard() {
             stackEl.appendChild(err);
         } finally {
             loading = false;
-            dismissLoading();
+            await dismissLoading();
         }
     }
 
@@ -828,10 +856,8 @@ export async function initInterviewWizard() {
             if (!detail?.locale || detail.locale === locale) return;
             locale = detail.locale;
             steps = resolveStepsForLocale(locale);
-            void renderStack().then(() => {
-                if (!isActive()) return;
-                return ensureActiveQuestion();
-            });
+            applyLocaleToDocument(locale);
+            relocalizeStackInPlace();
         },
         { signal }
     );

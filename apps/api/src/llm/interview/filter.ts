@@ -100,12 +100,34 @@ export function buildFilterHints(
         hints.push('Drop crowded house-party / club-door scene options unless opening widened the frame.');
     }
 
+    const kineticSocialRegion =
+        m1Region === 'kinetic-high' || m1Region === 'rhythm-social';
+
     if (stepId === 'm4') {
+        if (kineticSocialRegion) {
+            hints.push(
+                'Kinetic/social Q1 region — house/dance warmth and peak-club energy stay reachable unless M2–M3 explicitly ruled them out; do not narrow to folk/ambient from setting nouns alone.'
+            );
+            hints.push(
+                'Do NOT drop club/party/dance/house avoids — kinetic scene may still need those discriminant negatives.'
+            );
+        }
+        if (hasAny(blob, ['cake', 'candle', 'party', '蛋糕', '蜡烛'])) {
+            hints.push(
+                'Drop celebration/party/confetti avoids — scene is already post-party aftermath.'
+            );
+            hints.push(
+                'Drop crowded/busy/bodies-and-noise avoids — post-party aftermath already ruled out party density.'
+            );
+        }
         if (edgeCharged) {
             hints.push(
                 'Do NOT drop aggressive / distortion / loud avoids — edge-charged or restless-charged scene may still need them.'
             );
-        } else if (intimate || calm || m1Region === 'intimate-still') {
+        } else if (
+            !kineticSocialRegion &&
+            (intimate || calm || m1Region === 'intimate-still')
+        ) {
             hints.push('Drop gym / club / aggressive workout avoids — already implied by calm intimate scene.');
         }
         if (!kinetic && !edgeCharged) {

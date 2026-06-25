@@ -18,9 +18,17 @@ export const lastQuestionModeSchema = z.preprocess(
     z.enum(['avoid', 'discriminant', 'skip']).optional()
 );
 
+export const interviewStorySchema = z.object({
+    en: z.string().min(1),
+    zh: z.string().min(1)
+});
+
 export const interviewPlannerStateSchema = z.object({
     version: z.literal(1),
     hypotheses: z.array(z.string()).default([]),
+    reachableGenresNote: z.string().optional(),
+    interviewStory: interviewStorySchema.optional(),
+    deliveryGenreNote: z.string().optional(),
     coverageRisk: z.boolean().default(false),
     m1RegionId: z.string().optional(),
     m1SceneId: z.string().optional(),

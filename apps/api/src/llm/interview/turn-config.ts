@@ -4,10 +4,12 @@ import {
     concreteM2Block,
     concreteM3Block,
     logicalDecisionBlock,
+    m4ExampleBlock,
     m4AvoidGlossBlock,
     m5FeltAxesBlock,
     q1CoverageBlock,
-    sceneFeelingBlock
+    sceneFeelingBlock,
+    storyM1Block
 } from './prompts.js';
 import type { InterviewAnswers } from '../../types/interview.js';
 import { buildSceneAnchorBlock } from './scene-anchor.js';
@@ -30,9 +32,9 @@ export function resolveTurnConfig(
         case 'm1':
             return {
                 questionMode: 'SceneFeeling',
-                draftBlocks: [sceneFeelingBlock(), q1CoverageBlock()],
+                draftBlocks: [sceneFeelingBlock(), storyM1Block(), q1CoverageBlock()],
                 logicVerifyIntro:
-                    '## Logic verify focus\nQ1 nine-region coverage, partition, kinetic/non-domestic.',
+                    '## Logic verify focus\nQ1: 4–6 distinct film-stills; span social heat AND setting type; stem-option coherence; no music words in stem.',
                 copyVerifyIntro: '## Copy verify focus\nEN free verse + ZH 现代诗 for Q1 stem/options.'
             };
 
@@ -45,8 +47,8 @@ export function resolveTurnConfig(
                     concreteM2Block()
                 ],
                 logicVerifyIntro:
-                    '## Logic verify focus\nM2 concrete in M1 scene; distinct emotionSlot per option; no abstract mood chips.',
-                copyVerifyIntro: '## Copy verify focus\nBilingual copy quality for M2 felt moments.'
+                    '## Logic verify focus\nM2: distinct concrete moments in M1 world; register spread when kinetic survives; BGM test; stem-option coherence.',
+                copyVerifyIntro: '## Copy verify focus\nBilingual copy quality for M2 story moments.'
             };
 
         case 'm3':
@@ -58,7 +60,7 @@ export function resolveTurnConfig(
                         logicalDecisionBlock()
                     ],
                     logicVerifyIntro:
-                        '## Logic verify focus\nLogicalDecision: you-decide option + gloss on others; body in scene.',
+                        '## Logic verify focus\nLogicalDecision: you-decide option + gloss on others.',
                     copyVerifyIntro: '## Copy verify focus\nGloss clarity for groove grain options.'
                 };
             }
@@ -70,8 +72,8 @@ export function resolveTurnConfig(
                     concreteM3Block()
                 ],
                 logicVerifyIntro:
-                    '## Logic verify focus\nM3 body in same scene; distinct tempoSlot; not tempo labels on chips.',
-                copyVerifyIntro: '## Copy verify focus\nBilingual copy for body-motion chips.'
+                    '## Logic verify focus\nM3 night-chapter beats; same M1 world; no tempo labels or music-pattern poetry.',
+                copyVerifyIntro: '## Copy verify focus\nBilingual copy for story beats.'
             };
 
         case 'm_clarify':
@@ -86,9 +88,9 @@ export function resolveTurnConfig(
         case 'm4':
             return {
                 questionMode: 'ClearDiscriminant',
-                draftBlocks: [clearDiscriminantBlock(), m4AvoidGlossBlock()],
+                draftBlocks: [clearDiscriminantBlock(), m4ExampleBlock(), m4AvoidGlossBlock()],
                 logicVerifyIntro:
-                    '## Logic verify focus\nM4 avoid partition; includes id "none"; gloss on poetic non-none options.',
+                    '## Logic verify focus\nM4: stem advances M3 prop; distinct trap clusters; includes "none"; gloss decodes traps not mood paraphrase.',
                 copyVerifyIntro: '## Copy verify focus\nM4 gloss decodes reject clusters.'
             };
 

@@ -11,7 +11,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test:verify": "node --import tsx --test src/llm/interview/__tests__/verify-deterministic.test.ts"
+    "test:verify": "node --import tsx --test src/llm/interview/__tests__/verify-deterministic.test.ts src/llm/interview/__tests__/verify-severity.test.ts"
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.21",

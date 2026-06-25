@@ -5,7 +5,9 @@ import type { LlmStepDraft, TurnPlan } from '../shared.js';
 
 const basePlan: TurnPlan = {
     gaps: ['m2'],
+    reachableGenresNote: 'indie folk and cool jazz still reachable; EDM ruled out',
     hypotheses: ['indie', 'jazz'],
+    plannedOptionCount: 2,
     axis: 'emotion',
     sceneBeat: 'porch rain',
     lateralHook: false,
@@ -66,6 +68,41 @@ test('fails abstract mood chip on M2', () => {
     });
     assert.equal(result.passed, false);
     assert.ok(result.failures.some((f) => f.includes('abstract mood')));
+});
+
+test('fails M4 too-* mood-template option id', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        questionMode: 'ClearDiscriminant',
+        optionSlots: {
+            'too-sad': { rejectCluster: 'sad acoustic' },
+            none: { rejectCluster: 'open' }
+        },
+        plannedOptionIds: ['too-sad', 'none']
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'The cups are stacked — what should this NOT sound like?',
+        stemZh: '杯子摞好了——这配乐最不该像什么？',
+        options: [
+            {
+                id: 'too-sad',
+                labelEn: 'Rain on the window',
+                labelZh: '窗上雨',
+                glossEn: 'sad acoustic cliché',
+                glossZh: '伤感木吉他套路'
+            },
+            { id: 'none', labelEn: "None — I'm open", labelZh: '都可以' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm4',
+        plan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('too-*')));
 });
 
 test('fails M4 poetic option without gloss', () => {
@@ -140,4 +177,126 @@ test('fails LogicalDecision without you-decide', () => {
     });
     assert.equal(result.passed, false);
     assert.ok(result.failures.some((f) => f.includes('you-decide')));
+});
+
+test('fails music-pattern word on M3', () => {
+    const draft: LlmStepDraft = {
+        ...baseDraft,
+        options: [
+            { id: 'wistful', labelEn: 'Kick switches — room goes quiet', labelZh: '鼓点切换' },
+            ...baseDraft.options.slice(1)
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm3',
+        plan: basePlan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('music-pattern')));
+});
+
+test('fails stemGloss on scene turns', () => {
+    const draft: LlmStepDraft = {
+        ...baseDraft,
+        stemGlossEn: 'Ask which feeling inside this crowd-moving moment is most like the user.',
+        stemGlossZh: '问人群里哪种感觉最像你。'
+    };
+    const result = verifyDeterministic({
+        stepId: 'm2',
+        plan: basePlan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('stemGloss')));
+});
+
+test('allows duplicate regionId on M2 (no slot collision)', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        optionSlots: {
+            wistful: { regionId: 'kinetic-high' },
+            hopeful: { regionId: 'kinetic-high' }
+        }
+    };
+    const result = verifyDeterministic({
+        stepId: 'm2',
+        plan,
+        draft: baseDraft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, true);
+});
+
+test('fails M2 options inconsistent with prior M1 scene', () => {
+    const draft: LlmStepDraft = {
+        stemEn: 'Which moment feels most like you?',
+        stemZh: '哪个瞬间最像你？',
+        options: [
+            { id: 'keys', labelEn: 'Keys in hand, door still shut', labelZh: '钥匙攥在手里，门还没开' },
+            { id: 'lamp', labelEn: 'Back turned, one last look at the lamp', labelZh: '背过身去，最后看一眼灯' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm2',
+        plan: basePlan,
+        draft,
+        optionMin: 2,
+        optionMax: 6,
+        priorLabels: ['Neon rooftop at dusk, wind across the rail']
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('prior answers')));
+});
+
+test('fails overlapping crowd-mood M2 options from production pattern', () => {
+    const draft: LlmStepDraft = {
+        stemEn: 'In this packed room, which moment feels most like you?',
+        stemZh: '在人挤满的房间里，哪一刻最像你？',
+        options: [
+            {
+                id: 'smile',
+                labelEn: 'A smile opens wide, the room softens',
+                labelZh: '笑开，屋子软下来'
+            },
+            {
+                id: 'glance',
+                labelEn: 'A glance catches, and the air sparks',
+                labelZh: '目光相接，空气带电'
+            },
+            {
+                id: 'shoulders',
+                labelEn: 'Shoulders loosen, and laughter spills out',
+                labelZh: '肩松了，笑涌出来'
+            },
+            {
+                id: 'surge',
+                labelEn: 'The whole room surges, and you go with it',
+                labelZh: '整间屋子涌起来'
+            }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm2',
+        plan: basePlan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(
+        result.failures.some(
+            (f) =>
+                f.includes('overlap') ||
+                f.includes('crowd-mood') ||
+                f.includes('room') ||
+                f.includes('softens') ||
+                f.includes('template')
+        )
+    );
 });

@@ -49,19 +49,55 @@ export function fitDraftOptionCount(
     return { ...draft, options: kept.slice(0, optionMax) };
 }
 
+/** Strip mood-template too-* prefix from M4 planned ids (verify hard-fails too-*). */
+export function sanitizeM4TrapId(id: string): string {
+    if (id === 'none' || id === 'you-decide') return id;
+    if (!/^too-/i.test(id)) return id;
+    const stripped = id.replace(/^too-/i, '').replace(/^-+/, '');
+    return stripped.length > 0 ? stripped : 'playlist-trap';
+}
+
+export function normalizeDraftM4Ids(draft: LlmStepDraft, stepId: string): LlmStepDraft {
+    if (stepId !== 'm4') return draft;
+    return {
+        ...draft,
+        options: draft.options.map((opt) => ({
+            ...opt,
+            id: sanitizeM4TrapId(opt.id)
+        }))
+    };
+}
+
 /** Cap planner output so verify does not inherit oversized option lists. */
 export function fitPlanOptionIds(
     plan: TurnPlan,
     stepId: string,
     optionMax: number
 ): TurnPlan {
-    const ids = plan.plannedOptionIds;
-    if (!ids || ids.length <= optionMax) return plan;
+    let next = plan;
+    if (stepId === 'm4' && plan.plannedOptionIds?.length) {
+        const idMap = new Map<string, string>();
+        for (const id of plan.plannedOptionIds) {
+            idMap.set(id, sanitizeM4TrapId(id));
+        }
+        const plannedOptionIds = plan.plannedOptionIds.map((id) => idMap.get(id) ?? id);
+        const optionSlots: TurnPlan['optionSlots'] = {};
+        for (const [key, slot] of Object.entries(plan.optionSlots ?? {})) {
+            optionSlots[sanitizeM4TrapId(key)] = slot;
+        }
+        next = { ...plan, plannedOptionIds, optionSlots };
+    }
 
-    const trimmed = ids.slice(0, optionMax);
-    const slots = { ...plan.optionSlots };
+    const cap = next.plannedOptionCount
+        ? Math.min(next.plannedOptionCount, optionMax)
+        : optionMax;
+    const ids = next.plannedOptionIds;
+    if (!ids || ids.length <= cap) return next;
+
+    const trimmed = ids.slice(0, cap);
+    const slots = { ...next.optionSlots };
     for (const key of Object.keys(slots)) {
         if (!trimmed.includes(key)) delete slots[key];
     }
-    return { ...plan, plannedOptionIds: trimmed, optionSlots: slots };
+    return { ...next, plannedOptionIds: trimmed, optionSlots: slots };
 }

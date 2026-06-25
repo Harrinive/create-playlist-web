@@ -11,7 +11,9 @@ const fixtures: Array<{ name: string; stepId: string; plan: TurnPlan; draft: Llm
         stepId: 'm2',
         plan: {
             gaps: ['m2'],
+            reachableGenresNote: 'indie folk and cool jazz still reachable',
             hypotheses: ['indie folk', 'cool jazz'],
+            plannedOptionCount: 4,
             axis: 'emotion in scene',
             sceneBeat: 'porch rain cooling',
             lateralHook: false,

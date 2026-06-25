@@ -7,6 +7,10 @@ type LoadingProfile = {
     stageDelaysMs: number[];
     /** Progress % at each stage index (same length as stages) */
     progressAtStage: number[];
+    /** Stage index for "Checking logic and coverage…" */
+    verifyStageIndex: number;
+    /** Minimum time (ms) to show verify stage before dismiss */
+    verifyMinDisplayMs: number;
 };
 
 type LoadingCopy = {
@@ -31,8 +35,10 @@ const LOADING_COPY: Record<Locale, LoadingCopy> = {
                 'Revising if needed…',
                 'Finishing up…'
             ],
-            stageDelaysMs: [8000, 20000, 40000, 65000],
-            progressAtStage: [12, 28, 48, 68, 85]
+            stageDelaysMs: [2000, 4500, 9000, 14000],
+            progressAtStage: [12, 28, 52, 72, 88],
+            verifyStageIndex: 2,
+            verifyMinDisplayMs: 700
         }
     },
     zh: {
@@ -48,15 +54,18 @@ const LOADING_COPY: Record<Locale, LoadingCopy> = {
                 '必要时修订…',
                 '即将完成…'
             ],
-            stageDelaysMs: [8000, 20000, 40000, 65000],
-            progressAtStage: [12, 28, 48, 68, 85]
+            stageDelaysMs: [2000, 4500, 9000, 14000],
+            progressAtStage: [12, 28, 52, 72, 88],
+            verifyStageIndex: 2,
+            verifyMinDisplayMs: 700
         }
     }
 };
 
 export type InterviewLoadingHandle = {
     element: HTMLElement;
-    stop: () => void;
+    /** Await before removing the loading UI so verify stage is visible. */
+    stop: () => Promise<void>;
 };
 
 export function mountInterviewLoading(
@@ -72,7 +81,7 @@ export function mountInterviewLoading(
             <p class="interview-loading__text">${copy.fastTitle}</p>
             <p class="interview-loading__hint">${copy.fastSubtitle}</p>
         `;
-        return { element: block, stop: () => {} };
+        return { element: block, stop: async () => {} };
     }
 
     const profile = copy.fullModeProfile;
@@ -97,11 +106,12 @@ export function mountInterviewLoading(
     const bar = block.querySelector<HTMLElement>('.interview-loading__progress-bar');
     const stageEl = block.querySelector<HTMLElement>('.interview-loading__stage');
     if (!progress || !bar || !stageEl) {
-        return { element: block, stop: () => {} };
+        return { element: block, stop: async () => {} };
     }
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let progressPct = profile.progressAtStage[0];
+    let currentStageIndex = 0;
     const timeouts: ReturnType<typeof setTimeout>[] = [];
     let creepInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -113,6 +123,7 @@ export function mountInterviewLoading(
 
     function setStage(index: number) {
         const clamped = Math.min(index, profile.stages.length - 1);
+        currentStageIndex = clamped;
         stageEl.textContent = profile.stages[clamped];
         setProgress(profile.progressAtStage[clamped] ?? progressPct);
     }
@@ -143,9 +154,17 @@ export function mountInterviewLoading(
 
     return {
         element: block,
-        stop: () => {
+        stop: async () => {
             for (const id of timeouts) clearTimeout(id);
             if (creepInterval) clearInterval(creepInterval);
+
+            if (currentStageIndex < profile.verifyStageIndex) {
+                setStage(profile.verifyStageIndex);
+                await new Promise((resolve) => {
+                    setTimeout(resolve, profile.verifyMinDisplayMs);
+                });
+            }
+
             setProgress(100);
             stageEl.textContent = profile.stages[profile.stages.length - 1];
         }

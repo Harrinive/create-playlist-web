@@ -17,6 +17,7 @@ export type InterviewNextResponse = {
     model: string | null;
     modelLabel: string | null;
     algorithmMode?: InterviewAlgorithmMode;
+    deliveryGenreNote?: string | null;
 };
 
 export type InterviewModelsResponse = {

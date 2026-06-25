@@ -6,6 +6,8 @@ import {
 import { DELIVERY_COPY } from '../lib/delivery-copy';
 import { applyLocaleToDocument, readLocale } from '../lib/locale';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
+import { readPlannerState } from '../lib/interview-session';
+import { deliveryText } from '../lib/delivery-copy';
 import { navigateTo } from '../lib/navigate';
 
 const abortByRoot = new WeakMap<HTMLElement, AbortController>();
@@ -93,6 +95,7 @@ export async function initDeliveryPage() {
     const missingEl = document.getElementById('delivery-missing');
     const contentEl = document.getElementById('delivery-content');
     const optionsEl = document.getElementById('delivery-options');
+    const genreNoteEl = document.getElementById('delivery-genre-note');
 
     if (!root || !missingEl || !contentEl || !optionsEl) return;
 
@@ -121,6 +124,18 @@ export async function initDeliveryPage() {
     );
 
     applyLocaleToDocument(readLocale());
+
+    const planner = readPlannerState();
+    const genreNote =
+        planner?.deliveryGenreNote?.trim() || planner?.reachableGenresNote?.trim();
+    if (genreNoteEl && genreNote) {
+        const locale = readLocale();
+        const prefix = deliveryText('genreNotePrefix', locale);
+        genreNoteEl.textContent = `${prefix} ${genreNote}`;
+        genreNoteEl.hidden = false;
+    } else if (genreNoteEl) {
+        genreNoteEl.hidden = true;
+    }
 
     optionsEl.addEventListener(
         'click',

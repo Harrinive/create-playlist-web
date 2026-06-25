@@ -30,7 +30,11 @@ export async function draftInterviewStep(
     );
     const stepId = ctx.stepId ?? resolved.stepId;
     const meta = stepMetaForId(stepId);
-    const optionCount = `${meta.optionMin}–${meta.optionMax}`;
+    const plannedCount = plan.plannedOptionCount;
+    const optionCount =
+        plannedCount >= meta.optionMin && plannedCount <= meta.optionMax
+            ? String(plannedCount)
+            : `${meta.optionMin}–${meta.optionMax}`;
     const turnConfig = resolveTurnConfig(stepId, plan, ctx.priorAnswers);
     const totalSteps = ctx.plannerState?.stepIds?.length ?? resolved.totalSteps;
 

@@ -10,6 +10,9 @@ export type OpeningContext = {
 export type InterviewPlannerState = {
     version: 1;
     hypotheses: string[];
+    reachableGenresNote?: string;
+    interviewStory?: { en: string; zh: string };
+    deliveryGenreNote?: string;
     coverageRisk: boolean;
     m1RegionId?: string;
     m1SceneId?: string;

@@ -17,7 +17,7 @@ export const llmStepSchema = z.object({
     stemGlossZh: z.string().min(1).optional(),
     hintEn: z.string().optional(),
     hintZh: z.string().optional(),
-    options: z.array(llmOptionSchema).min(3)
+    options: z.array(llmOptionSchema).min(2)
 });
 
 export type LlmStepDraft = z.infer<typeof llmStepSchema>;
@@ -69,9 +69,41 @@ export const optionSlotSchema = z.object({
 
 export type OptionSlot = z.infer<typeof optionSlotSchema>;
 
-export const turnPlanSchema = z.object({
+function preprocessTurnPlan(val: unknown): unknown {
+    if (typeof val !== 'object' || val === null) return val;
+    const o = val as Record<string, unknown>;
+    const plannedIds = o.plannedOptionIds;
+    const idCount = Array.isArray(plannedIds) ? plannedIds.length : 0;
+
+    return {
+        ...o,
+        gaps: Array.isArray(o.gaps) ? o.gaps : [],
+        reachableGenresNote:
+            typeof o.reachableGenresNote === 'string' && o.reachableGenresNote.trim()
+                ? o.reachableGenresNote
+                : 'Reachable genres still open based on prior answers.',
+        hypotheses:
+            Array.isArray(o.hypotheses) && o.hypotheses.length >= 2
+                ? o.hypotheses
+                : ['mixed', 'open'],
+        plannedOptionCount:
+            typeof o.plannedOptionCount === 'number'
+                ? o.plannedOptionCount
+                : idCount >= 2
+                  ? Math.min(6, idCount)
+                  : 4,
+        filterDrops: Array.isArray(o.filterDrops) ? o.filterDrops : [],
+        optionSlots: o.optionSlots && typeof o.optionSlots === 'object' ? o.optionSlots : {}
+    };
+}
+
+export const turnPlanSchema = z.preprocess(
+    preprocessTurnPlan,
+    z.object({
     gaps: z.array(z.string()),
+    reachableGenresNote: z.string().min(1),
     hypotheses: z.array(z.string()).min(2),
+    plannedOptionCount: z.number().int().min(2).max(6),
     axis: z.string().min(1),
     sceneBeat: z.string().min(1),
     lateralHook: z.boolean(),
@@ -81,15 +113,16 @@ export const turnPlanSchema = z.object({
     optionGuidance: z.string().min(1),
     questionMode: questionModeSchema.default('SceneFeeling'),
     optionSlots: z.record(z.string(), optionSlotSchema).default({}),
-    plannedOptionIds: z.array(z.string()).min(3).optional(),
+    plannedOptionIds: z.array(z.string()).min(2).max(6).optional(),
     m1SceneAnchor: z.string().optional(),
     coverageRisk: z.boolean().optional(),
     needsGrooveGrain: z.boolean().optional(),
     needsClarification: z.boolean().optional(),
     lastQuestionMode: lastQuestionModeSchema,
-    inferredM5Draft: z.string().optional(),
+    inferredM5Draft: z.string().nullish(),
     m1RegionId: z.string().optional()
-});
+    })
+);
 
 export type TurnPlan = z.infer<typeof turnPlanSchema>;
 

@@ -101,6 +101,12 @@ export async function generateSpotifyPrompt(
         throw new Error('No interview model configured on this server');
     }
 
+    const storyBlock = plannerState?.interviewStory?.en
+        ? `\nInterview story (prefer this for scene/mood/energy prose):\n${plannerState.interviewStory.en}`
+        : '';
+    const reachableBlock = plannerState?.reachableGenresNote
+        ? `\nReachable genres (from interview): ${plannerState.reachableGenresNote}`
+        : '';
     const hypothesesBlock =
         plannerState?.hypotheses?.length && plannerState.hypotheses.length > 1
             ? `\nHypotheses (keep playlist open to all): ${plannerState.hypotheses.join(', ')}`
@@ -108,7 +114,7 @@ export async function generateSpotifyPrompt(
 
     const userPrompt = `Write one Spotify Prompted Playlist paragraph from these interview answers.
 
-${formatAnswersBlock(answers)}${hypothesesBlock}
+${formatAnswersBlock(answers)}${storyBlock}${reachableBlock}${hypothesesBlock}
 
 Weave the dimensions into natural sentences — not a checklist. Output JSON only.`;
 

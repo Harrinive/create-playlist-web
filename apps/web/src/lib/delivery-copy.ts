@@ -16,7 +16,11 @@ export const DELIVERY_COPY = {
     },
     stepKicker: { en: 'Step 2', zh: '步骤 2' },
     heading: { en: 'What should we deliver?', zh: '你想怎么交付？' },
-    backToInterview: { en: 'Back to interview', zh: '返回访谈' }
+    backToInterview: { en: 'Back to interview', zh: '返回访谈' },
+    genreNotePrefix: {
+        en: 'Based on your interview, this playlist leans toward',
+        zh: '根据你的访谈，歌单可能偏向'
+    }
 } as const satisfies Record<string, Bilingual>;
 
 export function deliveryText(key: keyof typeof DELIVERY_COPY, locale: Locale): string {

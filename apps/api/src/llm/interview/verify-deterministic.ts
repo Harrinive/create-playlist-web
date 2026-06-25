@@ -1,5 +1,8 @@
 import type { LlmStepDraft, TurnPlan } from './shared.js';
 import { Q1_REGION_IDS } from './prompts.js';
+import { verifyGlossAndConcreteness } from './gloss-verify.js';
+import { verifyOptionOverlap } from './option-overlap.js';
+import { verifySceneContinuity } from './scene-continuity.js';
 
 export type DeterministicVerifyInput = {
     stepId: string;
@@ -7,6 +10,7 @@ export type DeterministicVerifyInput = {
     draft: LlmStepDraft;
     optionMin: number;
     optionMax: number;
+    priorLabels?: string[];
 };
 
 export type DeterministicVerifyResult = {
@@ -16,6 +20,9 @@ export type DeterministicVerifyResult = {
 
 const ABSTRACT_MOOD_BAN =
     /\b(calm|restless|hold me here|low energy|upbeat|hold me|numb mood)\b/i;
+
+const MUSIC_PATTERN_BAN =
+    /\b(kick|drop|BPM|bpm|grid|four-on-the-floor|beat switch|nod on the|nodding|thigh keeping|tempo label)\b/i;
 
 const SURVEY_STEM_BAN =
     /what kind of place|how does the track|what does the room take|which scene steps forward|choose the scene/i;
@@ -33,7 +40,7 @@ function isPlainRejectLabel(label: string): boolean {
 
 export function verifyDeterministic(input: DeterministicVerifyInput): DeterministicVerifyResult {
     const failures: string[] = [];
-    const { stepId, plan, draft, optionMin, optionMax } = input;
+    const { stepId, plan, draft, optionMin, optionMax, priorLabels } = input;
     const options = draft.options;
 
     if (options.length < optionMin || options.length > optionMax) {
@@ -62,6 +69,10 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
         failures.push(`stemEn matches survey/meta ban: ${draft.stemEn.slice(0, 60)}`);
     }
 
+    failures.push(...verifyGlossAndConcreteness(stepId, draft));
+    failures.push(...verifyOptionOverlap(stepId, draft));
+    failures.push(...verifySceneContinuity(stepId, draft, priorLabels ?? []));
+
     for (const opt of options) {
         if (wordCountEn(opt.labelEn) > 12) {
             failures.push(`labelEn >12 words on option "${opt.id}": ${opt.labelEn}`);
@@ -71,6 +82,11 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
             if (ABSTRACT_MOOD_BAN.test(opt.labelEn)) {
                 failures.push(
                     `abstract mood/tempo chip on ${stepId} option "${opt.id}": ${opt.labelEn}`
+                );
+            }
+            if (MUSIC_PATTERN_BAN.test(opt.labelEn)) {
+                failures.push(
+                    `music-pattern word on ${stepId} option "${opt.id}": ${opt.labelEn}`
                 );
             }
         }
@@ -83,6 +99,11 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
         }
         for (const opt of options) {
             if (opt.id === 'none') continue;
+            if (/^too-/.test(opt.id)) {
+                failures.push(
+                    `M4 option id "${opt.id}" mood-template too-* — name trap cluster instead`
+                );
+            }
             const poetic = !isPlainRejectLabel(opt.labelEn) && !isPlainRejectLabel(opt.labelZh);
             if (poetic && (!opt.glossEn?.trim() || !opt.glossZh?.trim())) {
                 failures.push(
@@ -108,24 +129,14 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
     }
 
     if (stepId === 'm1' && plan.q1RegionsToCover?.length) {
-        const regions = plan.q1RegionsToCover;
         const covered = new Set<string>();
         for (const opt of options) {
             const regionId = plan.optionSlots[opt.id]?.regionId;
             if (regionId) covered.add(regionId);
         }
-        for (const region of regions) {
-            if (!covered.has(region)) {
-                failures.push(`Q1 missing region "${region}" in optionSlots`);
-            }
-        }
         const kineticRegions = ['kinetic-high', 'rhythm-social', 'edge-charged'];
         if (!kineticRegions.some((r) => covered.has(r))) {
             failures.push('Q1 missing kinetic/crowd region (kinetic-high, rhythm-social, or edge-charged)');
-        }
-        const nonDomestic = ['elsewhere-transit', 'focus-flow', 'edge-charged', 'rhythm-social'];
-        if (!nonDomestic.some((r) => covered.has(r))) {
-            failures.push('Q1 missing non-domestic region');
         }
     }
 
@@ -135,23 +146,21 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
                 .map((o) => plan.optionSlots[o.id]?.regionId)
                 .filter(Boolean) as string[]
         );
-        if (covered.size < Math.min(6, Q1_REGION_IDS.length)) {
+        if (covered.size < Math.min(3, Q1_REGION_IDS.length)) {
             failures.push(`Q1 only ${covered.size} distinct regions in optionSlots`);
         }
     }
 
-    const slots = plan.optionSlots ?? {};
-    const slotValues: string[] = [];
-    for (const opt of options) {
-        const slot = slots[opt.id];
-        if (!slot) continue;
-        const key =
-            slot.emotionSlot ?? slot.tempoSlot ?? slot.regionId ?? slot.rejectCluster ?? '';
-        if (key) {
-            if (slotValues.includes(key)) {
-                failures.push(`slot collision on axis value "${key}" for option "${opt.id}"`);
+    if (stepId === 'm4') {
+        const slots = plan.optionSlots ?? {};
+        const rejectClusters: string[] = [];
+        for (const opt of options) {
+            const cluster = slots[opt.id]?.rejectCluster;
+            if (!cluster || opt.id === 'none') continue;
+            if (rejectClusters.includes(cluster)) {
+                failures.push(`rejectCluster collision "${cluster}" on option "${opt.id}"`);
             }
-            slotValues.push(key);
+            rejectClusters.push(cluster);
         }
     }
 

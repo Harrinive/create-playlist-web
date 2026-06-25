@@ -20,6 +20,8 @@ export type CompactBrief = {
     flow: string;
     reject: string[];
     seeds: string;
+    story?: string;
+    reachableGenresNote?: string;
     cooldownText?: string;
 };
 

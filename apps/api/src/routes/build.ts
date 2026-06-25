@@ -140,7 +140,10 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
             inferredProse = inferred.prose;
         }
 
-        const brief = buildCompactBrief(answers, cooldown, inferredProse);
+        const brief = buildCompactBrief(answers, cooldown, inferredProse, {
+            interviewStory: plannerState?.interviewStory,
+            reachableGenresNote: plannerState?.reachableGenresNote
+        });
 
         try {
             const model =

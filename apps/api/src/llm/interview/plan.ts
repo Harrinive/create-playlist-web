@@ -59,11 +59,15 @@ export async function planInterviewTurn(
             (stepId === 'm4' ? 'ClearDiscriminant' : 'SceneFeeling'),
         needsGrooveGrain:
             parsed.data.needsGrooveGrain ??
-            (ctx.plannerState?.needsGrooveGrain && stepId === 'm3')
+            (ctx.plannerState?.needsGrooveGrain && stepId === 'm3' && parsed.data.coverageRisk)
     };
 
-    if (stepId === 'm3' && plan.needsGrooveGrain) {
+    if (stepId === 'm3' && plan.needsGrooveGrain && plan.coverageRisk) {
         plan.questionMode = 'LogicalDecision';
+    }
+
+    if (stepId === 'm4') {
+        plan.questionMode = 'ClearDiscriminant';
     }
 
     return plan;

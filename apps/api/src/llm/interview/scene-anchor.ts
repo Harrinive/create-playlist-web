@@ -1,41 +1,31 @@
 import type { InterviewAnswers } from '../../types/interview.js';
 
-export type SceneAnchorContext = {
-    m1StemEn?: string;
-    m1StemZh?: string;
-    m1LabelEn: string;
-    m1LabelZh: string;
-    m2LabelEn?: string;
-    m2LabelZh?: string;
-};
-
-/** Build scene anchor block for M2/M3 draft prompts — keeps options in M1 world. */
+/** Build scene anchor block for M2/M3 draft prompts — keeps options in prior scene world. */
 export function buildSceneAnchorBlock(
     prior: Partial<InterviewAnswers>,
     includeM2 = false
 ): string {
-    if (!prior.m1?.label) return '';
+    const lines = ['## Prior answers (mandatory — stay consistent)'];
 
-    const m1En = prior.m1.label.trim();
-    const m1Zh = m1En;
-
-    const lines = [
-        '## Scene anchor (mandatory — stay in this world)',
-        `M1 chosen (EN): ${m1En}`,
-        `M1 chosen (ZH): ${m1Zh}`
-    ];
+    if (prior.m1?.label) {
+        lines.push(`M1 chosen (EN): ${prior.m1.label.trim()}`);
+        lines.push(`M1 chosen (ZH): ${prior.m1.label.trim()}`);
+    }
 
     if (includeM2 && prior.m2?.label) {
         lines.push(`M2 chosen (EN): ${prior.m2.label.trim()}`);
         lines.push(`M2 chosen (ZH): ${prior.m2.label.trim()}`);
+    }
+
+    if (includeM2) {
         lines.push(
-            'M3 rule: ask what the **body** is doing in this same scene — not tempo labels (Low energy, Upbeat).'
+            'M3 rule: next question and options must stay **consistent with all prior answers** — same scene story, no reset.'
         );
     } else {
         lines.push(
-            'M2 rule: advance ONE beat from M1; options = sensory micro-moments in this place — not abstract mood chips (Calm, Restless, Hold me here).'
+            'M2 rule: next question and options must stay **consistent with M1** — same place, props, and atmosphere the user already chose.'
         );
     }
 
-    return lines.join('\n');
+    return lines.length > 1 ? lines.join('\n') : '';
 }

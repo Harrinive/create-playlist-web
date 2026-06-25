@@ -21,9 +21,9 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 | Item | State |
 |------|-------|
 | Repo / git | **Public** — `Harrinive/create-playlist-web`, `main` |
-| Phase | **Phase 4 + Interview v3** — LLM interview v3 pipeline + full mode upgrade |
+| Phase | **Phase 4 + Interview v4** — story-native M2/M3, agent-reasoned genres, 2–6 options |
 | Frontend | `apps/web/` — Astro 6, Whono-style UI |
-| Interview | v3 dynamic 4–6 steps; scene-grounded M2/M3; **inferred M5**; nine-region Q1; full mode: plan → draft → deterministic + split verify → revise loop |
+| Interview | v4: story-native mood/night-chapter; **reachableGenresNote**; Q1 **4–6**; auto **3-sentence story** at M4; tiered prompts in `prompts/` |
 | Delivery | `/delivery` — Prompt + per-model tracklist options (Step 2.2.3) |
 | Prompt | Client-side Step 2.1 (`build-prompt.ts`) |
 | Build path | `/build` — OAuth + curate → verify → publish UI |
@@ -89,26 +89,33 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 
 **Phase 4 exit criteria:** met — LLM interview E2E on production with model picker.
 
-### Interview v3 (implemented locally — deploy to verify production)
+### Interview v4 (implemented locally — deploy to verify production)
+
+| Item | Status |
+|------|--------|
+| Prompt refactor (`prompts/` tiered modules) | Done |
+| Story-native M2/M3 + BGM test | Done — `sections/story-native.ts`, `turn-config.ts` |
+| Agent-reasoned `reachableGenresNote` + `plannedOptionCount` 2–6 | Done — `shared.ts`, plan checklist |
+| Q1 cap 4–6 options | Done — `resolve-step.ts` |
+| Auto 3-sentence story at M4 entry | Done — `story-synthesize.ts` |
+| Slim logic verify; M2/M3 music-pattern ban | Done — `verify-deterministic.ts`, `verify-system.ts` |
+| Curate + delivery genre note | Done — `curate.ts`, `delivery-page.ts` |
+| Tests | Done — `npm run test:verify`, `scripts/test-interview-story.ts` |
+
+### Interview v3 (superseded by v4)
 
 | Item | Status |
 |------|--------|
 | Dynamic steps `m1→m2→m3→[m_clarify]→m4` (no user M5) | Done — `resolve-step.ts` |
-| Nine-region Q1 (8–10 options) | Done — `prompts.ts` |
-| Turn-config router + scene anchors | Done — `turn-config.ts`, `scene-anchor.ts` |
-| Full mode: deterministic verify + logic/copy LLM verify + revise loop (max 3) | Done — `generate.ts`, `verify-deterministic.ts` |
-| Opaque `plannerState` (sessionStorage) | Done — API + web |
-| Inferred M5 | Done — `infer-sonic.ts`; `/api/interview/complete`, `/api/prompt`, `/api/curate` |
-| Curate hypotheses breadth mandate | Done — `curate.ts` |
-| Tests | Done — `npm run test:verify`, `scripts/test-interview-v3-fixtures.ts` |
+| Inferred M5 | Done — `infer-sonic.ts` |
 
 ### Next recommended work
 
-1. Production smoke test after deploy (v3 interview + inferred M5 curate path)
+1. Production smoke test after deploy (v4 interview + story + curate path)
 2. Opening path UI (API accepts `openingContext`; UI phase 2)
 3. Link from dychen.net nav
 4. Spotify app review for public users (beyond allowlist)
-5. Optional: extract Node `llm-router` to toolbox npm when a second Node consumer exists
+5. Optional: v4.1 early-stop / user-editable story
 
 ---
 
@@ -119,13 +126,14 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 3. **[docs/PROGRESS.md](./docs/PROGRESS.md)** — shipped work and bug fixes
 4. **[docs/INTERVIEW-STRATEGY.md](./docs/INTERVIEW-STRATEGY.md)** — interview design v1 baseline (implementation pending)
 5. **[docs/INTERVIEW-STRATEGY-v2.md](./docs/INTERVIEW-STRATEGY-v2.md)** — interview v2 (coverage, regions, curate)
-6. **[docs/INTERVIEW-STRATEGY-v3.md](./docs/INTERVIEW-STRATEGY-v3.md)** — interview v3 (**implemented** — see Interview v3 section above)
-7. **[docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md)** — CF / Fly / Spotify / GitHub settings
-8. **Skill router:** `~/.cursor/skills/create-playlist/SKILL.md`
-9. **For Step 2.2 API mapping:** `step-2-2-mcp-fallback.md` (direct Spotify Web API, not MCP)
-10. **Reference apps:** [dychen.net](https://github.com/Harrinive/dychen-net) (Astro/CF deploy pattern), [Cycloud](https://github.com/Harrinive/Cycloud) (Fly/secrets)
-11. **UI reference:** [astro-whono](https://github.com/cxro/astro-whono) (theme ported into `apps/web/src/styles/`)
-12. **Shared libs:** [toolbox/AGENTS.md](https://github.com/Harrinive/toolbox/blob/main/AGENTS.md)
+6. **[docs/INTERVIEW-STRATEGY-v4.md](./docs/INTERVIEW-STRATEGY-v4.md)** — interview v4 (**implemented** — story-native + reachable genres)
+7. **[docs/INTERVIEW-STRATEGY-v3.md](./docs/INTERVIEW-STRATEGY-v3.md)** — interview v3 (superseded)
+8. **[docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md)** — CF / Fly / Spotify / GitHub settings
+9. **Skill router:** `~/.cursor/skills/create-playlist/SKILL.md`
+10. **For Step 2.2 API mapping:** `step-2-2-mcp-fallback.md` (direct Spotify Web API, not MCP)
+11. **Reference apps:** [dychen.net](https://github.com/Harrinive/dychen-net) (Astro/CF deploy pattern), [Cycloud](https://github.com/Harrinive/Cycloud) (Fly/secrets)
+12. **UI reference:** [astro-whono](https://github.com/cxro/astro-whono) (theme ported into `apps/web/src/styles/`)
+13. **Shared libs:** [toolbox/AGENTS.md](https://github.com/Harrinive/toolbox/blob/main/AGENTS.md)
 
 ---
 

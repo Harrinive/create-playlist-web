@@ -56,6 +56,10 @@ for (let stepIndex = 0; stepIndex < 4; stepIndex += 1) {
         };
 
         console.log(`OK (${elapsed}s) — ${step.id} "${step.stem.en.slice(0, 48)}…" [${step.options.length} opts]`);
+
+        if (step.options.length > 6) {
+            throw new Error(`option count ${step.options.length} exceeds v4 max 6`);
+        }
     } catch (error) {
         const elapsed = ((Date.now() - started) / 1000).toFixed(1);
         console.log(`FAIL (${elapsed}s)`);
@@ -66,3 +70,6 @@ for (let stepIndex = 0; stepIndex < 4; stepIndex += 1) {
 
 console.log('\nAll steps generated successfully.');
 console.log(`Sequence: ${stepIds.join(' → ')}`);
+if (plannerState.interviewStory?.en) {
+    console.log(`Story: ${plannerState.interviewStory.en}`);
+}

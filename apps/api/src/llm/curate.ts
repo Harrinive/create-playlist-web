@@ -104,8 +104,8 @@ export async function curateTracklist(
     hypotheses?: string[]
 ): Promise<CurateResult> {
     const hypothesesBlock =
-        hypotheses && hypotheses.length > 1
-            ? `\nHYPOTHESES: ${hypotheses.join(' · ')}\nBreadth mandate: ≥2–4 tracks per cluster; weave in Sequence intent.`
+        hypotheses && hypotheses.length > 0
+            ? `\nHYPOTHESES: ${hypotheses.join(' · ')}\nPick ~26 tracks consistent with the story; blend reachable flavors — do not force one subgenre.`
             : '';
 
     const userPrompt = `${TASK_PROMPT_STARTER}

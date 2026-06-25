@@ -19,12 +19,18 @@ import {
     type TurnPlan
 } from './shared.js';
 import { verifyDeterministic } from './verify-deterministic.js';
-import { fitDraftOptionCount, fitPlanOptionIds } from './normalize-draft.js';
+import { fitDraftOptionCount, fitPlanOptionIds, normalizeDraftM4Ids } from './normalize-draft.js';
 import {
     classifyReviseKind,
     verifyCopyInterviewStep,
     verifyLogicInterviewStep
 } from './verify.js';
+import {
+    hasM1M2M3Answers,
+    sanitizeDeliveryGenreNote,
+    synthesizeInterviewStory
+} from './story-synthesize.js';
+import { partitionDeterministicFailures } from './verify-severity.js';
 
 export type GenerateInterviewStepInput = InterviewTurnContext & {
     algorithmMode?: 'fast' | 'full';
@@ -48,7 +54,8 @@ function toBilingualStep(stepId: string, parsed: LlmStepDraft): BilingualIntervi
             id: option.id,
             label: { en: option.labelEn.trim(), zh: option.labelZh.trim() }
         };
-        if (option.glossEn?.trim() && option.glossZh?.trim()) {
+        const allowOptionGloss = meta.id !== 'm2' && meta.id !== 'm3';
+        if (allowOptionGloss && option.glossEn?.trim() && option.glossZh?.trim()) {
             entry.gloss = { en: option.glossEn.trim(), zh: option.glossZh.trim() };
         }
         return entry;
@@ -80,7 +87,10 @@ function toBilingualStep(stepId: string, parsed: LlmStepDraft): BilingualIntervi
     }
 
     if (parsed.stemGlossEn?.trim() && parsed.stemGlossZh?.trim()) {
-        step.stemGloss = { en: parsed.stemGlossEn.trim(), zh: parsed.stemGlossZh.trim() };
+        const sceneStep = ['m1', 'm2', 'm3', 'm_clarify'].includes(meta.id);
+        if (!sceneStep) {
+            step.stemGloss = { en: parsed.stemGlossEn.trim(), zh: parsed.stemGlossZh.trim() };
+        }
     }
 
     return step;
@@ -140,6 +150,15 @@ function shouldRunCopyVerify(stepId: string): boolean {
     return stepId === 'm4' || stepId === 'm_clarify';
 }
 
+function stripSceneStemGloss(draft: LlmStepDraft, stepId: string): LlmStepDraft {
+    if (!['m1', 'm2', 'm3', 'm_clarify'].includes(stepId)) return draft;
+    return {
+        ...draft,
+        stemGlossEn: undefined,
+        stemGlossZh: undefined
+    };
+}
+
 async function generateInterviewStepFull(
     env: Env,
     input: GenerateInterviewStepInput,
@@ -154,6 +173,33 @@ async function generateInterviewStepFull(
     let plannerState = input.plannerState ?? emptyPlannerState(input.openingContext);
     const stepId = resolved.stepId;
     const ctxWithStep: InterviewTurnContext = { ...input, stepId };
+
+    if (
+        stepId === 'm4' &&
+        hasM1M2M3Answers(input.priorAnswers) &&
+        !plannerState.interviewStory
+    ) {
+        try {
+            const story = await synthesizeInterviewStory(
+                env,
+                input.priorAnswers,
+                plannerState.reachableGenresNote,
+                model
+            );
+            plannerState = {
+                ...plannerState,
+                interviewStory: story,
+                deliveryGenreNote: plannerState.reachableGenresNote
+                    ? sanitizeDeliveryGenreNote(plannerState.reachableGenresNote)
+                    : plannerState.deliveryGenreNote
+            };
+        } catch (error) {
+            console.warn(
+                '[interview] story synthesis failed — continuing without interviewStory:',
+                error instanceof Error ? error.message : error
+            );
+        }
+    }
 
     const plan = await planInterviewTurn(env, ctxWithStep, model);
     const meta = stepMetaForId(stepId);
@@ -173,7 +219,10 @@ async function generateInterviewStepFull(
     }
 
     let draft = fitDraftOptionCount(
-        await draftInterviewStep(env, ctxWithStep, fittedPlan, model),
+        normalizeDraftM4Ids(
+            await draftInterviewStep(env, ctxWithStep, fittedPlan, model),
+            stepId
+        ),
         fittedPlan,
         stepId,
         meta.optionMax
@@ -186,14 +235,23 @@ async function generateInterviewStepFull(
     const runCopyVerify = shouldRunCopyVerify(stepId);
 
     for (let attempt = 0; attempt < verifyAttempts; attempt += 1) {
-        draft = fitDraftOptionCount(draft, fittedPlan, stepId, meta.optionMax);
+        draft = stripSceneStemGloss(
+            fitDraftOptionCount(draft, fittedPlan, stepId, meta.optionMax),
+            stepId
+        );
+
+        const priorLabels = [
+            input.priorAnswers.m1?.label,
+            stepId === 'm3' ? input.priorAnswers.m2?.label : undefined
+        ].filter((l): l is string => Boolean(l?.trim()));
 
         const det = verifyDeterministic({
             stepId,
             plan: fittedPlan,
             draft,
             optionMin: meta.optionMin,
-            optionMax: meta.optionMax
+            optionMax: meta.optionMax,
+            priorLabels
         });
         deterministicFailures = det.failures;
 
@@ -211,29 +269,32 @@ async function generateInterviewStepFull(
 
         const isLastAttempt = attempt === verifyAttempts - 1;
         if (isLastAttempt) {
-            // Ship best-effort when hard checks pass — avoid user-facing 502 on picky LLM verify.
-            if (deterministicFailures.length === 0) {
+            const { hard, soft } = partitionDeterministicFailures(deterministicFailures);
+            if (hard.length === 0) {
                 console.warn(
                     `[interview] verify exhausted (${verifyAttempts} attempts) — shipping best-effort draft:`,
-                    allFailures.join('; ')
+                    [...soft, ...logicFailures, ...copyFailures].join('; ')
                 );
                 break;
             }
             throw new Error(
-                `Interview verify failed after ${verifyAttempts} attempts: ${allFailures.join('; ')}`
+                `Interview verify failed after ${verifyAttempts} attempts: ${[...hard, ...soft, ...logicFailures, ...copyFailures].join('; ')}`
             );
         }
 
         const kind = classifyReviseKind(deterministicFailures, logicFailures, copyFailures);
         draft = fitDraftOptionCount(
-            await reviseInterviewStep(
-                env,
-                ctxWithStep,
-                fittedPlan,
-                draft,
-                allFailures,
-                model,
-                kind
+            normalizeDraftM4Ids(
+                await reviseInterviewStep(
+                    env,
+                    ctxWithStep,
+                    fittedPlan,
+                    draft,
+                    allFailures,
+                    model,
+                    kind
+                ),
+                stepId
             ),
             fittedPlan,
             stepId,

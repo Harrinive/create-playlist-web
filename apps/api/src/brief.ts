@@ -188,11 +188,22 @@ function buildCooldownText(cooldown: CooldownSets): string | undefined {
 export function buildCompactBrief(
     answers: InterviewAnswers,
     cooldown?: CooldownSets,
-    inferredSonic?: string
+    inferredSonic?: string,
+    extras?: {
+        interviewStory?: { en: string };
+        reachableGenresNote?: string;
+    }
 ): CompactBrief {
-    const anchor = phraseEn(SCENE_PHRASES, answers.m1.id, answers.m1.label);
-    const emotion = phraseEn(EMOTION_PHRASES, answers.m2.id, answers.m2.label);
-    const pace = phraseEn(PACE_PHRASES, answers.m3.id, answers.m3.label);
+    const story = extras?.interviewStory?.en?.trim();
+    const anchor = story
+        ? story.split(/[.!?]/)[0]?.trim() || phraseEn(SCENE_PHRASES, answers.m1.id, answers.m1.label)
+        : phraseEn(SCENE_PHRASES, answers.m1.id, answers.m1.label);
+    const emotion = story
+        ? story.split(/[.!?]/)[1]?.trim() || phraseEn(EMOTION_PHRASES, answers.m2.id, answers.m2.label)
+        : phraseEn(EMOTION_PHRASES, answers.m2.id, answers.m2.label);
+    const pace = story
+        ? story.split(/[.!?]/)[2]?.trim() || phraseEn(PACE_PHRASES, answers.m3.id, answers.m3.label)
+        : phraseEn(PACE_PHRASES, answers.m3.id, answers.m3.label);
     const sonic = answers.m5
         ? phraseEn(SONIC_PHRASES, answers.m5.id, answers.m5.label)
         : inferredSonic ?? 'warm intimate air with room for varied timbres';
@@ -210,12 +221,18 @@ export function buildCompactBrief(
         flow,
         reject,
         seeds: 'none',
+        story,
+        reachableGenresNote: extras?.reachableGenresNote?.trim(),
         cooldownText: cooldown ? buildCooldownText(cooldown) : undefined
     };
 }
 
 export function formatBriefBlock(brief: CompactBrief): string {
     const lines = [
+        brief.story ? `STORY: ${brief.story}` : null,
+        brief.reachableGenresNote
+            ? `REACHABLE (from interview): ${brief.reachableGenresNote}`
+            : null,
         `ANCHOR: ${brief.anchor}`,
         `EMOTION: ${brief.emotion}`,
         `PACE: ${brief.pace}`,
@@ -223,7 +240,7 @@ export function formatBriefBlock(brief: CompactBrief): string {
         `FLOW: ${brief.flow}`,
         brief.reject.length > 0 ? `REJECT: ${brief.reject.join('; ')}` : 'REJECT: none',
         `SEEDS: ${brief.seeds}`
-    ];
+    ].filter(Boolean) as string[];
 
     if (brief.cooldownText) {
         lines.push(`COOLDOWN:\n${brief.cooldownText}`);

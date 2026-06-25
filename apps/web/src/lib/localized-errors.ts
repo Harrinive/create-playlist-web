@@ -123,6 +123,21 @@ export function localizeApiError(
         return localizeBuildError('connectionFailed', locale, { error: localizeOAuthError(code, locale) });
     }
 
+    if (trimmed.startsWith('Interview verify failed')) {
+        const detail = trimmed.replace(/^Interview verify failed after \d+ attempts:\s*/i, '');
+        return locale === 'zh'
+            ? `访谈校验未通过（已重试）：${detail.slice(0, 240)}`
+            : trimmed;
+    }
+
+    if (trimmed.startsWith('Interview plan returned invalid JSON')) {
+        return locale === 'zh' ? '访谈规划返回无效数据，请重试。' : trimmed;
+    }
+
+    if (trimmed.startsWith('Interview draft returned invalid JSON')) {
+        return locale === 'zh' ? '访谈题目返回无效数据，请重试。' : trimmed;
+    }
+
     if (locale === 'zh') return pick(locale, GENERIC_FALLBACK[surface]);
     return trimmed;
 }
