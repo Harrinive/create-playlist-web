@@ -45,6 +45,8 @@ export const WIZARD_LABELS: Record<
         chooseDelivery: string;
         apiUnavailable: string;
         apiUnreachable: string;
+        storageError: string;
+        resumeUnavailable: string;
     }
 > = {
     en: {
@@ -60,7 +62,10 @@ export const WIZARD_LABELS: Record<
         chooseDelivery: 'Choose delivery',
         apiUnavailable: 'Interview needs the API — check PUBLIC_API_URL and LLM keys on the server.',
         apiUnreachable:
-            'Could not reach the API. Start the server with `npm run dev` in apps/api (http://127.0.0.1:3001).'
+            'Could not reach the API. Start the server with `npm run dev` in apps/api (http://127.0.0.1:3001).',
+        storageError: "Couldn't save your progress — try Start over or free browser storage.",
+        resumeUnavailable:
+            "Couldn't restore this answered question — re-select your answer below or use Start over."
     },
     zh: {
         question: (n, dim) => `第 ${n} 题 · ${dim}`,
@@ -74,6 +79,8 @@ export const WIZARD_LABELS: Record<
         chooseDelivery: '选择交付方式',
         apiUnavailable: '访谈需要 API — 请检查 PUBLIC_API_URL 及服务器上的 LLM 密钥。',
         apiUnreachable:
-            '无法连接 API。请在 apps/api 目录运行 `npm run dev` 启动服务（http://127.0.0.1:3001）。'
+            '无法连接 API。请在 apps/api 目录运行 `npm run dev` 启动服务（http://127.0.0.1:3001）。',
+        storageError: '无法保存进度 — 请尝试「重新开始」或清理浏览器存储空间。',
+        resumeUnavailable: '无法恢复此题 — 请重新选择答案，或使用「重新开始」。'
     }
 };
