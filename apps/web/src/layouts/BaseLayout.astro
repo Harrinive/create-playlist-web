@@ -52,7 +52,7 @@ const pageFade = fade({ duration: '320ms' });
             <div class="divider" aria-hidden="true"></div>
             <main id="content" class="content" tabindex="-1">
                 <div class="content__inner">
-                    <div class="content__main" transition:animate={pageFade}>
+                    <div class="content__main" transition:name="main" transition:animate={pageFade}>
                         <slot />
                     </div>
                     <footer class="site-footer">
@@ -65,7 +65,7 @@ const pageFade = fade({ duration: '320ms' });
         <script>
             import '../scripts/sidebar-theme.ts';
             import '../scripts/app-toolbar.ts';
-            import '../scripts/page-enter.ts';
+            import '../scripts/page-metadata.ts';
         </script>
     </body>
 </html>

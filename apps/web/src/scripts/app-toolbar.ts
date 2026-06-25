@@ -1,3 +1,4 @@
+import { applyAriaLabels } from '../lib/aria-labels';
 import { applyLocaleToDocument, readLocale, writeLocale, type Locale } from '../lib/locale';
 import {
     CATALOG_INTERVIEW_MODELS,
@@ -16,16 +17,9 @@ import {
     readInterviewAlgorithmMode,
     saveInterviewAlgorithmMode
 } from '../lib/interview-algorithm-mode';
-import { clearRejectedQuestions } from '../lib/interview-refresh';
-import { clearLlmSteps } from '../lib/interview-llm-cache';
 import { lastResultHref, readLastDelivery } from '../lib/last-delivery';
-import {
-    BUILD_RESULT_KEY,
-    CURATE_MODEL_KEY,
-    DRAFT_KEY,
-    LAST_DELIVERY_KEY,
-    SESSION_KEY
-} from '../lib/session-keys';
+import { openOverlay, openWithFade, closeInstant, closeWithTransition } from '../lib/motion';
+import { performStartOver } from '../lib/start-over';
 
 const LOCALE_OPTIONS: {
     id: Locale;
@@ -39,7 +33,7 @@ const LOCALE_OPTIONS: {
         labelEn: 'English',
         labelZh: 'English',
         descEn: 'UI and interview in English',
-        descZh: 'UI and interview in English'
+        descZh: '界面与访谈使用英文'
     },
     {
         id: 'zh',
@@ -61,6 +55,7 @@ function localeOptionDescription(option: (typeof LOCALE_OPTIONS)[number], locale
 function setLocale(locale: Locale) {
     writeLocale(locale);
     applyLocaleToDocument(locale);
+    applyAriaLabels(locale);
     updateLocaleLabel();
     refreshLocaleMenuLabels();
     updateInterviewModelLabel(interviewModelCatalog);
@@ -82,12 +77,14 @@ function syncToolbarPanelVisibility() {
     if (!panel) return;
 
     if (isCompactToolbar()) {
-        panel.hidden = !panel.classList.contains('is-open');
+        if (!panel.classList.contains('is-open')) {
+            panel.hidden = true;
+        }
         return;
     }
 
     panel.hidden = false;
-    panel.classList.remove('is-open');
+    panel.classList.remove('is-open', 'is-opening');
     const toggle = document.getElementById('toolbar-menu-toggle');
     toggle?.setAttribute('aria-expanded', 'false');
 }
@@ -96,9 +93,15 @@ function closeMobileToolbar() {
     const panel = document.getElementById('app-toolbar-panel');
     const toggle = document.getElementById('toolbar-menu-toggle');
     if (!panel || !toggle) return;
-    panel.classList.remove('is-open');
-    if (isCompactToolbar()) panel.hidden = true;
+
+    if (!panel.classList.contains('is-open')) {
+        panel.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+        return;
+    }
+
     toggle.setAttribute('aria-expanded', 'false');
+    void closeWithTransition(panel);
 }
 
 function toggleMobileToolbar() {
@@ -111,8 +114,7 @@ function toggleMobileToolbar() {
         closeLocaleMenu();
         closeInterviewModelMenu();
         closeInterviewAlgorithmMenu();
-        panel.hidden = false;
-        panel.classList.add('is-open');
+        openOverlay(panel);
         toggle.setAttribute('aria-expanded', 'true');
         return;
     }
@@ -148,19 +150,6 @@ function bindMobileToolbarMenu() {
     });
 }
 
-function startOver() {
-    try {
-        sessionStorage.removeItem(SESSION_KEY);
-        sessionStorage.removeItem(DRAFT_KEY);
-        sessionStorage.removeItem(CURATE_MODEL_KEY);
-        sessionStorage.removeItem(LAST_DELIVERY_KEY);
-        sessionStorage.removeItem(BUILD_RESULT_KEY);
-        clearRejectedQuestions();
-        clearLlmSteps();
-    } catch {}
-    window.location.assign('/interview');
-}
-
 function updateLocaleLabel() {
     const labelEl = document.getElementById('locale-label');
     if (!labelEl) return;
@@ -173,7 +162,7 @@ function closeLocaleMenu() {
     const menu = document.getElementById('locale-menu');
     const trigger = document.getElementById('locale-trigger');
     if (!menu || !trigger) return;
-    menu.hidden = true;
+    closeInstant(menu);
     trigger.setAttribute('aria-expanded', 'false');
 }
 
@@ -183,7 +172,7 @@ function openLocaleMenu() {
     const menu = document.getElementById('locale-menu');
     const trigger = document.getElementById('locale-trigger');
     if (!menu || !trigger) return;
-    menu.hidden = false;
+    openWithFade(menu);
     trigger.setAttribute('aria-expanded', 'true');
 }
 
@@ -276,7 +265,7 @@ function bindStartOver() {
     document.querySelectorAll<HTMLElement>('[data-start-over]').forEach((btn) => {
         if (btn.dataset.bound === 'true') return;
         btn.dataset.bound = 'true';
-        btn.addEventListener('click', startOver);
+        btn.addEventListener('click', performStartOver);
     });
 }
 
@@ -293,7 +282,7 @@ function closeInterviewModelMenu() {
     const menu = document.getElementById('interview-model-menu');
     const trigger = document.getElementById('interview-model-trigger');
     if (!menu || !trigger) return;
-    menu.hidden = true;
+    closeInstant(menu);
     trigger.setAttribute('aria-expanded', 'false');
 }
 
@@ -303,7 +292,7 @@ function openInterviewModelMenu() {
     const menu = document.getElementById('interview-model-menu');
     const trigger = document.getElementById('interview-model-trigger');
     if (!menu || !trigger) return;
-    menu.hidden = false;
+    openWithFade(menu);
     trigger.setAttribute('aria-expanded', 'true');
 }
 
@@ -388,7 +377,7 @@ function closeInterviewAlgorithmMenu() {
     const menu = document.getElementById('interview-algorithm-menu');
     const trigger = document.getElementById('interview-algorithm-trigger');
     if (!menu || !trigger) return;
-    menu.hidden = true;
+    closeInstant(menu);
     trigger.setAttribute('aria-expanded', 'false');
 }
 
@@ -398,7 +387,7 @@ function openInterviewAlgorithmMenu() {
     const menu = document.getElementById('interview-algorithm-menu');
     const trigger = document.getElementById('interview-algorithm-trigger');
     if (!menu || !trigger) return;
-    menu.hidden = false;
+    openWithFade(menu);
     trigger.setAttribute('aria-expanded', 'true');
 }
 
@@ -568,6 +557,8 @@ let resizeListenerBound = false;
 export async function initAppToolbar() {
     const locale = readLocale();
     applyLocaleToDocument(locale);
+    applyAriaLabels(locale);
+    closeMobileToolbar();
     bindLocaleDropdown();
     updateLocaleLabel();
     bindMobileToolbarMenu();
@@ -589,6 +580,10 @@ export async function initAppToolbar() {
 
 document.addEventListener('astro:page-load', () => {
     void initAppToolbar();
+});
+
+document.addEventListener('astro:before-swap', () => {
+    closeMobileToolbar();
 });
 
 export {};

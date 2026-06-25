@@ -24,7 +24,7 @@ import InterviewMissing from '../components/InterviewMissing.astro';
             </div>
         </div>
 
-        <div id="prompt-loading" hidden>
+        <div id="prompt-loading">
             <p class="page-kicker">Spotify Prompted Playlist</p>
             <h1 class="page-title">
                 <span data-locale="en">Copy into Spotify</span>
@@ -68,7 +68,7 @@ import InterviewMissing from '../components/InterviewMissing.astro';
                 <div class="prompt-footer__copy">
                     <button id="copy-prompt" type="button" class="text-link-button text-link-button--primary">
                         <span data-locale="en">Copy prompt</span>
-                        <span data-locale="zh" hidden>复制提示</span>
+                        <span data-locale="zh" hidden>复制提示词</span>
                     </button>
                     <span id="copy-status" class="copy-status" role="status" aria-live="polite"></span>
                 </div>
@@ -82,7 +82,12 @@ import InterviewMissing from '../components/InterviewMissing.astro';
                     </span>
                 </p>
 
-                <nav class="prompt-footer__nav" aria-label="Prompt page actions">
+                <nav
+                    class="prompt-footer__nav"
+                    aria-label="Prompt page actions"
+                    data-aria-en="Prompt page actions"
+                    data-aria-zh="提示词页操作"
+                >
                     <a class="text-link-button" href="/delivery">
                         <span data-locale="en">Other delivery</span>
                         <span data-locale="zh" hidden>其他交付方式</span>

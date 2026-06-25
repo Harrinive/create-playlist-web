@@ -1,17 +1,28 @@
 import {
-    CATALOG_CURATE_MODELS,
     fetchCurateModels,
-    sameModelIds,
     saveCurateModel,
     type CurateModelOption
 } from '../lib/curate-model';
+import { DELIVERY_COPY } from '../lib/delivery-copy';
 import { saveLastDelivery } from '../lib/last-delivery';
 import { applyLocaleToDocument, readLocale } from '../lib/locale';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
-import { appearOnMount, revealPanel, staggerAppear } from '../lib/motion';
+import { navigateTo } from '../lib/navigate';
 
 const abortByRoot = new WeakMap<HTMLElement, AbortController>();
 let deliveryOptionsGeneration = 0;
+
+function modelIdsFromOptions(optionsEl: HTMLElement): string[] {
+    return [...optionsEl.querySelectorAll<HTMLElement>('[data-model]')]
+        .map((el) => el.dataset.model ?? '')
+        .filter(Boolean);
+}
+
+function modelsMatchDom(optionsEl: HTMLElement, models: CurateModelOption[]): boolean {
+    const domIds = modelIdsFromOptions(optionsEl);
+    if (domIds.length !== models.length) return false;
+    return models.every((model, index) => model.id === domIds[index]);
+}
 
 function createDeliveryButton(
     option: { delivery: string; model?: string },
@@ -45,10 +56,10 @@ function renderDeliveryOptions(optionsEl: HTMLElement, models: CurateModelOption
     optionsEl.appendChild(
         createDeliveryButton(
             { delivery: 'prompt' },
-            'Prompt for Spotify Prompted Playlist',
-            'Spotify Prompted Playlist',
-            'Paste in the Spotify app',
-            '粘贴到 Spotify 应用'
+            DELIVERY_COPY.promptLabel.en,
+            DELIVERY_COPY.promptLabel.zh,
+            DELIVERY_COPY.promptSublabel.en,
+            DELIVERY_COPY.promptSublabel.zh
         )
     );
 
@@ -59,8 +70,8 @@ function renderDeliveryOptions(optionsEl: HTMLElement, models: CurateModelOption
                     { delivery: 'build', model: model.id },
                     model.labelEn,
                     model.labelZh,
-                    '~20 verified tracks on your Spotify',
-                    '约 20 首验证曲目，发布到你的 Spotify'
+                    DELIVERY_COPY.buildSublabelSpotify.en,
+                    DELIVERY_COPY.buildSublabelSpotify.zh
                 )
             );
         }
@@ -70,10 +81,10 @@ function renderDeliveryOptions(optionsEl: HTMLElement, models: CurateModelOption
     optionsEl.appendChild(
         createDeliveryButton(
             { delivery: 'build' },
-            'Build on Spotify',
-            '在 Spotify 上创建',
-            '~20 verified tracks on your account',
-            '约 20 首验证曲目，发布到你的账号'
+            DELIVERY_COPY.buildFallbackLabel.en,
+            DELIVERY_COPY.buildFallbackLabel.zh,
+            DELIVERY_COPY.buildSublabelAccount.en,
+            DELIVERY_COPY.buildSublabelAccount.zh
         )
     );
 }
@@ -94,15 +105,15 @@ export async function initDeliveryPage() {
 
     const answers = readStoredInterviewAnswers();
     const hasAnswers = Boolean(answers);
-    missingEl.hidden = hasAnswers;
-    contentEl.hidden = !hasAnswers;
-    if (hasAnswers) {
-        revealPanel(contentEl, [missingEl]);
-    } else {
-        revealPanel(missingEl, [contentEl]);
+
+    if (!hasAnswers) {
+        contentEl.hidden = true;
+        missingEl.hidden = false;
+        return;
     }
 
-    if (!hasAnswers) return;
+    missingEl.hidden = true;
+    contentEl.hidden = false;
 
     document.addEventListener(
         'locale-changed',
@@ -110,9 +121,7 @@ export async function initDeliveryPage() {
         { signal }
     );
 
-    renderDeliveryOptions(optionsEl, CATALOG_CURATE_MODELS);
     applyLocaleToDocument(readLocale());
-    staggerAppear(optionsEl, '.chip-option');
 
     optionsEl.addEventListener(
         'click',
@@ -124,14 +133,14 @@ export async function initDeliveryPage() {
             if (choice === 'prompt') {
                 saveLastDelivery('prompt');
                 document.dispatchEvent(new CustomEvent('last-delivery-changed'));
-                window.location.assign('/prompt');
+                navigateTo('/prompt');
                 return;
             }
             if (choice === 'build') {
                 if (model) saveCurateModel(model);
                 saveLastDelivery('build');
                 document.dispatchEvent(new CustomEvent('last-delivery-changed'));
-                window.location.assign('/build');
+                navigateTo('/build');
             }
         },
         { signal }
@@ -142,12 +151,11 @@ export async function initDeliveryPage() {
         if (gen !== deliveryOptionsGeneration || !data) return;
 
         const models = data.llmConfigured ? data.models : [];
-        if (!sameModelIds(models, CATALOG_CURATE_MODELS)) {
+        if (models.length > 0 && !modelsMatchDom(optionsEl, models)) {
             renderDeliveryOptions(optionsEl, models);
             applyLocaleToDocument(readLocale());
-            staggerAppear(optionsEl, '.chip-option');
         }
     } catch {
-        // Keep static catalog on network failure.
+        // Keep SSR catalog on network failure.
     }
 }

@@ -4,7 +4,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout>
-    <p class="page-kicker">Mood → music</p>
+    <p class="page-kicker">
+        <span data-locale="en">Mood → music</span>
+        <span data-locale="zh" hidden>氛围 → 音乐</span>
+    </p>
     <h1 class="page-title">
         <span data-locale="en">{siteConfig.tagline.en}</span>
         <span data-locale="zh" hidden>{siteConfig.tagline.zh}</span>
@@ -21,7 +24,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </a>
         <a class="text-link-button" href="/prompt">
             <span data-locale="en">View last prompt</span>
-            <span data-locale="zh" hidden>查看上次提示</span>
+            <span data-locale="zh" hidden>查看上次提示词</span>
         </a>
     </div>
 
@@ -36,7 +39,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                 <span data-locale="zh" hidden>步骤 1</span>
             </p>
             <p class="how-step__text">
-                <span data-locale="en">Scene, emotion, energy, texture, and avoids — five quick picks.</span>
+                <span data-locale="en">Scene, emotion, energy, Sound, and avoids — five quick picks.</span>
                 <span data-locale="zh" hidden>场景、情绪、能量、质感与避开项 — 五个快速选择。</span>
             </p>
         </div>
@@ -47,7 +50,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             </p>
             <p class="how-step__text">
                 <span data-locale="en">Prompt paragraph or ~20 verified tracks — pick your model at delivery.</span>
-                <span data-locale="zh" hidden>提示词段落或约 20 首验证曲目 — 在交付步骤选择模型。</span>
+                <span data-locale="zh" hidden>提示词段落或约 20 首验证曲目 — 在交付方式步骤选择模型。</span>
             </p>
         </div>
         <div>
@@ -56,8 +59,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                 <span data-locale="zh" hidden>步骤 3</span>
             </p>
             <p class="how-step__text">
-                <span data-locale="en">Paste into Spotify Prompted Playlist, or curate and publish a playlist to your account.</span>
-                <span data-locale="zh" hidden>粘贴到 Spotify Prompted Playlist，或策展并发布歌单到你的账户。</span>
+                <span data-locale="en">Paste into Spotify Prompted Playlist, or generate and publish a playlist to your account.</span>
+                <span data-locale="zh" hidden>粘贴到 Spotify Prompted Playlist，或生成并发布歌单到你的账号。</span>
             </p>
         </div>
     </div>

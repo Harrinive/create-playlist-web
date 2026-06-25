@@ -1,6 +1,7 @@
 import { isApiConfigured } from '../lib/api-config';
 import { saveLastDelivery } from '../lib/last-delivery';
 import { readLocale } from '../lib/locale';
+import { localizeApiError } from '../lib/localized-errors';
 import { resolveInterviewModelId } from '../lib/interview-model';
 import { fetchSpotifyPrompt } from '../lib/prompt-api';
 import { crossFadePanels, revealPanel } from '../lib/motion';
@@ -59,6 +60,8 @@ export function initPromptPage() {
 
     let copyStatusTimer: ReturnType<typeof setTimeout> | undefined;
     let paragraph = '';
+    let lastErrorRaw: string | undefined;
+    let lastCopyStatus: 'ok' | 'fail' | null = null;
 
     signal.addEventListener('abort', () => {
         if (copyStatusTimer !== undefined) {
@@ -69,6 +72,31 @@ export function initPromptPage() {
 
     const answers = readStoredInterviewAnswers();
     const panels = [contentEl, loadingEl, errorEl, unconfiguredEl];
+
+    function renderErrorText() {
+        const locale = readLocale();
+        errorTextEl.textContent = lastErrorRaw
+            ? localizeApiError(lastErrorRaw, locale, 'prompt')
+            : ERROR_GENERIC[locale];
+    }
+
+    function renderCopyStatus() {
+        if (!lastCopyStatus) {
+            statusEl.textContent = '';
+            return;
+        }
+        const locale = readLocale();
+        statusEl.textContent = lastCopyStatus === 'ok' ? COPY_OK[locale] : COPY_FAIL[locale];
+    }
+
+    document.addEventListener(
+        'locale-changed',
+        () => {
+            if (!errorEl.hidden) renderErrorText();
+            if (lastCopyStatus) renderCopyStatus();
+        },
+        { signal }
+    );
 
     if (!answers) {
         revealPanel(missingEl, panels);
@@ -83,12 +111,14 @@ export function initPromptPage() {
     }
 
     function showLoading() {
-        crossFadePanels(loadingEl, [contentEl, errorEl, unconfiguredEl]);
+        if (loadingEl.hidden) {
+            crossFadePanels(loadingEl, [contentEl, errorEl, unconfiguredEl]);
+        }
     }
 
     function showError(message?: string) {
-        const locale = readLocale();
-        errorTextEl.textContent = message ?? ERROR_GENERIC[locale];
+        lastErrorRaw = message;
+        renderErrorText();
         crossFadePanels(errorEl, [loadingEl, contentEl, unconfiguredEl]);
     }
 
@@ -124,17 +154,19 @@ export function initPromptPage() {
         'click',
         async () => {
             if (!paragraph) return;
-            const locale = readLocale();
             try {
                 await navigator.clipboard.writeText(paragraph);
-                statusEl.textContent = COPY_OK[locale];
+                lastCopyStatus = 'ok';
+                renderCopyStatus();
                 if (copyStatusTimer !== undefined) clearTimeout(copyStatusTimer);
                 copyStatusTimer = window.setTimeout(() => {
+                    lastCopyStatus = null;
                     statusEl.textContent = '';
                     copyStatusTimer = undefined;
                 }, 2000);
             } catch {
-                statusEl.textContent = COPY_FAIL[locale];
+                lastCopyStatus = 'fail';
+                renderCopyStatus();
             }
         },
         { signal }

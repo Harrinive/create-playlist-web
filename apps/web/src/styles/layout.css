@@ -8,7 +8,6 @@
     width: 100%;
     min-width: 0;
     margin: 0 auto;
-    overflow-x: clip;
 }
 
 .divider {
@@ -158,6 +157,11 @@
 .toolbar-dropdown__caret {
     font-size: 11px;
     opacity: 0.6;
+    transition: transform var(--motion-duration) var(--motion-ease);
+}
+
+.toolbar-menu-toggle[aria-expanded='true'] .toolbar-dropdown__caret {
+    transform: rotate(180deg);
 }
 
 .toolbar-dropdown__menu {
@@ -182,8 +186,12 @@
     transition: background var(--motion-duration) var(--motion-ease);
 }
 
-.toolbar-dropdown__option:hover,
-.toolbar-dropdown__option.is-selected {
+.toolbar-dropdown__option:hover {
+    background: var(--panel);
+}
+
+/* Show selected only when nothing in the menu is hovered */
+.toolbar-dropdown__menu:not(:has(.toolbar-dropdown__option:hover)) .toolbar-dropdown__option.is-selected {
     background: var(--panel);
 }
 
@@ -210,6 +218,7 @@
 }
 
 @media (min-width: 1101px) {
+    .sidebar__header,
     .sidebar__top,
     .sidebar__header-actions {
         display: contents;
@@ -226,7 +235,12 @@
     .sidebar__toolbar-panel {
         order: 3;
         display: block !important;
+        position: static;
         width: 100%;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: none;
     }
 
     .sidebar__toolbar-panel[hidden] {
@@ -446,52 +460,87 @@
         min-height: 36px;
     }
 
-    .sidebar__toolbar-panel {
-        display: none;
+    .sidebar__header {
+        position: relative;
         width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        margin-top: 10px;
+    }
+
+    .sidebar__toolbar-panel {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        left: auto;
+        z-index: 40;
+        width: max-content;
+        max-width: min(100%, 22rem);
+        margin-top: 0;
         padding: 8px;
         border: 1px solid var(--border);
         border-radius: 14px;
         background: var(--bg);
-        box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 8%, transparent);
-        overflow: hidden;
+        box-shadow: 0 12px 32px color-mix(in srgb, var(--text) 12%, transparent);
+        overflow: visible;
+        text-align: right;
+        display: block;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(-8px) scale(0.98);
+        transform-origin: top right;
+        transition:
+            opacity var(--motion-duration) var(--motion-ease),
+            transform var(--motion-duration) var(--motion-ease),
+            visibility 0s linear var(--motion-duration);
+    }
+
+    .sidebar__toolbar-panel.is-open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+        transition:
+            opacity var(--motion-duration) var(--motion-ease),
+            transform var(--motion-duration) var(--motion-ease),
+            visibility 0s;
     }
 
     .sidebar__toolbar-panel[hidden] {
         display: none !important;
     }
 
-    .sidebar__toolbar-panel.is-open {
-        display: block;
-    }
-
-    .sidebar__toolbar-panel .app-toolbar {
+    #app-toolbar-panel .app-toolbar {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: 6px;
         margin: 0;
+        width: max-content;
+        max-width: 100%;
+    }
+
+    #app-toolbar-panel .app-toolbar__item,
+    #app-toolbar-panel .app-toolbar__item--dropdown {
+        display: block;
         width: 100%;
     }
 
-    .sidebar__toolbar-panel .app-toolbar__item {
-        width: auto;
-        max-width: 100%;
-        justify-content: flex-start;
+    #app-toolbar-panel .toolbar-dropdown {
+        display: block;
+        width: 100%;
     }
 
-    .sidebar__toolbar-panel .app-toolbar__btn,
-    .sidebar__toolbar-panel .toolbar-dropdown__trigger {
-        width: auto;
-        max-width: 100%;
-        justify-content: flex-start;
+    #app-toolbar-panel .app-toolbar__btn,
+    #app-toolbar-panel .toolbar-dropdown__trigger {
+        display: flex;
+        width: 100%;
+        box-sizing: border-box;
+        justify-content: flex-end;
         gap: 6px;
         min-height: var(--tap-min-h);
         padding: 6px 12px;
         font-size: 14px;
+        text-align: right;
+        white-space: nowrap;
     }
 
     .sidebar__header-actions .toolbar-menu-toggle {
@@ -500,33 +549,31 @@
         gap: 3px;
     }
 
-    .sidebar__toolbar-panel .app-toolbar__item--dropdown {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    .sidebar__toolbar-panel .toolbar-dropdown {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    .sidebar__toolbar-panel .toolbar-dropdown__trigger {
+    #app-toolbar-panel .toolbar-dropdown__trigger {
         gap: 4px;
     }
 
-    .sidebar__toolbar-panel .toolbar-dropdown__value {
-        max-width: 14rem;
+    #app-toolbar-panel .toolbar-dropdown__value {
+        max-width: none;
+        flex: 0 1 auto;
     }
 
-    .sidebar__toolbar-panel .toolbar-dropdown__menu {
-        position: static;
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        margin-top: 4px;
-        box-shadow: none;
+    #app-toolbar-panel .toolbar-dropdown__menu {
+        position: absolute;
+        top: calc(100% + 4px);
         right: 0;
-        left: auto;
+        z-index: 50;
+        width: max-content;
+        min-width: 100%;
+        max-width: min(100vw - 2 * var(--pad-x), 20rem);
+        margin-top: 0;
+        box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 8%, transparent);
+        text-align: right;
+        transform-origin: top right;
+    }
+
+    #app-toolbar-panel .toolbar-dropdown__menu.is-opening {
+        animation: menu-reveal var(--motion-duration) var(--motion-ease) both;
     }
 
     .content {
@@ -542,20 +589,18 @@
 }
 
 @media (max-width: 480px) {
-    .sidebar__toolbar-panel .app-toolbar__btn,
-    .sidebar__toolbar-panel .toolbar-dropdown__trigger {
+    #app-toolbar-panel .app-toolbar__btn,
+    #app-toolbar-panel .toolbar-dropdown__trigger {
         padding: 8px 10px;
-    }
-
-    .sidebar__toolbar-panel .toolbar-dropdown__value {
-        max-width: 10rem;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .sidebar__title,
     .app-toolbar__btn,
-    .icon-button .icon {
+    .icon-button .icon,
+    .toolbar-dropdown__caret,
+    .sidebar__toolbar-panel {
         transition: none;
     }
 }

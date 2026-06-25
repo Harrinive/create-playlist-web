@@ -5,6 +5,33 @@
     --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Astro ClientRouter — unified cross-fade for page navigation */
+::view-transition-old(main),
+::view-transition-new(main) {
+    animation-duration: var(--motion-duration);
+    animation-timing-function: var(--motion-ease);
+}
+
+@keyframes astroFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes astroFadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
 @keyframes cross-fade-in {
     from {
         opacity: 0;
@@ -35,15 +62,21 @@
     pointer-events: none;
 }
 
-/* First paint before ClientRouter navigations */
-.content__main {
-    animation: cross-fade-in var(--motion-duration) var(--motion-ease) both;
+/* Toolbar dropdowns (desktop flyout + in-panel) */
+.toolbar-dropdown__menu.is-opening {
+    animation: menu-reveal var(--motion-duration) var(--motion-ease) both;
 }
 
-/* Toolbar dropdowns and mobile menu panel */
-.toolbar-dropdown__menu:not([hidden]),
-.sidebar__toolbar-panel.is-open {
-    animation: cross-fade-in var(--motion-duration) var(--motion-ease) both;
+@keyframes menu-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .interview-step.appear-on-mount,
@@ -63,8 +96,7 @@
 .chip-option {
     transition:
         background var(--motion-duration) var(--motion-ease),
-        border-color var(--motion-duration) var(--motion-ease),
-        opacity var(--motion-duration) var(--motion-ease);
+        border-color var(--motion-duration) var(--motion-ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -72,11 +104,9 @@
         --motion-duration: 0.01ms;
     }
 
-    .content__main,
     .appear-on-mount,
     .is-fading-out,
-    .toolbar-dropdown__menu:not([hidden]),
-    .sidebar__toolbar-panel.is-open {
+    .toolbar-dropdown__menu.is-opening {
         animation: none;
     }
 

@@ -1,28 +1,73 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import InterviewMissing from '../components/InterviewMissing.astro';
+import { CATALOG_CURATE_MODELS } from '../data/model-catalog';
+import { DELIVERY_COPY } from '../lib/delivery-copy';
 ---
 
 <BaseLayout title="Choose delivery">
     <section id="delivery-page">
-        <InterviewMissing id="delivery-missing" />
+        <InterviewMissing id="delivery-missing" hidden />
 
-        <div id="delivery-content" hidden>
+        <div id="delivery-content">
             <p class="page-kicker">
-                <span data-locale="en">Step 2</span>
-                <span data-locale="zh" hidden>步骤 2</span>
+                <span data-locale="en">{DELIVERY_COPY.stepKicker.en}</span>
+                <span data-locale="zh" hidden>{DELIVERY_COPY.stepKicker.zh}</span>
             </p>
             <h1 class="page-title">
-                <span data-locale="en">What should we deliver?</span>
-                <span data-locale="zh" hidden>你想怎么交付？</span>
+                <span data-locale="en">{DELIVERY_COPY.heading.en}</span>
+                <span data-locale="zh" hidden>{DELIVERY_COPY.heading.zh}</span>
             </h1>
 
-            <div id="delivery-options" class="chip-grid" role="group"></div>
+            <div id="delivery-options" class="chip-grid" role="group">
+                <button type="button" class="chip-option chip-option--delivery" data-delivery="prompt">
+                    <span class="chip-option__label">
+                        <span data-locale="en">{DELIVERY_COPY.promptLabel.en}</span>
+                        <span data-locale="zh" hidden>{DELIVERY_COPY.promptLabel.zh}</span>
+                    </span>
+                    <span class="chip-option__sublabel">
+                        <span data-locale="en">{DELIVERY_COPY.promptSublabel.en}</span>
+                        <span data-locale="zh" hidden>{DELIVERY_COPY.promptSublabel.zh}</span>
+                    </span>
+                </button>
+                {
+                    CATALOG_CURATE_MODELS.length > 0 ? (
+                        CATALOG_CURATE_MODELS.map((model) => (
+                            <button
+                                type="button"
+                                class="chip-option chip-option--delivery"
+                                data-delivery="build"
+                                data-model={model.id}
+                            >
+                                <span class="chip-option__label">
+                                    <span data-locale="en">{model.labelEn}</span>
+                                    <span data-locale="zh" hidden>{model.labelZh}</span>
+                                </span>
+                                <span class="chip-option__sublabel">
+                                    <span data-locale="en">{DELIVERY_COPY.buildSublabelSpotify.en}</span>
+                                    <span data-locale="zh" hidden>{DELIVERY_COPY.buildSublabelSpotify.zh}</span>
+                                </span>
+                            </button>
+                        ))
+                    ) : (
+                        <button type="button" class="chip-option chip-option--delivery" data-delivery="build">
+                            <span class="chip-option__label">
+                                <span data-locale="en">{DELIVERY_COPY.buildFallbackLabel.en}</span>
+                                <span data-locale="zh" hidden>{DELIVERY_COPY.buildFallbackLabel.zh}</span>
+                            </span>
+                            <span class="chip-option__sublabel">
+                                <span data-locale="en">{DELIVERY_COPY.buildSublabelAccount.en}</span>
+                                <span data-locale="zh" hidden>{DELIVERY_COPY.buildSublabelAccount.zh}</span>
+                            </span>
+                        </button>
+                    )
+                }
+            </div>
 
             <div class="actions-row">
                 <a class="text-link-button" href="/interview">
-                    <span data-locale="en">Back to interview</span>
-                    <span data-locale="zh" hidden>返回访谈</span>
+                    <span data-locale="en">{DELIVERY_COPY.backToInterview.en}</span>
+                    <span data-locale="zh" hidden>{DELIVERY_COPY.backToInterview.zh}</span>
                 </a>
             </div>
         </div>

@@ -46,13 +46,13 @@ export function fadeOut(el: HTMLElement): Promise<void> {
 
 export function crossFadePanels(show: HTMLElement, hide: HTMLElement[]): void {
     const visibleHide = hide.filter((panel) => !panel.hidden);
-    if (prefersReducedMotion()) {
+
+    if (prefersReducedMotion() || visibleHide.length === 0) {
         visibleHide.forEach((panel) => {
             panel.hidden = true;
             panel.classList.remove('is-fading-out');
         });
         show.hidden = false;
-        appearOnMount(show);
         return;
     }
 
@@ -70,4 +70,61 @@ export function crossFadePanels(show: HTMLElement, hide: HTMLElement[]): void {
 
 export function revealPanel(show: HTMLElement, hide: HTMLElement[] = []): void {
     crossFadePanels(show, hide);
+}
+
+export function openWithFade(el: HTMLElement): void {
+    el.classList.remove('is-opening');
+    el.hidden = false;
+    if (prefersReducedMotion()) return;
+    void el.offsetWidth;
+    el.classList.add('is-opening');
+    el.addEventListener(
+        'animationend',
+        () => {
+            el.classList.remove('is-opening');
+        },
+        { once: true }
+    );
+}
+
+export function closeInstant(el: HTMLElement): void {
+    el.classList.remove('is-opening', 'is-open');
+    el.hidden = true;
+}
+
+export function closeWithTransition(el: HTMLElement): Promise<void> {
+    el.classList.remove('is-open', 'is-opening');
+
+    if (prefersReducedMotion()) {
+        el.hidden = true;
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+        let settled = false;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            el.hidden = true;
+            resolve();
+        };
+
+        el.addEventListener('transitionend', (event) => {
+            if (event.target === el) finish();
+        }, { once: true });
+        window.setTimeout(finish, MOTION_MS + 40);
+    });
+}
+
+export function openOverlay(el: HTMLElement): void {
+    el.classList.remove('is-opening');
+    el.hidden = false;
+
+    if (prefersReducedMotion()) {
+        el.classList.add('is-open');
+        return;
+    }
+
+    void el.offsetWidth;
+    el.classList.add('is-open');
 }
