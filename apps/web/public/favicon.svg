@@ -1,3 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Vibelist">
-  <text x="50" y="52" font-size="72" text-anchor="middle" dominant-baseline="central">🪎</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Vibelist">
+  <style>
+    .bg {
+      fill: #fffefc;
+    }
+    .icon {
+      fill: none;
+      stroke: #292524;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    @media (prefers-color-scheme: dark) {
+      .bg {
+        fill: #1a1a1a;
+      }
+      .icon {
+        stroke: #e5e5e5;
+      }
+    }
+  </style>
+  <rect class="bg" width="32" height="32" rx="7" />
+  <g class="icon" transform="translate(4 4)">
+    <path d="M4 9V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4" />
+    <path d="M8 8v1" />
+    <path d="M12 8v1" />
+    <path d="M16 8v1" />
+    <rect width="20" height="12" x="2" y="9" rx="2" />
+    <circle cx="8" cy="15" r="2" />
+    <circle cx="16" cy="15" r="2" />
+  </g>
 </svg>

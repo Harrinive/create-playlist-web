@@ -67,7 +67,6 @@
     --muted: #57534e;
     --faint: #a8a29e;
     --border: #e7e5e4;
-    --accent: #1db954;
     --panel: #f2f2f0;
     --max: 720px;
     --sidebar: 280px;
@@ -86,7 +85,6 @@
     --muted: #a3a3a3;
     --faint: #737373;
     --border: #333333;
-    --accent: #1ed760;
     --panel: #2a2a2a;
 }
 
@@ -135,7 +133,7 @@ a:where(:not([class])):hover {
 
 a:focus-visible,
 button:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--text);
     outline-offset: 2px;
 }
 
