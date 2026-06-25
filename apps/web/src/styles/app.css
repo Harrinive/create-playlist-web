@@ -45,6 +45,21 @@
 .chip-option .interview-bilingual__primary {
     grid-column: 1;
     grid-row: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
+}
+
+.chip-option .interview-bilingual__label {
+    min-width: 0;
+}
+
+.chip-option .interview-option-gloss {
+    flex-shrink: 0;
+    text-align: right;
+    max-width: 48%;
 }
 
 .chip-option .interview-bilingual__secondary {
@@ -152,54 +167,67 @@
     min-height: 1.2em;
 }
 
-.build-search {
-    margin: 0 0 24px;
-    max-width: 36rem;
-}
-
-.build-search__label {
-    display: block;
-    font-size: 13px;
-    color: var(--faint);
-    margin-bottom: 8px;
-    font-family: var(--font-copy);
-}
-
-.build-search__row {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.build-search__input {
-    flex: 1 1 220px;
-    min-width: 0;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 10px 14px;
-    font-size: 15px;
-    background: transparent;
-    color: var(--text);
-    font-family: var(--font-copy);
-}
-
-.build-search-results {
-    margin: 0 0 24px;
-    color: var(--muted);
-    font-size: 15px;
-    line-height: 1.65;
-    max-width: 36rem;
-}
-
-.build-track-list {
-    margin: 0;
-    padding-left: 1.2rem;
-}
-
 .build-flow {
-    margin: 0 0 24px;
+    margin: 0 0 28px;
     max-width: 36rem;
+    padding: 20px 22px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--panel);
+}
+
+.build-page-header {
+    margin-bottom: 24px;
+}
+
+.build-page-header .page-title {
+    margin-bottom: 6px;
+}
+
+.page-subtitle {
+    margin: 0;
+    font-family: var(--font-copy);
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.page-subtitle strong {
+    color: var(--text);
+    font-weight: 500;
+}
+
+.build-flow__model {
+    margin: 0 0 14px;
+    font-family: var(--font-copy);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--faint);
+    letter-spacing: 0.02em;
+}
+
+.build-flow__lead {
+    margin: 0 0 20px;
+    font-family: var(--font-copy);
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--muted);
+}
+
+.build-flow__actions {
+    margin-bottom: 0;
+}
+
+.build-flow__progress {
+    margin: 14px 0 0;
+    font-family: var(--font-copy);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--muted);
+}
+
+.build-footer-actions {
+    margin-top: 8px;
 }
 
 .build-results {
@@ -212,10 +240,49 @@
     font-size: 1.35rem;
 }
 
-.build-results__summary p {
-    margin: 0 0 8px;
+.build-results__meta {
+    margin: 0 0 20px;
+}
+
+.build-results__meta-row {
+    display: grid;
+    grid-template-columns: minmax(7rem, 9rem) 1fr;
+    gap: 8px 16px;
+    margin: 0 0 10px;
+}
+
+.build-results__meta dt {
+    margin: 0;
+    color: var(--faint);
+    font-size: 13px;
+    font-family: var(--font-copy);
+    font-weight: 500;
+}
+
+.build-results__meta dd {
+    margin: 0;
     color: var(--muted);
     line-height: 1.65;
+    word-break: break-word;
+}
+
+.build-results__meta dd a {
+    color: var(--text);
+}
+
+.build-results__sequence {
+    margin: 0 0 20px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--panel);
+}
+
+.build-results__sequence-text {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.75;
 }
 
 .build-results__section {
@@ -229,45 +296,18 @@
 
 .build-results__list {
     margin: 0;
-    padding-left: 1.2rem;
+    padding-left: 1.4rem;
     color: var(--muted);
     line-height: 1.65;
 }
 
-.build-results__table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-
-.build-results__table th,
-.build-results__table td {
-    border: 1px solid var(--border);
-    padding: 8px 10px;
-    text-align: left;
-    vertical-align: top;
-}
-
-.build-results__table th {
-    color: var(--faint);
-    font-weight: 500;
+.build-results__track {
+    color: var(--text);
 }
 
 .build-fallback {
     margin: 0 0 24px;
     max-width: 36rem;
-}
-
-.build-advanced {
-    margin: 0 0 24px;
-    max-width: 36rem;
-}
-
-.build-advanced summary {
-    cursor: pointer;
-    color: var(--faint);
-    font-size: 14px;
-    margin-bottom: 12px;
 }
 
 .page-kicker {

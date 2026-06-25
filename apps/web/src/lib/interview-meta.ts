@@ -44,6 +44,7 @@ export const WIZARD_LABELS: Record<
         refreshQuestion: string;
         refreshingQuestion: string;
         apiUnavailable: string;
+        apiUnreachable: string;
     }
 > = {
     en: {
@@ -57,7 +58,9 @@ export const WIZARD_LABELS: Record<
         done: 'Done',
         refreshQuestion: 'New question',
         refreshingQuestion: 'Finding another question…',
-        apiUnavailable: 'Interview needs the API — check PUBLIC_API_URL and LLM keys on the server.'
+        apiUnavailable: 'Interview needs the API — check PUBLIC_API_URL and LLM keys on the server.',
+        apiUnreachable:
+            'Could not reach the API. Start the server with `npm run dev` in apps/api (http://127.0.0.1:3001).'
     },
     zh: {
         continue: '继续',
@@ -69,6 +72,8 @@ export const WIZARD_LABELS: Record<
         done: '完成',
         refreshQuestion: '换一题',
         refreshingQuestion: '正在换一题…',
-        apiUnavailable: '访谈需要 API — 请检查 PUBLIC_API_URL 及服务器上的 LLM 密钥。'
+        apiUnavailable: '访谈需要 API — 请检查 PUBLIC_API_URL 及服务器上的 LLM 密钥。',
+        apiUnreachable:
+            '无法连接 API。请在 apps/api 目录运行 `npm run dev` 启动服务（http://127.0.0.1:3001）。'
     }
 };

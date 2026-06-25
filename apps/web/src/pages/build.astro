@@ -8,14 +8,22 @@ import InterviewMissing from '../components/InterviewMissing.astro';
         <InterviewMissing id="build-missing" />
 
         <div id="build-content" hidden>
-            <p class="page-kicker">
-                <span data-locale="en">Build on Spotify</span>
-                <span data-locale="zh" hidden>在 Spotify 上创建</span>
-            </p>
-            <h1 class="page-title">
-                <span data-locale="en">Create your playlist</span>
-                <span data-locale="zh" hidden>创建你的歌单</span>
-            </h1>
+            <header class="build-page-header">
+                <p class="page-kicker">
+                    <span data-locale="en">Build on Spotify</span>
+                    <span data-locale="zh" hidden>在 Spotify 上创建</span>
+                </p>
+                <h1 class="page-title">
+                    <span data-locale="en">Create your playlist</span>
+                    <span data-locale="zh" hidden>创建你的歌单</span>
+                </h1>
+                <p id="build-user-subtitle" class="page-subtitle" hidden>
+                    <span data-locale="en">Connected as </span>
+                    <span data-locale="zh" hidden>已连接 </span>
+                    <strong id="build-user-label"></strong>
+                </p>
+            </header>
+
             <p id="build-status" class="help-line" hidden role="status"></p>
 
             <div id="build-unconfigured" hidden>
@@ -59,15 +67,9 @@ import InterviewMissing from '../components/InterviewMissing.astro';
             </div>
 
             <div id="build-connected" hidden>
-                <p class="intro-lead">
-                    <span data-locale="en">Connected as </span>
-                    <span data-locale="zh" hidden>已连接 </span>
-                    <strong id="build-user-label"></strong>
-                </p>
-
                 <div id="build-flow" class="build-flow">
-                    <p id="build-model-label" class="help-line" hidden></p>
-                    <p class="intro-lead">
+                    <p id="build-model-label" class="build-flow__model" hidden></p>
+                    <p class="build-flow__lead">
                         <span data-locale="en">
                             We'll curate a ~26-line tracklist from your interview, verify each song on Spotify, trim to
                             ~20 tracks in listen order, then publish a private playlist.
@@ -76,13 +78,13 @@ import InterviewMissing from '../components/InterviewMissing.astro';
                             我们会根据访谈生成约 26 首候选曲目，在 Spotify 上验证，按聆听顺序裁剪到约 20 首，然后发布私密歌单。
                         </span>
                     </p>
-                    <div class="actions-row">
+                    <div class="actions-row build-flow__actions">
                         <button id="build-start-btn" type="button" class="text-link-button text-link-button--primary">
                             <span data-locale="en">Build playlist</span>
                             <span data-locale="zh" hidden>创建歌单</span>
                         </button>
                     </div>
-                    <p id="build-progress" class="help-line" hidden role="status"></p>
+                    <p id="build-progress" class="build-flow__progress" hidden role="status"></p>
                 </div>
 
                 <div id="build-results" class="build-results" hidden>
@@ -92,7 +94,6 @@ import InterviewMissing from '../components/InterviewMissing.astro';
                     </h2>
                     <div id="build-results-summary" class="build-results__summary"></div>
                     <div id="build-results-order" class="build-results__section"></div>
-                    <div id="build-results-skipped" class="build-results__section"></div>
                 </div>
 
                 <div id="build-fallback" class="build-fallback" hidden>
@@ -113,35 +114,7 @@ import InterviewMissing from '../components/InterviewMissing.astro';
                     </div>
                 </div>
 
-                <details class="build-advanced">
-                    <summary>
-                        <span data-locale="en">Test track search</span>
-                        <span data-locale="zh" hidden>测试曲目搜索</span>
-                    </summary>
-                    <form id="build-search-form" class="build-search">
-                        <label class="build-search__label" for="build-search-input">
-                            <span data-locale="en">Search query</span>
-                            <span data-locale="zh" hidden>搜索关键词</span>
-                        </label>
-                        <div class="build-search__row">
-                            <input
-                                id="build-search-input"
-                                class="build-search__input"
-                                type="search"
-                                name="q"
-                                placeholder="artist and track"
-                                autocomplete="off"
-                            />
-                            <button type="submit" class="text-link-button text-link-button--primary">
-                                <span data-locale="en">Search</span>
-                                <span data-locale="zh" hidden>搜索</span>
-                            </button>
-                        </div>
-                    </form>
-                    <div id="build-search-results" class="build-search-results" aria-live="polite"></div>
-                </details>
-
-                <div class="actions-row">
+                <div class="actions-row build-footer-actions">
                     <button id="build-logout-btn" type="button" class="text-link-button">
                         <span data-locale="en">Disconnect</span>
                         <span data-locale="zh" hidden>断开连接</span>

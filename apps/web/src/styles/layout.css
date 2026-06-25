@@ -179,7 +179,7 @@
     padding: 10px 12px;
     border-radius: 10px;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background var(--motion-duration) var(--motion-ease);
 }
 
 .toolbar-dropdown__option:hover,
@@ -468,36 +468,62 @@
         display: block;
     }
 
-    .app-toolbar {
+    .sidebar__toolbar-panel .app-toolbar {
         display: flex;
         flex-direction: column;
-        align-items: stretch;
-        gap: 4px;
+        align-items: flex-start;
+        gap: 6px;
         margin: 0;
         width: 100%;
     }
 
-    .app-toolbar__item {
-        width: 100%;
-        justify-content: stretch;
+    .sidebar__toolbar-panel .app-toolbar__item {
+        width: auto;
+        max-width: 100%;
+        justify-content: flex-start;
     }
 
-    .app-toolbar__btn,
-    .toolbar-dropdown__trigger {
-        width: 100%;
-        justify-content: space-between;
+    .sidebar__toolbar-panel .app-toolbar__btn,
+    .sidebar__toolbar-panel .toolbar-dropdown__trigger {
+        width: auto;
+        max-width: 100%;
+        justify-content: flex-start;
+        gap: 6px;
+        min-height: var(--tap-min-h);
+        padding: 6px 12px;
+        font-size: 14px;
     }
 
-    .toolbar-dropdown {
-        width: 100%;
+    .sidebar__header-actions .toolbar-menu-toggle {
+        width: auto;
+        justify-content: center;
+        gap: 3px;
     }
 
-    .toolbar-dropdown__menu {
+    .sidebar__toolbar-panel .app-toolbar__item--dropdown {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .sidebar__toolbar-panel .toolbar-dropdown {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .sidebar__toolbar-panel .toolbar-dropdown__trigger {
+        gap: 4px;
+    }
+
+    .sidebar__toolbar-panel .toolbar-dropdown__value {
+        max-width: 14rem;
+    }
+
+    .sidebar__toolbar-panel .toolbar-dropdown__menu {
         position: static;
         width: 100%;
         min-width: 0;
         max-width: 100%;
-        margin-top: 6px;
+        margin-top: 4px;
         box-shadow: none;
         right: 0;
         left: auto;
@@ -516,18 +542,13 @@
 }
 
 @media (max-width: 480px) {
-    .app-toolbar__btn,
-    .toolbar-dropdown__trigger {
-        font-size: 14px;
+    .sidebar__toolbar-panel .app-toolbar__btn,
+    .sidebar__toolbar-panel .toolbar-dropdown__trigger {
         padding: 8px 10px;
     }
 
-    .toolbar-dropdown__prefix {
-        display: none;
-    }
-
-    .toolbar-dropdown__value {
-        max-width: 6rem;
+    .sidebar__toolbar-panel .toolbar-dropdown__value {
+        max-width: 10rem;
     }
 }
 

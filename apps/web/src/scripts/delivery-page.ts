@@ -8,6 +8,7 @@ import {
 import { saveLastDelivery } from '../lib/last-delivery';
 import { applyLocaleToDocument, readLocale } from '../lib/locale';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
+import { appearOnMount, revealPanel, staggerAppear } from '../lib/motion';
 
 const abortByRoot = new WeakMap<HTMLElement, AbortController>();
 let deliveryOptionsGeneration = 0;
@@ -45,7 +46,7 @@ function renderDeliveryOptions(optionsEl: HTMLElement, models: CurateModelOption
         createDeliveryButton(
             { delivery: 'prompt' },
             'Prompt for Spotify Prompted Playlist',
-            'Spotify 提示歌单',
+            'Spotify Prompted Playlist',
             'Paste in the Spotify app',
             '粘贴到 Spotify 应用'
         )
@@ -95,6 +96,11 @@ export async function initDeliveryPage() {
     const hasAnswers = Boolean(answers);
     missingEl.hidden = hasAnswers;
     contentEl.hidden = !hasAnswers;
+    if (hasAnswers) {
+        revealPanel(contentEl, [missingEl]);
+    } else {
+        revealPanel(missingEl, [contentEl]);
+    }
 
     if (!hasAnswers) return;
 
@@ -106,6 +112,7 @@ export async function initDeliveryPage() {
 
     renderDeliveryOptions(optionsEl, CATALOG_CURATE_MODELS);
     applyLocaleToDocument(readLocale());
+    staggerAppear(optionsEl, '.chip-option');
 
     optionsEl.addEventListener(
         'click',
@@ -138,6 +145,7 @@ export async function initDeliveryPage() {
         if (!sameModelIds(models, CATALOG_CURATE_MODELS)) {
             renderDeliveryOptions(optionsEl, models);
             applyLocaleToDocument(readLocale());
+            staggerAppear(optionsEl, '.chip-option');
         }
     } catch {
         // Keep static catalog on network failure.

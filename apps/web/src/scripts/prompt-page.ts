@@ -3,6 +3,7 @@ import { saveLastDelivery } from '../lib/last-delivery';
 import { readLocale } from '../lib/locale';
 import { resolveInterviewModelId } from '../lib/interview-model';
 import { fetchSpotifyPrompt } from '../lib/prompt-api';
+import { crossFadePanels, revealPanel } from '../lib/motion';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
 
 const COPY_OK: Record<'en' | 'zh', string> = {
@@ -67,48 +68,34 @@ export function initPromptPage() {
     });
 
     const answers = readStoredInterviewAnswers();
+    const panels = [contentEl, loadingEl, errorEl, unconfiguredEl];
+
     if (!answers) {
-        missingEl.hidden = false;
-        contentEl.hidden = true;
-        loadingEl.hidden = true;
-        errorEl.hidden = true;
-        unconfiguredEl.hidden = true;
+        revealPanel(missingEl, panels);
         return;
     }
 
     missingEl.hidden = true;
 
     if (!isApiConfigured()) {
-        unconfiguredEl.hidden = false;
-        contentEl.hidden = true;
-        loadingEl.hidden = true;
-        errorEl.hidden = true;
+        crossFadePanels(unconfiguredEl, [contentEl, loadingEl, errorEl]);
         return;
     }
 
     function showLoading() {
-        loadingEl.hidden = false;
-        contentEl.hidden = true;
-        errorEl.hidden = true;
-        unconfiguredEl.hidden = true;
+        crossFadePanels(loadingEl, [contentEl, errorEl, unconfiguredEl]);
     }
 
     function showError(message?: string) {
-        loadingEl.hidden = true;
-        contentEl.hidden = true;
-        errorEl.hidden = false;
-        unconfiguredEl.hidden = true;
         const locale = readLocale();
         errorTextEl.textContent = message ?? ERROR_GENERIC[locale];
+        crossFadePanels(errorEl, [loadingEl, contentEl, unconfiguredEl]);
     }
 
     function showContent(text: string) {
         paragraph = text;
         promptEl.textContent = text;
-        loadingEl.hidden = true;
-        errorEl.hidden = true;
-        unconfiguredEl.hidden = true;
-        contentEl.hidden = false;
+        crossFadePanels(contentEl, [loadingEl, errorEl, unconfiguredEl]);
         saveLastDelivery('prompt');
         document.dispatchEvent(new CustomEvent('last-delivery-changed'));
     }

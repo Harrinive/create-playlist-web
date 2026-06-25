@@ -1,5 +1,6 @@
 import type { InterviewAlgorithmMode } from './interview-algorithm-mode';
 import type { Locale } from './locale';
+import { appearOnMount } from './motion';
 
 const FULL_STAGE_MS = [2800, 3500, 4500] as const;
 const FULL_PROGRESS = [18, 48, 78, 92] as const;
@@ -50,6 +51,7 @@ export function mountInterviewLoading(
             <p class="interview-loading__text">${copy.fastTitle}</p>
             <p class="interview-loading__hint">${copy.fastSubtitle}</p>
         `;
+        appearOnMount(block);
         return { element: block, stop: () => {} };
     }
 
@@ -74,6 +76,7 @@ export function mountInterviewLoading(
     const bar = block.querySelector<HTMLElement>('.interview-loading__progress-bar');
     const stageEl = block.querySelector<HTMLElement>('.interview-loading__stage');
     if (!progress || !bar || !stageEl) {
+        appearOnMount(block);
         return { element: block, stop: () => {} };
     }
 
@@ -106,6 +109,8 @@ export function mountInterviewLoading(
             );
         }
     }
+
+    appearOnMount(block);
 
     return {
         element: block,

@@ -50,12 +50,17 @@ export async function fetchInterviewNext(
     }
 
     const { signal, ...body } = input;
-    const response = await fetch(`${api}/api/interview/next`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal
-    });
+    let response: Response;
+    try {
+        response = await fetch(`${api}/api/interview/next`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal
+        });
+    } catch {
+        throw new Error('Failed to fetch');
+    }
 
     const payload = (await response.json()) as InterviewNextResponse & { error?: string };
     if (!response.ok) {

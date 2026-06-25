@@ -1,0 +1,89 @@
+/* Unified cross-fade motion — duration/easing shared across pages, menus, and dynamic UI */
+
+:root {
+    --motion-duration: 320ms;
+    --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes cross-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes cross-fade-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.appear-on-mount {
+    animation: cross-fade-in var(--motion-duration) var(--motion-ease) both;
+    animation-delay: var(--appear-delay, 0ms);
+}
+
+.is-fading-out {
+    animation: cross-fade-out var(--motion-duration) var(--motion-ease) both;
+    pointer-events: none;
+}
+
+/* First paint before ClientRouter navigations */
+.content__main {
+    animation: cross-fade-in var(--motion-duration) var(--motion-ease) both;
+}
+
+/* Toolbar dropdowns and mobile menu panel */
+.toolbar-dropdown__menu:not([hidden]),
+.sidebar__toolbar-panel.is-open {
+    animation: cross-fade-in var(--motion-duration) var(--motion-ease) both;
+}
+
+.interview-step.appear-on-mount,
+.interview-loading.appear-on-mount {
+    animation: cross-fade-in var(--motion-duration) var(--motion-ease) both;
+}
+
+.interview-step--answered {
+    transition: opacity var(--motion-duration) var(--motion-ease);
+}
+
+.interview-step.is-refreshing .interview-step__options,
+.interview-step.is-refreshing [data-role='done'] {
+    transition: opacity var(--motion-duration) var(--motion-ease);
+}
+
+.chip-option {
+    transition:
+        background var(--motion-duration) var(--motion-ease),
+        border-color var(--motion-duration) var(--motion-ease),
+        opacity var(--motion-duration) var(--motion-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --motion-duration: 0.01ms;
+    }
+
+    .content__main,
+    .appear-on-mount,
+    .is-fading-out,
+    .toolbar-dropdown__menu:not([hidden]),
+    .sidebar__toolbar-panel.is-open {
+        animation: none;
+    }
+
+    .interview-step--answered,
+    .interview-step.is-refreshing .interview-step__options,
+    .interview-step.is-refreshing [data-role='done'],
+    .chip-option {
+        transition: none;
+    }
+}

@@ -1,10 +1,11 @@
 ---
-import { ClientRouter } from 'astro:transitions';
+import { ClientRouter, fade } from 'astro:transitions';
 import BaseHead, { type Props as HeadProps } from '../components/BaseHead.astro';
 import Sidebar from '../components/Sidebar.astro';
 
 export type Props = HeadProps;
 const head = Astro.props;
+const pageFade = fade({ duration: '320ms' });
 ---
 
 <!doctype html>
@@ -51,7 +52,9 @@ const head = Astro.props;
             <div class="divider" aria-hidden="true"></div>
             <main id="content" class="content" tabindex="-1">
                 <div class="content__inner">
-                    <slot />
+                    <div class="content__main" transition:animate={pageFade}>
+                        <slot />
+                    </div>
                     <footer class="site-footer">
                         <span data-locale="en">Vibe List → Spotify</span>
                         <span data-locale="zh" hidden>氛围歌单 → Spotify</span>
@@ -62,6 +65,7 @@ const head = Astro.props;
         <script>
             import '../scripts/sidebar-theme.ts';
             import '../scripts/app-toolbar.ts';
+            import '../scripts/page-enter.ts';
         </script>
     </body>
 </html>

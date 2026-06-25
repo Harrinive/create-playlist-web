@@ -1,20 +1,25 @@
 import { getApiBaseUrl, hasDevHostMismatch, isApiConfigured } from '../lib/api-config';
 import {
+    buildProgressCurating,
+    buildProgressPublishing,
+    buildProgressVerifying,
+    buildVerifyFallbackMessage,
+    formatSequenceIntent,
+    resultLabel,
+    resultTracksLine
+} from '../lib/build-copy';
+import {
     curateModelLabel,
     resolveCurateModelId
 } from '../lib/curate-model';
 import { readLocale } from '../lib/locale';
 import { saveBuildResult, saveLastDelivery } from '../lib/last-delivery';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
+import { appearOnMount, crossFadePanels, revealPanel } from '../lib/motion';
 
 type MeResponse =
     | { authenticated: false }
     | { authenticated: true; user: { displayName: string | null; spotifyUserId: string } };
-
-type SearchResponse = {
-    query: string;
-    tracks: Array<{ id: string; name: string; artists: string; uri: string }>;
-};
 
 type CompactBrief = {
     anchor: string;
@@ -107,15 +112,12 @@ export function initBuildPage() {
     const fallbackEl = document.getElementById('build-fallback');
     const resultsSummary = document.getElementById('build-results-summary');
     const resultsOrder = document.getElementById('build-results-order');
-    const resultsSkipped = document.getElementById('build-results-skipped');
     const startBtn = document.getElementById('build-start-btn') as HTMLButtonElement | null;
     const modelLabelEl = document.getElementById('build-model-label');
-    const searchForm = document.getElementById('build-search-form') as HTMLFormElement | null;
-    const searchInput = document.getElementById('build-search-input') as HTMLInputElement | null;
-    const searchResults = document.getElementById('build-search-results');
     const connectBtn = document.getElementById('build-connect-btn') as HTMLAnchorElement | null;
     const logoutBtn = document.getElementById('build-logout-btn') as HTMLButtonElement | null;
     const userLabel = document.getElementById('build-user-label');
+    const userSubtitleEl = document.getElementById('build-user-subtitle');
 
     if (!missingEl || !contentEl) return;
 
@@ -123,7 +125,13 @@ export function initBuildPage() {
     const hasAnswers = Boolean(answers);
     missingEl.hidden = hasAnswers;
     contentEl.hidden = !hasAnswers;
-    if (!hasAnswers || !answers) return;
+    if (hasAnswers) {
+        revealPanel(contentEl, [missingEl]);
+    } else {
+        revealPanel(missingEl, [contentEl]);
+        return;
+    }
+    if (!answers) return;
 
     saveLastDelivery('build');
     document.dispatchEvent(new CustomEvent('last-delivery-changed'));
@@ -138,9 +146,7 @@ export function initBuildPage() {
     }
 
     if (!isApiConfigured()) {
-        if (unconfiguredEl) unconfiguredEl.hidden = false;
-        if (connectEl) connectEl.hidden = true;
-        if (connectedEl) connectedEl.hidden = true;
+        crossFadePanels(unconfiguredEl!, [connectEl!, connectedEl!].filter(Boolean) as HTMLElement[]);
         return;
     }
 
@@ -196,67 +202,67 @@ export function initBuildPage() {
     }
 
     async function showConnect() {
-        if (unconfiguredEl) unconfiguredEl.hidden = true;
-        if (connectEl) connectEl.hidden = false;
-        if (connectedEl) connectedEl.hidden = true;
+        if (userSubtitleEl) userSubtitleEl.hidden = true;
+        crossFadePanels(connectEl!, [unconfiguredEl!, connectedEl!].filter(Boolean) as HTMLElement[]);
     }
 
     async function showConnected(user: { displayName: string | null; spotifyUserId: string }) {
-        if (unconfiguredEl) unconfiguredEl.hidden = true;
-        if (connectEl) connectEl.hidden = true;
-        if (connectedEl) connectedEl.hidden = false;
+        crossFadePanels(connectedEl!, [unconfiguredEl!, connectEl!].filter(Boolean) as HTMLElement[]);
         if (userLabel) {
             userLabel.textContent = user.displayName ?? user.spotifyUserId;
         }
+        if (userSubtitleEl) userSubtitleEl.hidden = false;
         if (statusEl && connected) {
             statusEl.textContent = 'Spotify connected.';
             statusEl.hidden = false;
+            appearOnMount(statusEl);
         }
     }
 
     function renderResults(data: PublishResponse) {
         if (signal.aborted) return;
-        if (!resultsEl || !resultsSummary || !resultsOrder || !resultsSkipped) return;
+        if (!resultsEl || !resultsSummary || !resultsOrder) return;
+
+        const locale = readLocale();
+        const sequence = data.sequenceIntent ? formatSequenceIntent(data.sequenceIntent) : '';
 
         resultsSummary.innerHTML = `
-            <p><strong>Name:</strong> ${escapeHtml(data.playlist.name)}</p>
-            <p><strong>URL:</strong> <a href="${escapeHtml(data.playlist.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(data.playlist.url)}</a></p>
-            <p><strong>Tracks:</strong> ${data.trackCount} (from ${data.proposedCount} proposed)</p>
-            ${data.sequenceIntent ? `<p><strong>Sequence:</strong> ${escapeHtml(data.sequenceIntent)}</p>` : ''}
+            <dl class="build-results__meta">
+                <div class="build-results__meta-row">
+                    <dt>${escapeHtml(resultLabel(locale, 'name'))}</dt>
+                    <dd>${escapeHtml(data.playlist.name)}</dd>
+                </div>
+                <div class="build-results__meta-row">
+                    <dt>${escapeHtml(resultLabel(locale, 'link'))}</dt>
+                    <dd><a href="${escapeHtml(data.playlist.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(data.playlist.url)}</a></dd>
+                </div>
+                <div class="build-results__meta-row">
+                    <dt>${escapeHtml(resultLabel(locale, 'tracks'))}</dt>
+                    <dd>${escapeHtml(resultTracksLine(locale, data.trackCount, data.proposedCount))}</dd>
+                </div>
+            </dl>
+            ${
+                sequence
+                    ? `<div class="build-results__sequence">
+                        <h3 class="build-results__heading">${escapeHtml(resultLabel(locale, 'sequence'))}</h3>
+                        <p class="build-results__sequence-text">${escapeHtml(sequence)}</p>
+                       </div>`
+                    : ''
+            }
         `;
 
         const orderItems = data.tracks
             .map(
-                (track, index) =>
-                    `<li>${index + 1}. ${escapeHtml(track.artist)} — ${escapeHtml(track.title)} ✓</li>`
+                (track) =>
+                    `<li><span class="build-results__track">${escapeHtml(track.artist)} — ${escapeHtml(track.title)}</span></li>`
             )
             .join('');
         resultsOrder.innerHTML = `
-            <h3 class="build-results__heading">Order</h3>
+            <h3 class="build-results__heading">${escapeHtml(resultLabel(locale, 'order'))}</h3>
             <ol class="build-results__list">${orderItems}</ol>
         `;
 
-        if (data.skipped.length > 0) {
-            const rows = data.skipped
-                .map(
-                    (row) =>
-                        `<tr><td>${escapeHtml(row.proposed)}</td><td>${escapeHtml(row.reason)}</td></tr>`
-                )
-                .join('');
-            resultsSkipped.innerHTML = `
-                <h3 class="build-results__heading">Not on playlist</h3>
-                <table class="build-results__table">
-                    <thead><tr><th>Line</th><th>Reason</th></tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>
-            `;
-        } else {
-            resultsSkipped.innerHTML = '';
-        }
-
-        resultsEl.hidden = false;
-        if (flowEl) flowEl.hidden = true;
-        if (fallbackEl) fallbackEl.hidden = true;
+        crossFadePanels(resultsEl, [flowEl!, fallbackEl!].filter(Boolean) as HTMLElement[]);
         saveBuildResult({
             playlistName: data.playlist.name,
             playlistUrl: data.playlist.url,
@@ -284,7 +290,7 @@ export function initBuildPage() {
                 modelLabelEl.hidden = false;
             }
 
-            setProgress(`Step 2.2.3: ${curateLabel}…`);
+            setProgress(buildProgressCurating(readLocale(), curateLabel));
             const curateResponse = await fetch(`${api}/api/curate`, {
                 method: 'POST',
                 credentials: 'include',
@@ -303,7 +309,7 @@ export function initBuildPage() {
             const curated = (await curateResponse.json()) as CurateResponse;
             if (signal.aborted) return;
 
-            setProgress(`Step 2.2.4–2.2.5: verifying ${curated.proposedCount} lines on Spotify…`);
+            setProgress(buildProgressVerifying(readLocale(), curated.proposedCount));
             const verifyResponse = await fetch(`${api}/api/verify`, {
                 method: 'POST',
                 credentials: 'include',
@@ -325,15 +331,23 @@ export function initBuildPage() {
             if (verified.offerPromptFallback || verified.tracks.length < 10) {
                 hideProgress();
                 if (signal.aborted) return;
-                if (fallbackEl) fallbackEl.hidden = false;
+                if (fallbackEl) {
+                    crossFadePanels(fallbackEl, [resultsEl!, flowEl!].filter(Boolean) as HTMLElement[]);
+                }
                 if (statusEl) {
-                    statusEl.textContent = `Only ${verified.okCount} of ${verified.proposedCount} lines verified (${Math.round(verified.successRate * 100)}%).`;
+                    statusEl.textContent = buildVerifyFallbackMessage(
+                        readLocale(),
+                        verified.okCount,
+                        verified.proposedCount,
+                        verified.successRate
+                    );
                     statusEl.hidden = false;
+                    appearOnMount(statusEl);
                 }
                 return;
             }
 
-            setProgress(`Step 2.2.7: publishing ${verified.tracks.length} tracks…`);
+            setProgress(buildProgressPublishing(readLocale(), verified.tracks.length));
             const publishResponse = await fetch(`${api}/api/publish`, {
                 method: 'POST',
                 credentials: 'include',
@@ -400,7 +414,6 @@ export function initBuildPage() {
         'click',
         async () => {
             await fetch(`${api}/auth/logout`, { method: 'POST', credentials: 'include' });
-            if (searchResults) searchResults.innerHTML = '';
             if (resultsEl) resultsEl.hidden = true;
             if (fallbackEl) fallbackEl.hidden = true;
             if (flowEl) flowEl.hidden = false;
@@ -413,39 +426,6 @@ export function initBuildPage() {
         'click',
         () => {
             void runBuild();
-        },
-        { signal }
-    );
-
-    searchForm?.addEventListener(
-        'submit',
-        async (event) => {
-            event.preventDefault();
-            if (!searchInput || !searchResults) return;
-            const q = searchInput.value.trim();
-            if (!q) return;
-
-            searchResults.innerHTML = '';
-            const response = await fetch(`${api}/api/search?q=${encodeURIComponent(q)}`, {
-                credentials: 'include'
-            });
-            if (!response.ok) {
-                searchResults.textContent = 'Search failed — try reconnecting Spotify.';
-                return;
-            }
-            const data = (await response.json()) as SearchResponse;
-            if (data.tracks.length === 0) {
-                searchResults.textContent = 'No tracks found.';
-                return;
-            }
-            const list = document.createElement('ul');
-            list.className = 'build-track-list';
-            data.tracks.forEach((track) => {
-                const item = document.createElement('li');
-                item.textContent = `${track.name} — ${track.artists}`;
-                list.appendChild(item);
-            });
-            searchResults.appendChild(list);
         },
         { signal }
     );

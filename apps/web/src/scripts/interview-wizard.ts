@@ -21,6 +21,7 @@ import {
 } from '../lib/interview-refresh';
 import { readLocale, type Locale } from '../lib/locale';
 import { DRAFT_KEY, SESSION_KEY } from '../lib/session-keys';
+import { appearOnMount, fadeOut, staggerAppear } from '../lib/motion';
 
 type Draft = Partial<InterviewAnswers>;
 
@@ -111,6 +112,16 @@ async function loadLlmStep(
 
     upsertLlmStep(stepIndex, response.step);
     return bilingualStepToDisplay(response.step, locale) as InterviewStep;
+}
+
+function interviewLoadError(error: unknown, locale: Locale): string {
+    if (error instanceof Error) {
+        if (error.message === 'Failed to fetch') {
+            return WIZARD_LABELS[locale].apiUnreachable;
+        }
+        return error.message;
+    }
+    return WIZARD_LABELS[locale].apiUnavailable;
 }
 
 export async function initInterviewWizard() {
@@ -388,6 +399,7 @@ export async function initInterviewWizard() {
                     { signal }
                 );
             }
+            staggerAppear(optionsEl, '.chip-option');
             return;
         }
 
@@ -410,6 +422,8 @@ export async function initInterviewWizard() {
 
             optionsEl.appendChild(btn);
         });
+
+        staggerAppear(optionsEl, '.chip-option');
     }
 
     async function handleMultiToggle(
@@ -532,13 +546,14 @@ export async function initInterviewWizard() {
 
             const nextStep = await loadLlmStep(nextIndex, locale, false, interviewModelId, signal);
             if (!isActive()) return;
-            loadingEl.remove();
+            await fadeOut(loadingEl);
             dismissLoading();
 
             if (!nextStep) return;
 
             const block = createStepBlock(nextStep, nextIndex, 'active');
             stackEl.appendChild(block);
+            appearOnMount(block);
             loading = false;
             renderOptions(block, nextStep, nextIndex);
             block.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -578,6 +593,7 @@ export async function initInterviewWizard() {
             }
             stackEl.appendChild(block);
             renderOptions(block, step, i);
+            appearOnMount(block);
         }
     }
 
@@ -602,20 +618,22 @@ export async function initInterviewWizard() {
             const activeStep = await loadLlmStep(completed, locale, false, interviewModelId, signal);
             if (!isActive()) return;
             steps = resolveStepsForLocale(locale);
-            loadingEl.remove();
+            await fadeOut(loadingEl);
             dismissLoading();
             const block = createStepBlock(activeStep, completed, 'active');
             stackEl.appendChild(block);
+            appearOnMount(block);
             renderOptions(block, activeStep, completed);
         } catch (error) {
             if (!isActive()) return;
-            loadingEl.remove();
+            await fadeOut(loadingEl);
             dismissLoading();
-            const message = error instanceof Error ? error.message : 'Could not load question';
+            const message = interviewLoadError(error, locale);
             const err = document.createElement('p');
             err.className = 'help-line';
             err.textContent = message;
             stackEl.appendChild(err);
+            appearOnMount(err);
         } finally {
             loading = false;
             dismissLoading();

@@ -59,16 +59,16 @@ export function fillInterviewLineWithGloss(
         ? `<span class="interview-option-gloss">${escapeHtml(glossWrapper(locale, gloss.trim()))}</span>`
         : '';
 
+    const primaryHtml = glossHtml
+        ? `<span class="interview-bilingual__label">${escapeHtml(primary)}</span>${glossHtml}`
+        : escapeHtml(primary);
+
     if (locale === 'en' || !secondaryEn) {
-        if (glossHtml) {
-            el.innerHTML = `<span class="interview-bilingual__primary">${escapeHtml(primary)}</span>${glossHtml}`;
-        } else {
-            el.textContent = primary;
-        }
+        el.innerHTML = `<span class="interview-bilingual__primary">${primaryHtml}</span>`;
         return;
     }
 
-    el.innerHTML = `<span class="interview-bilingual__primary">${escapeHtml(primary)}${glossHtml}</span><span class="interview-bilingual__secondary">${escapeHtml(secondaryEn)}</span>`;
+    el.innerHTML = `<span class="interview-bilingual__primary">${primaryHtml}</span><span class="interview-bilingual__secondary">${escapeHtml(secondaryEn)}</span>`;
 }
 
 export function toDisplayInterviewStep(
