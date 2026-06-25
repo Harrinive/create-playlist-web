@@ -6,6 +6,10 @@
 }
 
 /* Astro ClientRouter — unified cross-fade for page navigation */
+::view-transition {
+    background-color: var(--bg);
+}
+
 ::view-transition-old(main),
 ::view-transition-new(main) {
     animation-duration: var(--motion-duration);

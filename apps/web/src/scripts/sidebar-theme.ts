@@ -1,3 +1,4 @@
+// Storage keys and mode resolution must stay in sync with the inline boot script in BaseLayout.astro.
 const THEME_KEY = 'theme';
 const THEME_MODE_KEY = 'theme-mode';
 
