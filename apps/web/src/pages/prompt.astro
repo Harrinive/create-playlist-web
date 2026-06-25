@@ -7,6 +7,54 @@ import InterviewMissing from '../components/InterviewMissing.astro';
     <section id="prompt-page">
         <InterviewMissing id="prompt-missing" />
 
+        <div id="prompt-unconfigured" hidden>
+            <p class="intro-lead">
+                <span data-locale="en">
+                    The prompt API is not configured. Set <code>PUBLIC_API_URL</code> when the Fly API is deployed.
+                </span>
+                <span data-locale="zh" hidden>
+                    提示词 API 尚未配置。部署 Fly API 后设置 <code>PUBLIC_API_URL</code>。
+                </span>
+            </p>
+            <div class="actions-row">
+                <a class="text-link-button" href="/delivery">
+                    <span data-locale="en">Other delivery</span>
+                    <span data-locale="zh" hidden>其他交付方式</span>
+                </a>
+            </div>
+        </div>
+
+        <div id="prompt-loading" hidden>
+            <p class="page-kicker">Spotify Prompted Playlist</p>
+            <h1 class="page-title">
+                <span data-locale="en">Copy into Spotify</span>
+                <span data-locale="zh" hidden>复制到 Spotify</span>
+            </h1>
+            <p class="help-line" role="status">
+                <span data-locale="en">Writing your Spotify prompt…</span>
+                <span data-locale="zh" hidden>正在生成 Spotify 提示词…</span>
+            </p>
+        </div>
+
+        <div id="prompt-error" hidden>
+            <p class="page-kicker">Spotify Prompted Playlist</p>
+            <h1 class="page-title">
+                <span data-locale="en">Copy into Spotify</span>
+                <span data-locale="zh" hidden>复制到 Spotify</span>
+            </h1>
+            <p id="prompt-error-text" class="help-line" role="alert"></p>
+            <div class="actions-row">
+                <button id="prompt-retry" type="button" class="text-link-button text-link-button--primary">
+                    <span data-locale="en">Try again</span>
+                    <span data-locale="zh" hidden>重试</span>
+                </button>
+                <a class="text-link-button" href="/interview">
+                    <span data-locale="en">Start over</span>
+                    <span data-locale="zh" hidden>重新开始</span>
+                </a>
+            </div>
+        </div>
+
         <div id="prompt-content" hidden>
             <p class="page-kicker">Spotify Prompted Playlist</p>
             <h1 class="page-title">

@@ -10,10 +10,15 @@ import {
     resolveInterviewDefaultModel
 } from '../llm/interview-models.js';
 import { resolveInterviewAlgorithmMode } from '../llm/interview.js';
+import { generateSpotifyPrompt } from '../llm/spotify-prompt.js';
 
 const interviewOptionSchema = z.object({
     id: z.string().min(1),
     label: z.string().min(1)
+});
+
+const promptOptionSchema = interviewOptionSchema.extend({
+    labelEn: z.string().min(1).optional()
 });
 
 const priorAnswersSchema = z
@@ -105,6 +110,57 @@ export async function registerInterviewRoutes(app: FastifyInstance, ctx: AppCont
             };
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Interview generation failed';
+            return reply.code(502).send({ error: message });
+        }
+    });
+
+    app.post('/api/prompt', async (request, reply) => {
+        const body = z
+            .object({
+                answers: z.object({
+                    m1: promptOptionSchema,
+                    m2: promptOptionSchema,
+                    m3: promptOptionSchema,
+                    m5: promptOptionSchema,
+                    m4: z.array(promptOptionSchema).min(1)
+                }),
+                model: z.string().optional()
+            })
+            .safeParse(request.body);
+
+        if (!body.success) {
+            return reply.code(400).send({ error: 'Invalid prompt request' });
+        }
+
+        if (!isAllowedInterviewModel(ctx.env, body.data.model)) {
+            return reply.code(400).send({
+                error: 'Model not available on this server',
+                requestedModel: body.data.model ?? null,
+                availableModels: listInterviewModels(ctx.env).map((option) => option.id)
+            });
+        }
+
+        if (!interviewLlmConfigured(ctx.env)) {
+            return reply.code(503).send({
+                error: 'Interview LLM not configured',
+                hint: 'Set OPENAI_API_KEY, ANTHROPIC_API_KEY, and/or CURSOR_API_KEY on the API server'
+            });
+        }
+
+        try {
+            const model =
+                body.data.model ??
+                resolveInterviewDefaultModel(ctx.env) ??
+                undefined;
+            const paragraph = await generateSpotifyPrompt(ctx.env, body.data.answers, model);
+            const modelInfo = model ? findInterviewModel(ctx.env, model) : null;
+            return {
+                paragraph,
+                model: model ?? null,
+                modelLabel: modelInfo?.labelEn ?? model ?? null
+            };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Prompt generation failed';
             return reply.code(502).send({ error: message });
         }
     });
