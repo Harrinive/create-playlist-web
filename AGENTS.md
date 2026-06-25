@@ -91,10 +91,11 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 
 ### Next recommended work
 
-1. Link from dychen.net nav
-2. Spotify app review for public users (beyond allowlist)
-3. Optional: extract Node `llm-router` to toolbox npm when a second Node consumer exists
-4. Optional: tune interview verify rules or `interview/filter.ts` heuristics
+1. **Interview redesign** — implement [docs/INTERVIEW-STRATEGY-v3.md](./docs/INTERVIEW-STRATEGY-v3.md) (v2: [INTERVIEW-STRATEGY-v2.md](./docs/INTERVIEW-STRATEGY-v2.md); v1: [INTERVIEW-STRATEGY.md](./docs/INTERVIEW-STRATEGY.md); not yet implemented)
+2. Link from dychen.net nav
+3. Spotify app review for public users (beyond allowlist)
+4. Optional: extract Node `llm-router` to toolbox npm when a second Node consumer exists
+5. Optional: tune interview verify rules or `interview/filter.ts` heuristics
 
 ---
 
@@ -103,12 +104,15 @@ Build a **web version of the create-playlist skill**: Astro interview UI on Clou
 1. **This file** — scope and constraints
 2. **[PLAN.md](./PLAN.md)** — architecture, phases, stack
 3. **[docs/PROGRESS.md](./docs/PROGRESS.md)** — shipped work and bug fixes
-4. **[docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md)** — CF / Fly / Spotify / GitHub settings
-5. **Skill router:** `~/.cursor/skills/create-playlist/SKILL.md`
-6. **For Step 2.2 API mapping:** `step-2-2-mcp-fallback.md` (direct Spotify Web API, not MCP)
-7. **Reference apps:** [dychen.net](https://github.com/Harrinive/dychen-net) (Astro/CF deploy pattern), [Cycloud](https://github.com/Harrinive/Cycloud) (Fly/secrets)
-8. **UI reference:** [astro-whono](https://github.com/cxro/astro-whono) (theme ported into `apps/web/src/styles/`)
-9. **Shared libs:** [toolbox/AGENTS.md](https://github.com/Harrinive/toolbox/blob/main/AGENTS.md)
+4. **[docs/INTERVIEW-STRATEGY.md](./docs/INTERVIEW-STRATEGY.md)** — interview design v1 baseline (implementation pending)
+5. **[docs/INTERVIEW-STRATEGY-v2.md](./docs/INTERVIEW-STRATEGY-v2.md)** — interview v2 (coverage, regions, curate)
+6. **[docs/INTERVIEW-STRATEGY-v3.md](./docs/INTERVIEW-STRATEGY-v3.md)** — interview v3 (**implement this** — concrete scene-grounded M2/M3 + internal slots)
+7. **[docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md)** — CF / Fly / Spotify / GitHub settings
+8. **Skill router:** `~/.cursor/skills/create-playlist/SKILL.md`
+9. **For Step 2.2 API mapping:** `step-2-2-mcp-fallback.md` (direct Spotify Web API, not MCP)
+10. **Reference apps:** [dychen.net](https://github.com/Harrinive/dychen-net) (Astro/CF deploy pattern), [Cycloud](https://github.com/Harrinive/Cycloud) (Fly/secrets)
+11. **UI reference:** [astro-whono](https://github.com/cxro/astro-whono) (theme ported into `apps/web/src/styles/`)
+12. **Shared libs:** [toolbox/AGENTS.md](https://github.com/Harrinive/toolbox/blob/main/AGENTS.md)
 
 ---
 
