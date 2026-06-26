@@ -6,6 +6,7 @@ import PageFlowActions from '../components/PageFlowActions.astro';
 import StepKicker from '../components/StepKicker.astro';
 import { FLOW_PAGE_HEADINGS, FLOW_STEP3_PROMPT_SUBTITLE } from '../lib/flow-steps';
 import { FLOW_EXIT_NAV, FLOW_SESSION_ACTIONS } from '../lib/flow-nav-copy';
+import { SERVICE_UNAVAILABLE_COPY } from '../lib/service-copy';
 ---
 
 <BaseLayout title="Your prompt">
@@ -21,12 +22,8 @@ import { FLOW_EXIT_NAV, FLOW_SESSION_ACTIONS } from '../lib/flow-nav-copy';
                 </h1>
             </header>
             <p class="intro-lead">
-                <span data-locale="en">
-                    The prompt API is not configured. Set <code>PUBLIC_API_URL</code> when the Fly API is deployed.
-                </span>
-                <span data-locale="zh" hidden>
-                    提示词 API 尚未配置。部署 Fly API 后设置 <code>PUBLIC_API_URL</code>。
-                </span>
+                <span data-locale="en">{SERVICE_UNAVAILABLE_COPY.prompt.en}</span>
+                <span data-locale="zh" hidden>{SERVICE_UNAVAILABLE_COPY.prompt.zh}</span>
             </p>
             <PageExitNav ariaLabelEn="Leave prompt page" ariaLabelZh="离开提示词页">
                 <a class="text-link-button" href="/delivery">
@@ -55,8 +52,8 @@ import { FLOW_EXIT_NAV, FLOW_SESSION_ACTIONS } from '../lib/flow-nav-copy';
 
             <div id="prompt-loading">
                 <p class="intro-lead" role="status">
-                    <span data-locale="en">Writing your Spotify prompt…</span>
-                    <span data-locale="zh" hidden>正在生成 Spotify 提示词…</span>
+                    <span data-locale="en">Drafting your Spotify prompt…</span>
+                    <span data-locale="zh" hidden>正在撰写 Spotify 提示词…</span>
                 </p>
             </div>
 

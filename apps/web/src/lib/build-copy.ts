@@ -8,36 +8,36 @@ function pick(locale: Locale, copy: Copy): string {
 
 export function buildProgressCurating(locale: Locale, modelLabel: string): string {
     return pick(locale, {
-        en: `Generating your tracklist with ${modelLabel}…`,
+        en: `Building your tracklist with ${modelLabel}…`,
         zh: `正在用 ${modelLabel} 生成曲目…`
     });
 }
 
 export function buildProgressVerifying(locale: Locale, count: number): string {
     return pick(locale, {
-        en: `Checking ${count} tracks on Spotify…`,
-        zh: `正在 Spotify 上验证 ${count} 首曲目…`
+        en: `Matching ${count} songs on Spotify…`,
+        zh: `正在 Spotify 上匹配 ${count} 首歌曲…`
     });
 }
 
 export function buildProgressPublishing(locale: Locale, count: number): string {
     return pick(locale, {
-        en: `Publishing ${count} tracks to your playlist…`,
-        zh: `正在将 ${count} 首曲目发布到你的歌单…`
+        en: `Adding ${count} songs to your playlist…`,
+        zh: `正在将 ${count} 首歌曲加入歌单…`
     });
 }
 
 export function buildImportReverifying(locale: Locale): string {
     return pick(locale, {
-        en: 'Checking against your past Vibelist playlists…',
-        zh: '正在对照你过去的 Vibelist 歌单…'
+        en: 'Skipping songs already on your recent playlists…',
+        zh: '正在跳过你近期歌单里已有的歌曲…'
     });
 }
 
-export function buildPreviewTracksLine(locale: Locale, trackCount: number, proposedCount: number): string {
+export function buildPreviewTracksLine(locale: Locale, trackCount: number, _proposedCount?: number): string {
     return pick(locale, {
-        en: `${trackCount} tracks verified (from ${proposedCount} proposed)`,
-        zh: `${trackCount} 首已验证（候选 ${proposedCount} 首）`
+        en: `${trackCount} tracks`,
+        zh: `${trackCount} 首曲目`
     });
 }
 
@@ -88,12 +88,12 @@ export function buildVerifyFallbackCopy(
     const pct = Math.round(successRate * 100);
     return pick(locale, {
         en: {
-            title: 'Too few tracks on Spotify',
-            body: `Only ${okCount} of ${proposedCount} matched (${pct}%). Use the prompt path instead — paste the paragraph into Spotify\u2019s Prompted Playlist feature.`
+            title: 'Too few songs matched on Spotify',
+            body: `Only ${okCount} of ${proposedCount} songs matched (${pct}%). Try pasting a prompt into Spotify\u2019s Prompted Playlist instead.`
         },
         zh: {
-            title: 'Spotify 上匹配的曲目太少',
-            body: `仅 ${okCount} / ${proposedCount} 首通过验证（${pct}%）。请改用提示词路径，将段落粘贴到 Spotify 的 AI 歌单功能中。`
+            title: 'Spotify 上匹配到的歌曲太少',
+            body: `${proposedCount} 首候选里只有 ${okCount} 首匹配（${pct}%）。可以改用 Spotify 提示词，粘贴到 Prompted Playlist。`
         }
     });
 }
@@ -101,20 +101,13 @@ export function buildVerifyFallbackCopy(
 export function buildImportRepeatFallbackCopy(locale: Locale): BuildVerifyFallbackCopy {
     return pick(locale, {
         en: {
-            title: 'Too few tracks to import',
-            body: 'Some tracks were removed because they\u2019re already on your recent Vibelist playlists. Regenerate the tracklist or use the prompt path instead.'
+            title: 'Too few songs left to import',
+            body: 'Some songs were already on your recent Vibelist playlists. Regenerate the list or try the Spotify prompt instead.'
         },
         zh: {
-            title: '可导入的曲目太少',
-            body: '部分曲目因已出现在你近期的 Vibelist 歌单中而被移除。请重新生成曲目，或改用提示词路径。'
+            title: '可导入的歌曲太少',
+            body: '部分歌曲已出现在你近期的 Vibelist 歌单里。请重新生成，或改用 Spotify 提示词。'
         }
-    });
-}
-
-export function buildPendingRestored(locale: Locale): string {
-    return pick(locale, {
-        en: 'Restored your tracklist from this session.',
-        zh: '已恢复本会话中的曲目列表。'
     });
 }
 
@@ -130,10 +123,10 @@ export function resultLabel(locale: Locale, key: keyof typeof RESULT_LABELS): st
     return pick(locale, RESULT_LABELS[key]);
 }
 
-export function resultTracksLine(locale: Locale, trackCount: number, proposedCount: number): string {
+export function resultTracksLine(locale: Locale, trackCount: number, _proposedCount?: number): string {
     return pick(locale, {
-        en: `${trackCount} published (from ${proposedCount} proposed)`,
-        zh: `已发布 ${trackCount} 首（候选 ${proposedCount} 首）`
+        en: `${trackCount} tracks`,
+        zh: `${trackCount} 首`
     });
 }
 

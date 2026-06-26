@@ -29,11 +29,11 @@ const LOADING_COPY: Record<Locale, LoadingCopy> = {
         fastSubtitle: 'Preparing your next question',
         fullModeProfile: {
             stages: [
-                'Planning this turn…',
-                'Writing stem and options…',
-                'Checking logic and coverage…',
-                'Revising if needed…',
-                'Finishing up…'
+                'Planning your question…',
+                'Writing choices…',
+                'Making sure it fits…',
+                'Polishing…',
+                'Almost ready…'
             ],
             stageDelaysMs: [2000, 4500, 9000, 14000],
             progressAtStage: [12, 28, 52, 72, 88],
@@ -48,11 +48,11 @@ const LOADING_COPY: Record<Locale, LoadingCopy> = {
         fastSubtitle: '正在准备下一题',
         fullModeProfile: {
             stages: [
-                '规划这一题…',
-                '撰写题干与选项…',
-                '校验逻辑与覆盖…',
-                '必要时修订…',
-                '即将完成…'
+                '构思题目…',
+                '撰写选项…',
+                '对照你的选择…',
+                '微调措辞…',
+                '马上好…'
             ],
             stageDelaysMs: [2000, 4500, 9000, 14000],
             progressAtStage: [12, 28, 52, 72, 88],

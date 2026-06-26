@@ -36,8 +36,8 @@ export const FLOW_HOW_IT_WORKS: Array<{ step: FlowStep; text: Bilingual }> = [
     {
         step: 2,
         text: {
-            en: 'Prompt paragraph or ~20 verified tracks — pick your model at delivery.',
-            zh: '提示词段落或约 20 首验证曲目 — 在交付方式步骤选择模型。'
+            en: 'Prompt paragraph or about 20 tracks — pick your model at delivery.',
+            zh: '提示词段落或约 20 首曲目 — 在交付方式步骤选择模型。'
         }
     },
     {

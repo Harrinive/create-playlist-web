@@ -2,7 +2,6 @@ import { getApiBaseUrl, hasDevHostMismatch, isApiConfigured } from '../lib/api-c
 import {
     buildImportRepeatFallbackCopy,
     buildImportReverifying,
-    buildPendingRestored,
     buildPreviewMetaLine,
     buildProgressCurating,
     buildProgressPublishing,
@@ -102,7 +101,6 @@ export function initBuildPage() {
     const unconfiguredEl = document.getElementById('build-unconfigured');
     const mainEl = document.getElementById('build-main');
     const statusEl = document.getElementById('build-status');
-    const restoredNoteEl = document.getElementById('build-restored-note');
     const progressEl = document.getElementById('build-progress');
     const importProgressEl = document.getElementById('build-import-progress');
     const flowEl = document.getElementById('build-flow');
@@ -214,7 +212,7 @@ export function initBuildPage() {
                 renderProgress(importProgressEl);
             }
             if (pendingSnapshot && previewEl && !previewEl.hidden) {
-                renderPreview(pendingSnapshot, !restoredNoteEl?.hidden);
+                renderPreview(pendingSnapshot);
             }
         },
         { signal }
@@ -347,7 +345,7 @@ export function initBuildPage() {
         crossFadePanels(panel, others);
     }
 
-    function renderPreview(snapshot: PendingBuildSnapshot, showRestoredNote: boolean) {
+    function renderPreview(snapshot: PendingBuildSnapshot) {
         if (!previewEl || !previewOrder) return;
         pendingSnapshot = snapshot;
         const locale = readLocale();
@@ -387,16 +385,6 @@ export function initBuildPage() {
             <h2 class="build-preview__heading">${escapeHtml(resultLabel(locale, 'order'))}</h2>
             <ol class="build-tracklist__list">${orderItems}</ol>
         `;
-
-        if (restoredNoteEl) {
-            if (showRestoredNote) {
-                restoredNoteEl.textContent = buildPendingRestored(locale);
-                restoredNoteEl.hidden = false;
-            } else {
-                restoredNoteEl.hidden = true;
-                restoredNoteEl.textContent = '';
-            }
-        }
 
         updateImportNoteVisibility();
         showPanel(previewEl);
@@ -539,10 +527,6 @@ export function initBuildPage() {
         if (statusEl) {
             statusEl.hidden = true;
             delete statusEl.dataset.modelError;
-        }
-        if (restoredNoteEl) {
-            restoredNoteEl.hidden = true;
-            restoredNoteEl.textContent = '';
         }
 
         try {
@@ -710,7 +694,7 @@ export function initBuildPage() {
     function initPanels() {
         const published = readBuildResult();
         if (pendingSnapshot) {
-            renderPreview(pendingSnapshot, true);
+            renderPreview(pendingSnapshot);
         } else if (published) {
             renderSavedBuildResult(published);
         } else {

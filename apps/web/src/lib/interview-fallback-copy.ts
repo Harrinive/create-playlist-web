@@ -12,8 +12,8 @@ export const INTERVIEW_FALLBACK_COPY = {
         zh: '我们试了几遍，问题还是没能落在你的场景里 \u2014 不是你的错。若刚才的选择还在，可以回到上一题；也可以从门口重新开始。'
     },
     resumeHint: {
-        en: 'Your answers from earlier questions are saved in this browser session.',
-        zh: '前面几题的选择还保存在当前浏览器会话里。'
+        en: 'Your earlier picks are still here.',
+        zh: '前面几题的选择还在。'
     },
     resumeButton: {
         en: 'Back to last question',
@@ -28,8 +28,8 @@ export const INTERVIEW_FALLBACK_COPY = {
         zh: '首页'
     },
     noCheckpoint: {
-        en: 'Nothing to return to yet \u2014 start fresh when you\u2019re ready.',
-        zh: '还没有可返回的检查点 \u2014 准备好了就从头开始。'
+        en: 'Nothing to go back to yet — start fresh when you\u2019re ready.',
+        zh: '还没有可以返回的上一题 — 准备好了就从头开始。'
     }
 } as const satisfies Record<string, Copy>;
 

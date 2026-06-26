@@ -6,6 +6,7 @@ import PageFlowActions from '../components/PageFlowActions.astro';
 import StepKicker from '../components/StepKicker.astro';
 import { FLOW_PAGE_HEADINGS } from '../lib/flow-steps';
 import { FLOW_EXIT_NAV } from '../lib/flow-nav-copy';
+import { SERVICE_UNAVAILABLE_COPY } from '../lib/service-copy';
 ---
 
 <BaseLayout title="Generate tracklist">
@@ -42,17 +43,11 @@ import { FLOW_EXIT_NAV } from '../lib/flow-nav-copy';
             </header>
 
             <p id="build-status" class="help-line" hidden role="status"></p>
-            <p id="build-restored-note" class="help-line" hidden role="status"></p>
 
             <div id="build-unconfigured" hidden>
                 <p class="intro-lead">
-                    <span data-locale="en">
-                        The build API is not configured yet. Set <code>PUBLIC_API_URL</code> when the Fly API is
-                        deployed, or use the prompt path for now.
-                    </span>
-                    <span data-locale="zh" hidden>
-                        构建 API 尚未配置。部署 Fly API 后设置 <code>PUBLIC_API_URL</code>，或暂时使用提示词路径。
-                    </span>
+                    <span data-locale="en">{SERVICE_UNAVAILABLE_COPY.build.en}</span>
+                    <span data-locale="zh" hidden>{SERVICE_UNAVAILABLE_COPY.build.zh}</span>
                 </p>
                 <PageFlowActions>
                     <a class="text-link-button text-link-button--primary" href="/prompt">
@@ -77,12 +72,11 @@ import { FLOW_EXIT_NAV } from '../lib/flow-nav-copy';
                     <p id="build-model-label" class="build-flow__model" hidden></p>
                     <p class="build-flow__lead">
                         <span data-locale="en">
-                            Generate a ~26-line tracklist from your interview, verify each song on Spotify, and trim to
-                            ~20 tracks. Connect Spotify only when you want a playlist on your account.
+                            We'll draft about 20 songs from your interview and check each one on Spotify. Connect
+                            your account only when you're ready to import.
                         </span>
                         <span data-locale="zh" hidden>
-                            根据访谈生成约 26 首候选曲目，在 Spotify 上验证并裁剪到约 20 首。仅在你想导入到自己的
-                            Spotify 账号时才需连接。
+                            我们会根据访谈选出约 20 首歌，并在 Spotify 上逐首核对。只有准备导入时，才需要连接你的账号。
                         </span>
                     </p>
                     <PageFlowActions>
