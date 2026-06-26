@@ -52,16 +52,22 @@ function localeOptionDescription(option: (typeof LOCALE_OPTIONS)[number], locale
 
 function setLocale(locale: Locale) {
     writeLocale(locale);
-    applyLocaleToDocument(locale);
-    applyAriaLabels(locale);
-    updateLocaleLabel();
-    refreshLocaleMenuLabels();
-    updateInterviewModelLabel(interviewModelCatalog);
-    refreshInterviewModelMenuLabels(interviewModelCatalog);
-    updateInterviewAlgorithmLabel();
-    refreshInterviewAlgorithmMenuLabels();
     closeMobileToolbar();
-    document.dispatchEvent(new CustomEvent('locale-changed', { detail: { locale } }));
+    applyLocaleToDocument(locale, {
+        animate: true,
+        onSwap: () => {
+            applyAriaLabels(locale);
+            updateLocaleLabel();
+            refreshLocaleMenuLabels();
+            updateInterviewModelLabel(interviewModelCatalog);
+            refreshInterviewModelMenuLabels(interviewModelCatalog);
+            updateInterviewAlgorithmLabel();
+            refreshInterviewAlgorithmMenuLabels();
+        },
+        onComplete: () => {
+            document.dispatchEvent(new CustomEvent('locale-changed', { detail: { locale } }));
+        }
+    });
 }
 
 /** Keep in sync with --layout-shell-max-inline-size (1100px) in global.css */

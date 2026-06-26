@@ -1,6 +1,6 @@
 export const MOTION_MS = 320;
 
-function prefersReducedMotion(): boolean {
+export function prefersReducedMotion(): boolean {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 

@@ -66,6 +66,18 @@
     pointer-events: none;
 }
 
+/* Locale switch — fade the full chrome (sidebar, content, controls); body background stays */
+.shell,
+.skip-link {
+    transition: opacity var(--motion-duration) var(--motion-ease);
+}
+
+html.is-locale-fading .shell,
+html.is-locale-fading .skip-link {
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* Toolbar dropdowns (desktop flyout + in-panel) */
 .toolbar-dropdown__menu.is-opening {
     animation: menu-reveal var(--motion-duration) var(--motion-ease) both;
@@ -112,6 +124,11 @@
     .is-fading-out,
     .toolbar-dropdown__menu.is-opening {
         animation: none;
+    }
+
+    .shell,
+    .skip-link {
+        transition: none;
     }
 
     .interview-step--answered,
