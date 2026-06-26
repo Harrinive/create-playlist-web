@@ -54,6 +54,11 @@ import {
     interviewStepCount,
     clearInterviewSessionMeta
 } from '../lib/interview-session';
+import {
+    clearInterviewFallbackState,
+    isInterviewHardFailure,
+    redirectToInterviewFallback
+} from '../lib/interview-fallback';
 import { navigateTo } from '../lib/navigate';
 import { staggerAppear } from '../lib/motion';
 
@@ -123,6 +128,16 @@ function interviewLoadError(error: unknown, locale: Locale): string {
         return localizeApiError(error.message, locale, 'interview');
     }
     return WIZARD_LABELS[locale].apiUnavailable;
+}
+
+function tryRedirectInterviewFallback(error: unknown, stepIndex: number, stepId?: string): boolean {
+    if (!isInterviewHardFailure(error)) return false;
+    const ids = stepIds();
+    redirectToInterviewFallback({
+        failedStepIndex: stepIndex,
+        failedStepId: stepId ?? ids[stepIndex] ?? 'm1'
+    });
+    return true;
 }
 
 export async function initInterviewWizard() {
@@ -256,6 +271,7 @@ export async function initInterviewWizard() {
 
         writeInterviewStepIds(response.stepIds);
         writePlannerState(response.plannerState);
+        clearInterviewFallbackState();
 
         lastFetchedBilingual.set(stepIndex, response.step);
         if (!upsertLlmStep(stepIndex, response.step)) showStorageError();
@@ -507,6 +523,14 @@ export async function initInterviewWizard() {
             steps[stepIndex] = nextStep;
             updateStepContent(block, nextStep, stepIndex);
             renderOptions(block, nextStep, stepIndex);
+        } catch (error) {
+            if (!isActive()) return;
+            const ids = stepIds();
+            if (tryRedirectInterviewFallback(error, stepIndex, step.id ?? ids[stepIndex])) return;
+            const err = document.createElement('p');
+            err.className = 'help-line';
+            err.textContent = interviewLoadError(error, locale);
+            block.appendChild(err);
         } finally {
             loading = false;
             setRefreshLoading(block, false);
@@ -730,6 +754,8 @@ export async function initInterviewWizard() {
             if (!isActive()) return;
             stackEl.querySelector('.interview-loading')?.remove();
             await dismissLoading();
+            const ids = stepIds();
+            if (tryRedirectInterviewFallback(error, nextIndex, ids[nextIndex])) return;
             const message = interviewLoadError(error, locale);
             const err = document.createElement('p');
             err.className = 'help-line';
@@ -780,7 +806,14 @@ export async function initInterviewWizard() {
                     appendResumeUnavailableNotice(i);
                     continue;
                 }
-                step = await loadLlmStep(i, false, interviewModelId);
+                try {
+                    step = await loadLlmStep(i, false, interviewModelId);
+                } catch (error) {
+                    if (!isActive()) return;
+                    const ids = stepIds();
+                    if (tryRedirectInterviewFallback(error, i, ids[i])) return;
+                    throw error;
+                }
                 if (!isActive()) return;
                 steps = resolveStepsForLocale(locale);
                 step = displayStepFromCache(i, locale) ?? steps[i];
@@ -838,6 +871,8 @@ export async function initInterviewWizard() {
             if (!isActive()) return;
             loadingEl.remove();
             await dismissLoading();
+            const ids = stepIds();
+            if (tryRedirectInterviewFallback(error, completed, ids[completed])) return;
             const message = interviewLoadError(error, locale);
             const err = document.createElement('p');
             err.className = 'help-line';

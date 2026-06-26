@@ -5,6 +5,7 @@ export const ANSWERED_STEPS_KEY = `${SESSION_KEY}-answered-steps`;
 export const REJECTED_KEY = `${SESSION_KEY}-interview-rejected`;
 export const INTERVIEW_PLANNER_KEY = `${SESSION_KEY}-planner`;
 export const INTERVIEW_STEP_IDS_KEY = `${SESSION_KEY}-step-ids`;
+export const INTERVIEW_FALLBACK_KEY = `${SESSION_KEY}-fallback`;
 export const CURATE_MODEL_KEY = 'create-playlist-curate-model';
 export const INTERVIEW_MODEL_KEY = 'create-playlist-interview-model';
 export const LAST_DELIVERY_KEY = 'create-playlist-last-delivery';

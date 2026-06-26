@@ -1,3 +1,4 @@
+import { clearInterviewFallbackState } from './interview-fallback';
 import { clearInterviewSessionMeta } from './interview-session';
 import { clearLlmSteps, clearAnsweredSteps } from './interview-llm-cache';
 import { clearRejectedQuestions } from './interview-refresh';
@@ -25,6 +26,7 @@ export function performStartOver() {
         clearLlmSteps();
         clearAnsweredSteps();
         clearInterviewSessionMeta();
+        clearInterviewFallbackState();
     } catch {}
     navigateTo('/interview');
 }

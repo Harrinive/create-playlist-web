@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { INTERVIEW_FALLBACK_COPY } from '../../lib/interview-fallback-copy';
+---
+
+<BaseLayout title="Interview pause">
+    <section id="interview-fallback-page" class="interview-fallback">
+        <p class="page-kicker">
+            <span data-locale="en">{INTERVIEW_FALLBACK_COPY.kicker.en}</span>
+            <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.kicker.zh}</span>
+        </p>
+        <h1 class="page-title">
+            <span data-locale="en">{INTERVIEW_FALLBACK_COPY.title.en}</span>
+            <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.title.zh}</span>
+        </h1>
+        <p class="intro-lead">
+            <span data-locale="en">{INTERVIEW_FALLBACK_COPY.body.en}</span>
+            <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.body.zh}</span>
+        </p>
+
+        <p id="interview-fallback-resume-hint" class="help-line" hidden>
+            <span data-locale="en">{INTERVIEW_FALLBACK_COPY.resumeHint.en}</span>
+            <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.resumeHint.zh}</span>
+        </p>
+        <p id="interview-fallback-no-checkpoint" class="help-line" hidden>
+            <span data-locale="en">{INTERVIEW_FALLBACK_COPY.noCheckpoint.en}</span>
+            <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.noCheckpoint.zh}</span>
+        </p>
+
+        <div class="actions-row">
+            <a
+                id="interview-fallback-resume"
+                class="text-link-button text-link-button--primary"
+                href="/interview"
+                hidden
+            >
+                <span data-locale="en">{INTERVIEW_FALLBACK_COPY.resumeButton.en}</span>
+                <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.resumeButton.zh}</span>
+            </a>
+            <button type="button" id="interview-fallback-start-over" class="text-link-button">
+                <span data-locale="en">{INTERVIEW_FALLBACK_COPY.startOverButton.en}</span>
+                <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.startOverButton.zh}</span>
+            </button>
+            <a class="text-link-button" href="/">
+                <span data-locale="en">{INTERVIEW_FALLBACK_COPY.homeButton.en}</span>
+                <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.homeButton.zh}</span>
+            </a>
+        </div>
+    </section>
+</BaseLayout>
+
+<script>
+    import { initInterviewFallbackPage } from '../../scripts/interview-fallback-page.ts';
+
+    document.addEventListener('astro:page-load', () => initInterviewFallbackPage());
+</script>
