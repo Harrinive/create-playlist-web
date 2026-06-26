@@ -1,6 +1,6 @@
 # create-playlist-web — frontend
 
-Astro static site: interview → delivery → prompt (Phase 1) or Spotify connect + search (Phase 2).
+Astro static site: interview → delivery → prompt or Spotify build path.
 
 **Live:** https://vibelist.dychen.net  
 **API:** https://api.vibelist.dychen.net
@@ -22,10 +22,10 @@ Requires Node ≥ 22.12. Dev server binds to **127.0.0.1** (required for API ses
 
 | Path | Purpose |
 |------|---------|
-| `/interview` | Step 1 wizard (M1–M5) |
-| `/delivery` | Step 2 — Prompt vs Build |
-| `/prompt` | Step 2.1 copyable paragraph |
-| `/build` | Connect Spotify + test search |
+| `/interview` | LLM chip wizard |
+| `/delivery` | Prompt vs model-backed build |
+| `/prompt` | Copyable Spotify paragraph |
+| `/build` | OAuth + curate → verify → publish |
 
 ## Local two-terminal setup
 
