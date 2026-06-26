@@ -23,16 +23,19 @@ function isHardDeterministicFailure(failure: string): boolean {
         /missing planned option id/i.test(failure) ||
         /optionSlots key .* missing/i.test(failure) ||
         /M4 missing id "none"/i.test(failure) ||
-        /M4 poetic option .* missing gloss/i.test(failure) ||
+        /M4 option .* must not use gloss/i.test(failure) ||
+        /M4 option .* needs plain trap language/i.test(failure) ||
         /LogicalDecision missing option id "you-decide"/i.test(failure) ||
-        /LogicalDecision option .* missing gloss/i.test(failure) ||
+        /M1 option .* must not use gloss/i.test(failure) ||
         /stemEn matches survey/i.test(failure) ||
         /Q1 missing kinetic/i.test(failure) ||
         /Q1 missing non-domestic/i.test(failure) ||
         /Q1 missing region "/i.test(failure) ||
         /Q1 only \d+ distinct regions/i.test(failure) ||
         /rejectCluster collision/i.test(failure) ||
-        /M4 option id .* mood-template too-/i.test(failure);
+        /M4 option id .* mood-template too-/i.test(failure) ||
+        /stemEn duplicates option/i.test(failure) ||
+        /stemZh duplicates option/i.test(failure);
 
     return hard;
 }

@@ -9,12 +9,8 @@ const VAGUE_MOOD_CHIP_BAN =
 const META_OPTION_GLOSS_BAN =
     /warm,? open|charged,? playful|easygoing,? social|bigger,? braver|人群里那种|一起传开|涌成同一句|峰顶之后|松开了|往上亮/i;
 
-const M4_GLOSS_MOOD_STACK = /\broom that feels\b|a grief that|or a room\b/i;
-
-const M4_GLOSS_STILL_MOOD = /Still\s+(too|feels)/i;
-
-const M4_TRAP_LEXICON =
-    /\b(elevator|trailer|hyperpop|hyper-pop|sad-acoustic|sad acoustic|grief|dirge|gym|lo-fi|lofi|muzak|motivational|club|acoustic cliché|acoustic cliche|coffee-shop|coffee shop|study beats|workout|hype|swell|banger|template song|playlist trap)\b/i;
+export const M4_TRAP_LEXICON =
+    /\b(elevator|trailer|hyperpop|hyper-pop|sad-acoustic|sad acoustic|grief|dirge|gym|lo-fi|lofi|muzak|motivational|club|acoustic cliché|acoustic cliche|coffee-shop|coffee shop|study beats|workout|hype|swell|banger|template song|playlist trap|karaoke|singalong|sing-along|skip|avoid)\b/i;
 
 const CONCRETE_EN_WORDS =
     /\b(room|door|window|kitchen|plate|glass|cup|lamp|chair|table|coat|jacket|rain|steam|towel|step|steps|porch|hall|light|bottle|speaker|floor|wall|hand|phone|car|seat|street|bar|dish|sink|crowd|friend|voice|song|neon|ice|mirror|elevator|stairs|bed|pillow|clock|screen|text|bag|shoe|train|bus|menu|beer|wine|smoke|candle|book|pen|note|box|plant|tree|wind|sky|bridge|river|beach|sand|bench|park|path|sign|photo|frame|shirt|hat|ring|watch|fire|grill|stove|pan|pot|spoon|fork|knife|bowl|mug|key|keys|wallet|card|waiter|bartender|booth|stage|mic|drink|drinks|pile|railing|gutter|hallway|counter|fridge|oven|ashtray|lighter|match|curtain|blanket|sofa|couch|desk|shelf|shower|road|highway|alley|corner|building|roof|balcony|pool|dock|boat|station|platform|ticket|map|post|pole|bulb|switch|button|cord|rope|chain|lock|handle|mat|rug|wood|paper|envelope|letter|package|gift|flower|vase|fruit|bread|meat|fish|egg|rice|soup|salt|sugar|honey|oil|sauce|garlic|onion|tomato|potato|carrot|apple|orange|banana|grape|cherry|berry|melon|peach|pear|lemon|mint|basil|corn|bean|nut|flour|dough|toast|jam|cream|milk|yogurt|cake|pie|cookie|brownie|muffin|donut|bagel|pretzel|cracker|chip|popcorn|candy|chocolate|drum|guitar|piano|violin|trumpet|flute|saxophone|harp|organ|synth|keyboard|amplifier|headphone|microphone|cable|battery|charger|motor|engine|wheel|tire|pedal|handlebar|saddle|collar|leash|cage|nest|hive|cave|tunnel|mine|valley|canyon|cliff|peak|summit|ridge|plain|desert|forest|jungle|swamp|marsh|meadow|prairie|glacier|volcano|spring|stream|creek|waterfall|wave|tide|shore|coast|dune|oasis)\b/i;
@@ -26,7 +22,11 @@ function hasConcreteAnchor(labelEn: string, labelZh: string): boolean {
     return CONCRETE_EN_WORDS.test(labelEn) || CONCRETE_ZH.test(labelZh);
 }
 
-/** Deterministic gloss + concreteness checks for scene turns. */
+function sceneStepId(stepId: string): boolean {
+    return stepId === 'm1' || stepId === 'm2' || stepId === 'm3' || stepId === 'm_clarify';
+}
+
+/** Deterministic gloss + concreteness checks (zero-gloss policy in prompts; code kept for future re-enable). */
 export function verifyGlossAndConcreteness(
     stepId: string,
     draft: LlmStepDraft
@@ -38,10 +38,8 @@ export function verifyGlossAndConcreteness(
         failures.push(`stemGloss meta-explains the question — omit stemGloss: ${stemGloss.slice(0, 80)}`);
     }
 
-    if (stepId === 'm1' || stepId === 'm2' || stepId === 'm3' || stepId === 'm_clarify') {
-        if (draft.stemGlossEn?.trim() || draft.stemGlossZh?.trim()) {
-            failures.push('stemGloss not allowed on scene turns — omit stemGlossEn/stemGlossZh');
-        }
+    if (sceneStepId(stepId) && (draft.stemGlossEn?.trim() || draft.stemGlossZh?.trim())) {
+        failures.push('stemGloss not allowed on scene turns — omit stemGlossEn/stemGlossZh');
     }
 
     for (const opt of draft.options) {
@@ -56,34 +54,23 @@ export function verifyGlossAndConcreteness(
                     `missing concrete object/event on ${stepId} option "${opt.id}" — name props, light, or action: ${opt.labelEn}`
                 );
             }
-            if (opt.glossEn?.trim() || opt.glossZh?.trim()) {
-                failures.push(
-                    `M2/M3 option "${opt.id}" must not use gloss — put the full beat in labelEn/labelZh`
-                );
-            }
+        }
+
+        if (sceneStepId(stepId) && (opt.glossEn?.trim() || opt.glossZh?.trim())) {
+            failures.push(
+                `${stepId.toUpperCase()} option "${opt.id}" must not use gloss — put the full beat in labelEn/labelZh`
+            );
         }
 
         const gloss = `${opt.glossEn ?? ''} ${opt.glossZh ?? ''}`.trim();
         if (gloss && META_OPTION_GLOSS_BAN.test(gloss)) {
-            failures.push(`option gloss repeats vague mood on "${opt.id}" — omit or add concrete decode`);
+            failures.push(`option gloss repeats vague mood on "${opt.id}" — omit gloss`);
         }
 
         if (stepId === 'm4' && opt.id !== 'none' && gloss) {
-            if (M4_GLOSS_MOOD_STACK.test(gloss)) {
-                failures.push(
-                    `M4 gloss on "${opt.id}" mood-stacks instead of plain reject decode`
-                );
-            }
-            if (M4_GLOSS_STILL_MOOD.test(gloss)) {
-                failures.push(
-                    `M4 gloss on "${opt.id}" uses "Still too/feels" mood template — name a playlist trap`
-                );
-            }
-            if (!M4_TRAP_LEXICON.test(gloss)) {
-                failures.push(
-                    `M4 gloss on "${opt.id}" lacks playlist-trap lexicon — name elevator/trailer/hyperpop/sad-acoustic/etc.`
-                );
-            }
+            failures.push(
+                `M4 option "${opt.id}" must not use gloss — put trap name in labelEn/labelZh`
+            );
         }
     }
 

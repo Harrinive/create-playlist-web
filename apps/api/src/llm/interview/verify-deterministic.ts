@@ -1,8 +1,9 @@
 import type { LlmStepDraft, TurnPlan } from './shared.js';
 import { Q1_REGION_IDS } from './prompts.js';
-import { verifyGlossAndConcreteness } from './gloss-verify.js';
+import { M4_TRAP_LEXICON, verifyGlossAndConcreteness } from './gloss-verify.js';
 import { verifyOptionOverlap } from './option-overlap.js';
 import { verifySceneContinuity } from './scene-continuity.js';
+import { verifyStemDistinctFromOptions } from './verify-stem-distinct.js';
 
 export type DeterministicVerifyInput = {
     stepId: string;
@@ -71,6 +72,7 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
 
     failures.push(...verifyGlossAndConcreteness(stepId, draft));
     failures.push(...verifyOptionOverlap(stepId, draft));
+    failures.push(...verifyStemDistinctFromOptions(draft));
     failures.push(...verifySceneContinuity(stepId, draft, priorLabels ?? []));
 
     for (const opt of options) {
@@ -104,10 +106,18 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
                     `M4 option id "${opt.id}" mood-template too-* — name trap cluster instead`
                 );
             }
-            const poetic = !isPlainRejectLabel(opt.labelEn) && !isPlainRejectLabel(opt.labelZh);
-            if (poetic && (!opt.glossEn?.trim() || !opt.glossZh?.trim())) {
+            if (opt.glossEn?.trim() || opt.glossZh?.trim()) {
                 failures.push(
-                    `M4 poetic option "${opt.id}" missing glossEn/glossZh`
+                    `M4 option "${opt.id}" must not use gloss — put trap name in labelEn/labelZh`
+                );
+            }
+            const plain =
+                isPlainRejectLabel(opt.labelEn) ||
+                isPlainRejectLabel(opt.labelZh) ||
+                M4_TRAP_LEXICON.test(opt.labelEn);
+            if (!plain) {
+                failures.push(
+                    `M4 option "${opt.id}" needs plain trap language in labelEn/labelZh`
                 );
             }
         }
@@ -117,14 +127,6 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
         const hasYouDecide = options.some((o) => o.id === 'you-decide');
         if (!hasYouDecide) {
             failures.push('LogicalDecision missing option id "you-decide"');
-        }
-        for (const opt of options) {
-            if (opt.id === 'you-decide') continue;
-            if (!opt.glossEn?.trim() || !opt.glossZh?.trim()) {
-                failures.push(
-                    `LogicalDecision option "${opt.id}" missing glossEn/glossZh`
-                );
-            }
         }
     }
 
@@ -140,7 +142,26 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
         }
     }
 
-    if (stepId === 'm1' && !plan.q1RegionsToCover?.length) {
+    if (
+        stepId === 'm1' &&
+        !plan.q1RegionsToCover?.length &&
+        Object.keys(plan.optionSlots ?? {}).length === 0
+    ) {
+        const kineticLabel =
+            /\b(crowd|packed|dance|club|party|bar|floor|bodies|neon spill|moving|speakers|gym|parade|block party)\b/i;
+        const hasKinetic = options.some((o) => kineticLabel.test(o.labelEn));
+        if (!hasKinetic && options.length >= 4) {
+            failures.push(
+                'Q1 missing kinetic/crowd option — span intimate and kinetic social heat'
+            );
+        }
+    }
+
+    if (
+        stepId === 'm1' &&
+        !plan.q1RegionsToCover?.length &&
+        Object.keys(plan.optionSlots ?? {}).length > 0
+    ) {
         const covered = new Set(
             options
                 .map((o) => plan.optionSlots[o.id]?.regionId)

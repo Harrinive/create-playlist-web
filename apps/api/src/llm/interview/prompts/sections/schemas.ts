@@ -1,11 +1,9 @@
 export const draftOutputSchema = `{
   "stemEn": "...",
   "stemZh": "...",
-  "stemGlossEn": "optional",
-  "stemGlossZh": "optional",
   "hintEn": "optional",
   "hintZh": "optional",
-  "options": [{ "id": "slug", "labelEn": "...", "labelZh": "...", "glossEn": "optional", "glossZh": "optional" }]
+  "options": [{ "id": "slug", "labelEn": "...", "labelZh": "..." }]
 }`;
 
 export const planOutputSchema = `{

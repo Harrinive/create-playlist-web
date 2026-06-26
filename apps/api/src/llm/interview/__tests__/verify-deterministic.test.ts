@@ -86,10 +86,8 @@ test('fails M4 too-* mood-template option id', () => {
         options: [
             {
                 id: 'too-sad',
-                labelEn: 'Rain on the window',
-                labelZh: '窗上雨',
-                glossEn: 'sad acoustic cliché',
-                glossZh: '伤感木吉他套路'
+                labelEn: 'Skip sad acoustic cliché',
+                labelZh: '避开伤感木吉他套路'
             },
             { id: 'none', labelEn: "None — I'm open", labelZh: '都可以' }
         ]
@@ -105,7 +103,7 @@ test('fails M4 too-* mood-template option id', () => {
     assert.ok(result.failures.some((f) => f.includes('too-*')));
 });
 
-test('fails M4 poetic option without gloss', () => {
+test('fails M4 option without plain trap language', () => {
     const plan: TurnPlan = {
         ...basePlan,
         questionMode: 'ClearDiscriminant',
@@ -135,7 +133,43 @@ test('fails M4 poetic option without gloss', () => {
         optionMax: 6
     });
     assert.equal(result.passed, false);
-    assert.ok(result.failures.some((f) => f.includes('gloss')));
+    assert.ok(result.failures.some((f) => f.includes('plain trap language')));
+});
+
+test('fails M1 option gloss', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        questionMode: 'SceneFeeling',
+        optionSlots: {},
+        plannedOptionIds: []
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'Night air — pick the still that feels like you.',
+        stemZh: '夜气里——选一个最像你的画面。',
+        options: [
+            {
+                id: 'kitchen',
+                labelEn: 'Quiet kitchen, one lamp on',
+                labelZh: '安静的厨房，只剩一盏灯',
+                glossEn: 'intimate still register',
+                glossZh: '私密静止的调性'
+            },
+            {
+                id: 'rooftop',
+                labelEn: 'Neon rooftop, wind on the rail',
+                labelZh: '霓虹天台，风过栏杆'
+            }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm1',
+        plan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('must not use gloss')));
 });
 
 test('fails LogicalDecision without you-decide', () => {
@@ -154,17 +188,13 @@ test('fails LogicalDecision without you-decide', () => {
         options: [
             {
                 id: 'heel',
-                labelEn: 'Heel on the step, steady',
-                labelZh: '脚跟点阶，稳住',
-                glossEn: 'even pulse',
-                glossZh: '均匀拍点'
+                labelEn: 'Heel on the step, even pulse',
+                labelZh: '脚跟点阶，均匀拍点'
             },
             {
                 id: 'sway',
-                labelEn: 'Weight shifting side to side',
-                labelZh: '重心左右移',
-                glossEn: 'loose sway',
-                glossZh: '松摆'
+                labelEn: 'Weight shifting, loose sway',
+                labelZh: '重心左右移，松摆'
             }
         ]
     };
@@ -299,4 +329,30 @@ test('fails overlapping crowd-mood M2 options from production pattern', () => {
                 f.includes('template')
         )
     );
+});
+
+test('fails when stem duplicates an option chip (production M2 bug)', () => {
+    const draft: LlmStepDraft = {
+        stemEn: 'A guard turns the brochure rack',
+        stemZh: '保安翻动宣传架',
+        options: [
+            { id: 'glass-corner', labelEn: 'You stop by a glass corner', labelZh: '你停在玻璃转角' },
+            {
+                id: 'brochure-rack',
+                labelEn: 'A guard turns the brochure rack',
+                labelZh: '保安翻动宣传架'
+            },
+            { id: 'blue-bench', labelEn: 'One bench under blue light', labelZh: '蓝光下的一张长椅' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm2',
+        plan: basePlan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('stemEn duplicates option')));
+    assert.ok(result.failures.some((f) => f.includes('stemZh duplicates option')));
 });

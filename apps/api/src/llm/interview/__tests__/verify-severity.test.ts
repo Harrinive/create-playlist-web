@@ -24,3 +24,10 @@ test('treats M4 too-* option id as hard failure', () => {
     assert.equal(hard.length, 1);
     assert.equal(soft.length, 0);
 });
+
+test('treats stem-option duplication as hard failure', () => {
+    const { hard } = partitionDeterministicFailures([
+        'stemZh duplicates option "brochure-rack" — stem must ask/frame the turn, not repeat a chip verbatim'
+    ]);
+    assert.equal(hard.length, 1);
+});

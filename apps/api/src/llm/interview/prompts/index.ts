@@ -24,6 +24,7 @@ export {
     q1PlanContextBlock,
     q1DraftContextBlock,
     q1VerifyContextBlock,
+    m4PlainRejectBlock,
     m4AvoidGlossBlock,
     m4ExampleBlock,
     m5FeltAxesBlock,

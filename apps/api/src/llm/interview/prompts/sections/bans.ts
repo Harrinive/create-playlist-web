@@ -18,7 +18,7 @@ Every Start over = brand-new stem + brand-new option wording. Do not copy prompt
 
 export const twoLayerRule = `## Two layers — never mix in user copy
 - **Vibe / story** (M1–M3): concrete scenes and story beats the user recognizes — background-music test
-- **Music-logical** (M4 avoid only): plain reject language + gloss when needed
+- **Music-logical** (M4 avoid only): plain reject language in main labels
 
 If a chip only makes sense if you know what a kick drum is → wrong layer for M2/M3.`;
 

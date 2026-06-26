@@ -5,7 +5,7 @@ import {
     concreteM3Block,
     logicalDecisionBlock,
     m4ExampleBlock,
-    m4AvoidGlossBlock,
+    m4PlainRejectBlock,
     m5FeltAxesBlock,
     q1CoverageBlock,
     sceneFeelingBlock,
@@ -60,8 +60,8 @@ export function resolveTurnConfig(
                         logicalDecisionBlock()
                     ],
                     logicVerifyIntro:
-                        '## Logic verify focus\nLogicalDecision: you-decide option + gloss on others.',
-                    copyVerifyIntro: '## Copy verify focus\nGloss clarity for groove grain options.'
+                        '## Logic verify focus\nLogicalDecision: you-decide option + groove read in main labels.',
+                    copyVerifyIntro: '## Copy verify focus\nPlain groove wording in both languages.'
                 };
             }
             return {
@@ -88,10 +88,10 @@ export function resolveTurnConfig(
         case 'm4':
             return {
                 questionMode: 'ClearDiscriminant',
-                draftBlocks: [clearDiscriminantBlock(), m4ExampleBlock(), m4AvoidGlossBlock()],
+                draftBlocks: [clearDiscriminantBlock(), m4ExampleBlock(), m4PlainRejectBlock()],
                 logicVerifyIntro:
-                    '## Logic verify focus\nM4: stem advances M3 prop; distinct trap clusters; includes "none"; gloss decodes traps not mood paraphrase.',
-                copyVerifyIntro: '## Copy verify focus\nM4 gloss decodes reject clusters.'
+                    '## Logic verify focus\nM4: stem advances M3 prop; distinct trap clusters in plain labels; includes "none".',
+                copyVerifyIntro: '## Copy verify focus\nPlain reject trap wording in both languages.'
             };
 
         case 'm5':

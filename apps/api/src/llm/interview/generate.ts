@@ -46,6 +46,10 @@ export type GenerateInterviewStepResult = {
     plan?: TurnPlan;
 };
 
+/** Zero-gloss policy: LLM prompts omit gloss fields; re-enable when product wants parens again. */
+const EMIT_OPTION_GLOSS = false;
+const EMIT_STEM_GLOSS = false;
+
 function toBilingualStep(stepId: string, parsed: LlmStepDraft): BilingualInterviewStep {
     const meta = stepMetaForId(stepId);
 
@@ -54,7 +58,8 @@ function toBilingualStep(stepId: string, parsed: LlmStepDraft): BilingualIntervi
             id: option.id,
             label: { en: option.labelEn.trim(), zh: option.labelZh.trim() }
         };
-        const allowOptionGloss = meta.id !== 'm2' && meta.id !== 'm3';
+        const allowOptionGloss =
+            EMIT_OPTION_GLOSS && meta.id !== 'm2' && meta.id !== 'm3';
         if (allowOptionGloss && option.glossEn?.trim() && option.glossZh?.trim()) {
             entry.gloss = { en: option.glossEn.trim(), zh: option.glossZh.trim() };
         }
@@ -86,7 +91,11 @@ function toBilingualStep(stepId: string, parsed: LlmStepDraft): BilingualIntervi
         step.hint = { en: parsed.hintEn.trim(), zh: parsed.hintZh.trim() };
     }
 
-    if (parsed.stemGlossEn?.trim() && parsed.stemGlossZh?.trim()) {
+    if (
+        EMIT_STEM_GLOSS &&
+        parsed.stemGlossEn?.trim() &&
+        parsed.stemGlossZh?.trim()
+    ) {
         const sceneStep = ['m1', 'm2', 'm3', 'm_clarify'].includes(meta.id);
         if (!sceneStep) {
             step.stemGloss = { en: parsed.stemGlossEn.trim(), zh: parsed.stemGlossZh.trim() };
@@ -107,32 +116,105 @@ async function generateInterviewStepFast(
         input.plannerState,
         input.openingContext
     );
+    const stepId = resolved.stepId;
+    const meta = stepMetaForId(stepId);
+    const totalSteps = resolved.totalSteps;
+    const emptyPlan: TurnPlan = {
+        gaps: [],
+        reachableGenresNote: 'fast mode',
+        hypotheses: ['open'],
+        plannedOptionCount: meta.optionMax,
+        axis: stepId,
+        sceneBeat: '',
+        lateralHook: false,
+        filterDrops: [],
+        stemGuidance: '',
+        optionGuidance: '',
+        questionMode: stepId === 'm4' ? 'ClearDiscriminant' : 'SceneFeeling',
+        optionSlots: {},
+        lastQuestionMode: 'avoid'
+    };
 
-    const userPrompt = buildFastUserPrompt(
-        input.stepIndex,
-        input.priorAnswers,
-        input.rejectedStems,
-        input.refresh
-    );
+    const priorLabels = [
+        input.priorAnswers.m1?.label,
+        stepId === 'm3' || stepId === 'm4' ? input.priorAnswers.m2?.label : undefined
+    ].filter((l): l is string => Boolean(l?.trim()));
 
-    const raw = await completeChat(
-        env,
-        [
-            { role: 'system', content: fastSystemPrompt() },
-            { role: 'user', content: userPrompt }
-        ],
-        { model }
-    );
+    let draft: LlmStepDraft | null = null;
+    let verifyFailures: string[] = [];
+    const maxAttempts = 3;
 
-    const parsed = llmStepSchema.safeParse(extractJson(raw));
-    if (!parsed.success) {
-        throw new Error(`Interview LLM returned invalid JSON: ${parsed.error.message}`);
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const userPrompt = buildFastUserPrompt(
+            input.stepIndex,
+            stepId,
+            input.priorAnswers,
+            input.rejectedStems,
+            input.refresh || attempt > 0,
+            totalSteps,
+            attempt > 0 ? verifyFailures : []
+        );
+
+        const raw = await completeChat(
+            env,
+            [
+                { role: 'system', content: fastSystemPrompt() },
+                { role: 'user', content: userPrompt }
+            ],
+            { model }
+        );
+
+        const parsed = llmStepSchema.safeParse(extractJson(raw));
+        if (!parsed.success) {
+            if (attempt === maxAttempts - 1) {
+                throw new Error(`Interview LLM returned invalid JSON: ${parsed.error.message}`);
+            }
+            verifyFailures = [`invalid JSON: ${parsed.error.message}`];
+            continue;
+        }
+
+        draft = fitDraftOptionCount(
+            stripSceneStemGloss(normalizeDraftM4Ids(parsed.data, stepId), stepId),
+            emptyPlan,
+            stepId,
+            meta.optionMax
+        );
+
+        const det = verifyDeterministic({
+            stepId,
+            plan: emptyPlan,
+            draft,
+            optionMin: meta.optionMin,
+            optionMax: meta.optionMax,
+            priorLabels
+        });
+
+        verifyFailures = det.failures;
+        if (det.passed) break;
+
+        const { hard } = partitionDeterministicFailures(verifyFailures);
+        if (attempt === maxAttempts - 1) {
+            if (hard.length === 0) {
+                console.warn(
+                    `[interview] fast verify exhausted (${maxAttempts} attempts) — shipping:`,
+                    verifyFailures.join('; ')
+                );
+                break;
+            }
+            throw new Error(
+                `Fast interview verify failed after ${maxAttempts} attempts: ${verifyFailures.join('; ')}`
+            );
+        }
+    }
+
+    if (!draft) {
+        throw new Error('Fast interview produced no draft');
     }
 
     const plannerState = input.plannerState ?? emptyPlannerState(input.openingContext);
 
     return {
-        step: toBilingualStep(resolved.stepId, parsed.data),
+        step: toBilingualStep(stepId, draft),
         plannerState,
         totalSteps: resolved.totalSteps,
         stepIds: resolved.stepIds,

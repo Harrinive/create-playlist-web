@@ -61,28 +61,31 @@ export function q1VerifyContextBlock(): string {
 export function m4PlanContextBlock(): string {
     return `## M4 plan requirements
 **questionMode:** ClearDiscriminant
-**plannedOptionIds:** name trap clusters (playlist/production cliché) — e.g. elevator-muzak, trailer-swell, sad-acoustic-cliche, gym-hype, coffee-shop-template, grief-dirge, hyperpop-gloss, lo-fi-study, peak-club-banger.
+**plannedOptionIds:** name trap clusters (playlist/production cliché) — e.g. elevator-muzak, trailer-swell, sad-acoustic-cliche, gym-hype, coffee-shop-template, grief-dirge, hyperpop-sheen, lo-fi-study, peak-club-banger.
 **Anti-pattern ids:** mood-template too-* prefix (too-shiny, too-sad, too-mellow, etc.) — verify rejects these.
 **reachableGenresNote:** re-read Q1 social heat and region; crowded/kinetic scenes keep social house/dance warmth reachable unless answers explicitly wind down.
-**optionGuidance:** each non-none trap = distinct accidental playlist cluster still plausible; omit traps already ruled out by M1–M3.`;
+**optionGuidance:** each non-none trap = distinct accidental playlist cluster in plain labelEn/labelZh; omit traps already ruled out by M1–M3.`;
 }
 
 export function m4ExampleBlock(): string {
     return `## M4 structural shape (invent fresh wording — do not copy prompt canon)
 **Stem:** one M3 prop/beat still visible + reject question in the same scene world.
-**Options:** multi-select playlist traps + id "none". Each non-none = distinct accidental match still plausible after M1–M3.
+**Options:** multi-select plain trap labels + id "none". Each non-none = distinct accidental match still plausible after M1–M3.
 **Ids:** name trap clusters — not mood-adjective quartet pattern (too-X ids).
-**Gloss:** on poetic non-"none" only — one plain sentence decoding the reject cluster.
+**Labels:** plain trap language in labelEn/labelZh (skip elevator muzak, avoid gym hype) — self-contained, no secondary decoder fields.
 **Filter:** omit avoids already implied by prior answers; keep aesthetic false positives user might still hit.`;
 }
 
-export function m4AvoidGlossBlock(): string {
-    return `## M4 avoid gloss
-Poetic non-"none" options: glossEn + glossZh = ONE plain sentence naming a concrete playlist/production trap.
-
-**Shape:** name the trap register (cliché acoustic template, hold music, trailer swell, hyperpop gloss, grief dirge, gym hype, lo-fi study beats, motivational arc, peak-club banger, etc.) — decode what to skip, not how the room feels.
-**Anti-patterns:** mood-template openers that paraphrase the chip ("still too …", "still feels too …"); "Avoid X, Y, or a room that feels Z" — mood-stack paraphrase instead of trap names.`;
+/** Plain M4 reject labels — no separate gloss fields. */
+export function m4PlainRejectBlock(): string {
+    return `## M4 plain reject labels
+Each non-"none" option = one plain sentence in labelEn/labelZh naming what to skip (playlist trap, production cliché).
+Good shape: "Skip elevator muzak and hold music" / "Avoid gym hype and workout playlists"
+Anti-patterns: poetic metaphor mains that need a decoder; mood-adjective ids (too-*); vague "feels too bright" wording.`;
 }
+
+/** @deprecated Use m4PlainRejectBlock — kept for import compatibility. */
+export const m4AvoidGlossBlock = m4PlainRejectBlock;
 
 export function m5FeltAxesBlock(): string {
     return `## M5 (inferred server-side only in v4)`;

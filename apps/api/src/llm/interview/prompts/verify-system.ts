@@ -4,9 +4,9 @@ import { verifyOutputSchema } from './sections/schemas.js';
 import type { InterviewAnswers } from '../../../types/interview.js';
 import { formatPriorAnswers } from './fragments.js';
 import { turnLabel } from './dimension.js';
-import { m4AvoidGlossBlock, q1VerifyContextBlock } from './blocks.js';
+import { m4PlainRejectBlock, q1VerifyContextBlock } from './blocks.js';
 import { musicPatternBan } from './sections/bans.js';
-import { stemGlossRules, optionGlossRules, concreteStoryRules } from './sections/gloss-rules.js';
+import { noGlossOutputBlock, concreteStoryRules } from './sections/gloss-rules.js';
 
 export function logicVerifySystemPrompt(): string {
     return joinSections(
@@ -14,18 +14,17 @@ export function logicVerifySystemPrompt(): string {
         musicPatternBan,
         '## Checks (same principles as draft)',
         `1. **Stem-option coherence** — stem sets the scene/question; every option belongs in that frame (no orphan beats or mismatched register)
+1b. **Stem ≠ chip** — stemEn/stemZh must not duplicate any option label verbatim (stem frames/asks; options are the picks)
 2. **Advance scene** — stem does not caption user's last pick
 3. **Story/BGM test** — each option feels like different background music (M2/M3)
-4. **Concrete objects/events** on every M2/M3 chip — not mood poetry; no option gloss on M2/M3
+4. **Concrete objects/events** on every M2/M3 chip — not mood poetry
 5. **Scene continuity** — M2/M3 consistent with all prior answers; same world, no reset
-6. **Stem gloss** — omit on M1–M3 unless stem is genuinely obscure (default: omit)
-7. **Option gloss** — only when chip is vague (M1 OK); gloss adds concrete info, not mood re-description
-8. **Q1** — 4–6 options; distinct scenes; span social heat AND setting type; no overlapping beats
-9. **M2 register spread** — when kinetic genres survive, options partition distinct moments across social heat — not 3+ crowd-mood variants
-10. **M4** — includes "none"; poetic non-none gloss decodes DISTINCT reject clusters (trap names, not mood-stack paraphrase); no duplicate trap clusters; drop already-implied avoids
-11. **Filter drops** — no option matches filterDrops`,
-        stemGlossRules,
-        optionGlossRules,
+6. **No gloss fields** — omit stemGlossEn/stemGlossZh and option glossEn/glossZh on all steps; full meaning in main labels
+7. **Q1** — 4–6 options; distinct scenes; span social heat AND setting type; no overlapping beats
+8. **M2 register spread** — when kinetic genres survive, options partition distinct moments across social heat — not 3+ crowd-mood variants
+9. **M4** — includes "none"; non-none labels use plain trap language (elevator muzak, gym hype, etc.); no duplicate trap clusters; drop already-implied avoids
+10. **Filter drops** — no option matches filterDrops`,
+        noGlossOutputBlock,
         concreteStoryRules,
         verifyOutputSchema
     );
@@ -33,7 +32,7 @@ export function logicVerifySystemPrompt(): string {
 
 export function copyVerifySystemPrompt(): string {
     return joinSections(
-        'Verify bilingual COPY only (M4 gloss focus). Output JSON only.',
+        'Verify bilingual COPY only. Output JSON only.',
         buildBilingualCopyRules(),
         verifyOutputSchema
     );
@@ -55,7 +54,7 @@ export function buildLogicVerifyUserPrompt(
         stepId === 'm1'
             ? q1VerifyContextBlock()
             : stepId === 'm4'
-              ? `## M4 focus\n${m4AvoidGlossBlock()}`
+              ? `## M4 focus\n${m4PlainRejectBlock()}`
               : logicVerifyIntro;
 
     return joinSections(
