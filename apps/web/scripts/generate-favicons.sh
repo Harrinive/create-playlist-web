@@ -18,6 +18,9 @@ render favicon.svg 48 favicon-48x48.png
 render favicon.svg 180 apple-touch-icon.png
 render favicon-dark.svg 32 favicon-32x32-dark.png
 
-magick favicon-16x16.png favicon-32x32.png favicon-48x48.png favicon.ico
+cp favicon-32x32.png site-icon.png
+
+# Safari probes /favicon.ico automatically — keep in sync with site-icon.png.
+magick favicon-16x16.png favicon-32x32.png favicon.ico
 
 echo "Generated favicon raster assets in $public"
