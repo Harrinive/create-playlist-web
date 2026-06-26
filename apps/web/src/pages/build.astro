@@ -105,15 +105,8 @@ import InterviewMissing from '../components/InterviewMissing.astro';
                 </div>
 
                 <div id="build-fallback" class="build-fallback" hidden>
-                    <p class="intro-lead">
-                        <span data-locale="en">
-                            Too few tracks verified on Spotify. Try the Prompted Playlist path instead — paste the
-                            paragraph into Spotify's AI playlist feature.
-                        </span>
-                        <span data-locale="zh" hidden>
-                            Spotify 上验证通过的曲目太少。请改用提示词路径 — 将段落粘贴到 Spotify 的 AI 歌单功能中。
-                        </span>
-                    </p>
+                    <h2 id="build-fallback-title" class="build-results__title"></h2>
+                    <p id="build-fallback-body" class="intro-lead"></p>
                     <div class="actions-row">
                         <a class="text-link-button text-link-button--primary" href="/prompt">
                             <span data-locale="en">Get a prompt instead</span>

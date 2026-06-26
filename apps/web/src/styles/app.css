@@ -337,8 +337,12 @@
 }
 
 .build-fallback {
-    margin: 0 0 24px;
-    max-width: 36rem;
+    margin: 0 0 28px;
+    max-width: 42rem;
+}
+
+.build-fallback .intro-lead {
+    margin-bottom: 20px;
 }
 
 .page-kicker {

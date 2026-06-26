@@ -3,7 +3,7 @@ import {
     buildProgressCurating,
     buildProgressPublishing,
     buildProgressVerifying,
-    buildVerifyFallbackMessage,
+    buildVerifyFallbackCopy,
     formatSequenceIntent,
     resultLabel,
     resultTracksLine
@@ -79,13 +79,7 @@ type BuildStatusState =
     | { kind: 'oauth'; code: string }
     | { kind: 'api'; raw: string }
     | { kind: 'devHost' }
-    | { kind: 'apiUnreachable' }
-    | {
-          kind: 'verifyFallback';
-          okCount: number;
-          proposedCount: number;
-          successRate: number;
-      };
+    | { kind: 'apiUnreachable' };
 
 type BuildProgressState =
     | { kind: 'curating'; modelShort: string }
@@ -129,6 +123,8 @@ export function initBuildPage() {
     const flowEl = document.getElementById('build-flow');
     const resultsEl = document.getElementById('build-results');
     const fallbackEl = document.getElementById('build-fallback');
+    const fallbackTitleEl = document.getElementById('build-fallback-title');
+    const fallbackBodyEl = document.getElementById('build-fallback-body');
     const resultsSummary = document.getElementById('build-results-summary');
     const resultsOrder = document.getElementById('build-results-order');
     const startBtn = document.getElementById('build-start-btn') as HTMLButtonElement | null;
@@ -173,16 +169,19 @@ export function initBuildPage() {
             case 'apiUnreachable':
                 statusEl.textContent = localizeBuildError('apiUnreachable', locale);
                 break;
-            case 'verifyFallback':
-                statusEl.textContent = buildVerifyFallbackMessage(
-                    locale,
-                    lastStatus.okCount,
-                    lastStatus.proposedCount,
-                    lastStatus.successRate
-                );
-                break;
         }
         statusEl.hidden = false;
+    }
+
+    function renderVerifyFallback(okCount: number, proposedCount: number, successRate: number) {
+        if (!fallbackTitleEl || !fallbackBodyEl) return;
+        const copy = buildVerifyFallbackCopy(readLocale(), okCount, proposedCount, successRate);
+        fallbackTitleEl.textContent = copy.title;
+        fallbackBodyEl.textContent = copy.body;
+        if (statusEl) {
+            statusEl.hidden = true;
+            statusEl.textContent = '';
+        }
     }
 
     function renderProgress() {
@@ -434,17 +433,9 @@ export function initBuildPage() {
             if (verified.offerPromptFallback || verified.tracks.length < 10) {
                 hideProgress();
                 if (signal.aborted) return;
+                renderVerifyFallback(verified.okCount, verified.proposedCount, verified.successRate);
                 if (fallbackEl) {
                     crossFadePanels(fallbackEl, [resultsEl!, flowEl!].filter(Boolean) as HTMLElement[]);
-                }
-                if (statusEl) {
-                    lastStatus = {
-                        kind: 'verifyFallback',
-                        okCount: verified.okCount,
-                        proposedCount: verified.proposedCount,
-                        successRate: verified.successRate
-                    };
-                    renderStatus();
                 }
                 return;
             }

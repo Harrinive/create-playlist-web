@@ -27,16 +27,24 @@ export function buildProgressPublishing(locale: Locale, count: number): string {
     });
 }
 
-export function buildVerifyFallbackMessage(
+export type BuildVerifyFallbackCopy = { title: string; body: string };
+
+export function buildVerifyFallbackCopy(
     locale: Locale,
     okCount: number,
     proposedCount: number,
     successRate: number
-): string {
+): BuildVerifyFallbackCopy {
     const pct = Math.round(successRate * 100);
     return pick(locale, {
-        en: `Only ${okCount} of ${proposedCount} tracks verified on Spotify (${pct}%).`,
-        zh: `Spotify 上仅验证通过 ${okCount} / ${proposedCount} 首（${pct}%）。`
+        en: {
+            title: 'Too few tracks on Spotify',
+            body: `Only ${okCount} of ${proposedCount} matched (${pct}%). Use the prompt path instead — paste the paragraph into Spotify\u2019s Prompted Playlist feature.`
+        },
+        zh: {
+            title: 'Spotify 上匹配的曲目太少',
+            body: `仅 ${okCount} / ${proposedCount} 首通过验证（${pct}%）。请改用提示词路径，将段落粘贴到 Spotify 的 AI 歌单功能中。`
+        }
     });
 }
 
