@@ -31,6 +31,15 @@ const SURVEY_STEM_BAN =
 const PLAIN_REJECT_KEYWORDS =
     /\b(gym|workout|club|edm|sad.?acoustic|elevator|trailer|polish|hype|distort|aggressive)\b/i;
 
+const KINETIC_LABEL =
+    /\b(crowd|packed|dance|club|party|bar|floor|bodies|neon spill|moving|speakers|gym|parade|block party)\b/i;
+
+const KINETIC_REGION_IDS = ['kinetic-high', 'rhythm-social', 'edge-charged'] as const;
+
+function hasKineticCrowdLabel(options: LlmStepDraft['options']): boolean {
+    return options.some((opt) => KINETIC_LABEL.test(opt.labelEn));
+}
+
 function wordCountEn(text: string): number {
     return text.trim().split(/\s+/).filter(Boolean).length;
 }
@@ -136,9 +145,11 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
             const regionId = plan.optionSlots[opt.id]?.regionId;
             if (regionId) covered.add(regionId);
         }
-        const kineticRegions = ['kinetic-high', 'rhythm-social', 'edge-charged'];
-        if (!kineticRegions.some((r) => covered.has(r))) {
-            failures.push('Q1 missing kinetic/crowd region (kinetic-high, rhythm-social, or edge-charged)');
+        const hasKineticRegion = KINETIC_REGION_IDS.some((region) => covered.has(region));
+        if (!hasKineticRegion && !hasKineticCrowdLabel(options)) {
+            failures.push(
+                'Q1 missing kinetic/crowd region (kinetic-high, rhythm-social, or edge-charged)'
+            );
         }
     }
 
@@ -147,10 +158,7 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
         !plan.q1RegionsToCover?.length &&
         Object.keys(plan.optionSlots ?? {}).length === 0
     ) {
-        const kineticLabel =
-            /\b(crowd|packed|dance|club|party|bar|floor|bodies|neon spill|moving|speakers|gym|parade|block party)\b/i;
-        const hasKinetic = options.some((o) => kineticLabel.test(o.labelEn));
-        if (!hasKinetic && options.length >= 4) {
+        if (!hasKineticCrowdLabel(options) && options.length >= 4) {
             failures.push(
                 'Q1 missing kinetic/crowd option — span intimate and kinetic social heat'
             );
