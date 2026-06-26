@@ -8,6 +8,13 @@ type TokenResponse = {
     expires_in: number;
 };
 
+type AppTokenCache = {
+    accessToken: string;
+    expiresAt: number;
+};
+
+let appTokenCache: AppTokenCache | null = null;
+
 function basicAuth(clientId: string, clientSecret: string): string {
     return `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`;
 }
@@ -75,6 +82,39 @@ async function refreshAccessToken(
         refreshToken: data.refresh_token,
         expiresAt: Date.now() + data.expires_in * 1000
     };
+}
+
+export async function getAppAccessToken(env: Env): Promise<string> {
+    const now = Date.now();
+    if (appTokenCache && appTokenCache.expiresAt > now + 60_000) {
+        return appTokenCache.accessToken;
+    }
+
+    const params = new URLSearchParams({ grant_type: 'client_credentials' });
+    const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+            Authorization: basicAuth(env.SPOTIFY_CLIENT_ID, env.SPOTIFY_CLIENT_SECRET),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params
+    });
+
+    if (!response.ok) {
+        throw new Error(`App token request failed (${response.status}): ${await response.text()}`);
+    }
+
+    const data = (await response.json()) as TokenResponse;
+    appTokenCache = {
+        accessToken: data.access_token,
+        expiresAt: now + data.expires_in * 1000
+    };
+    return appTokenCache.accessToken;
+}
+
+/** Reset cached app token — for tests only. */
+export function resetAppAccessTokenCache(): void {
+    appTokenCache = null;
 }
 
 export async function getValidAccessToken(

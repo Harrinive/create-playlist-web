@@ -1,4 +1,4 @@
-import { getHomeProgressActions } from '../lib/home-progress';
+import { getHomeProgressActions, type HomeLastOutputLabel } from '../lib/home-progress';
 import type { LastDelivery } from '../lib/last-delivery';
 import { applyLocaleToDocument, readLocale } from '../lib/locale';
 import { normalizeSessionState } from '../lib/session-normalize';
@@ -21,7 +21,11 @@ function mountStartOverButton(): HTMLButtonElement {
     return btn;
 }
 
-function mountLastOutputLink(href: string, kind: LastDelivery): HTMLAnchorElement {
+function mountLastOutputLink(
+    href: string,
+    kind: LastDelivery,
+    label: HomeLastOutputLabel
+): HTMLAnchorElement {
     const link = document.createElement('a');
     link.className = 'text-link-button';
     link.href = href;
@@ -29,15 +33,17 @@ function mountLastOutputLink(href: string, kind: LastDelivery): HTMLAnchorElemen
     link.innerHTML = `
         <span data-locale="en">
             <span data-last-label="prompt">View last prompt</span>
-            <span data-last-label="build" hidden>View last result</span>
+            <span data-last-label="result" hidden>View last result</span>
+            <span data-last-label="tracklist" hidden>View tracklist</span>
         </span>
         <span data-locale="zh" hidden>
             <span data-last-label="prompt">查看上次提示词</span>
-            <span data-last-label="build" hidden>查看上次结果</span>
+            <span data-last-label="result" hidden>查看上次结果</span>
+            <span data-last-label="tracklist" hidden>查看曲目</span>
         </span>
     `;
     link.querySelectorAll<HTMLElement>('[data-last-label]').forEach((el) => {
-        el.hidden = el.dataset.lastLabel !== kind;
+        el.hidden = el.dataset.lastLabel !== label;
     });
     return link;
 }
@@ -59,7 +65,7 @@ export function renderHomeActions() {
         root.appendChild(mountStartOverButton());
     }
     if (actions.lastOutput) {
-        root.appendChild(mountLastOutputLink(actions.lastOutput.href, actions.lastOutput.kind));
+        root.appendChild(mountLastOutputLink(actions.lastOutput.href, actions.lastOutput.kind, actions.lastOutput.label));
     }
 
     applyLocaleToDocument(readLocale());

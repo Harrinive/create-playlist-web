@@ -1,0 +1,11 @@
+---
+export interface Props {
+    variant?: 'primary' | 'secondary';
+}
+
+const { variant = 'primary' } = Astro.props;
+---
+
+<div class:list={['page-flow-actions', variant === 'secondary' && 'page-flow-actions--secondary']}>
+    <slot />
+</div>

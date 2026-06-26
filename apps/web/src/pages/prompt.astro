@@ -1,6 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import InterviewMissing from '../components/InterviewMissing.astro';
+import PageExitNav from '../components/PageExitNav.astro';
+import PageFlowActions from '../components/PageFlowActions.astro';
+import StepKicker from '../components/StepKicker.astro';
+import { FLOW_PAGE_HEADINGS, FLOW_STEP3_PROMPT_SUBTITLE } from '../lib/flow-steps';
+import { FLOW_EXIT_NAV, FLOW_SESSION_ACTIONS } from '../lib/flow-nav-copy';
 ---
 
 <BaseLayout title="Your prompt">
@@ -8,6 +13,13 @@ import InterviewMissing from '../components/InterviewMissing.astro';
         <InterviewMissing id="prompt-missing" />
 
         <div id="prompt-unconfigured" hidden>
+            <header class="prompt-page-header">
+                <StepKicker step={3} />
+                <h1 class="page-title">
+                    <span data-locale="en">{FLOW_PAGE_HEADINGS.prompt.en}</span>
+                    <span data-locale="zh" hidden>{FLOW_PAGE_HEADINGS.prompt.zh}</span>
+                </h1>
+            </header>
             <p class="intro-lead">
                 <span data-locale="en">
                     The prompt API is not configured. Set <code>PUBLIC_API_URL</code> when the Fly API is deployed.
@@ -16,92 +28,92 @@ import InterviewMissing from '../components/InterviewMissing.astro';
                     提示词 API 尚未配置。部署 Fly API 后设置 <code>PUBLIC_API_URL</code>。
                 </span>
             </p>
-            <div class="actions-row">
+            <PageExitNav ariaLabelEn="Leave prompt page" ariaLabelZh="离开提示词页">
                 <a class="text-link-button" href="/delivery">
-                    <span data-locale="en">Other delivery</span>
-                    <span data-locale="zh" hidden>其他交付方式</span>
+                    <span data-locale="en">{FLOW_EXIT_NAV.otherDelivery.en}</span>
+                    <span data-locale="zh" hidden>{FLOW_EXIT_NAV.otherDelivery.zh}</span>
                 </a>
-            </div>
+                <a class="text-link-button" href="/">
+                    <span data-locale="en">{FLOW_EXIT_NAV.home.en}</span>
+                    <span data-locale="zh" hidden>{FLOW_EXIT_NAV.home.zh}</span>
+                </a>
+            </PageExitNav>
         </div>
 
-        <div id="prompt-loading">
-            <p class="page-kicker">Spotify Prompted Playlist</p>
-            <h1 class="page-title">
-                <span data-locale="en">Copy into Spotify</span>
-                <span data-locale="zh" hidden>复制到 Spotify</span>
-            </h1>
-            <p class="intro-lead" role="status">
-                <span data-locale="en">Writing your Spotify prompt…</span>
-                <span data-locale="zh" hidden>正在生成 Spotify 提示词…</span>
-            </p>
-        </div>
-
-        <div id="prompt-error" hidden>
-            <p class="page-kicker">Spotify Prompted Playlist</p>
-            <h1 class="page-title">
-                <span data-locale="en">Copy into Spotify</span>
-                <span data-locale="zh" hidden>复制到 Spotify</span>
-            </h1>
-            <p id="prompt-error-text" class="intro-lead" role="alert"></p>
-            <div class="actions-row">
-                <button id="prompt-retry" type="button" class="text-link-button text-link-button--primary">
-                    <span data-locale="en">Try again</span>
-                    <span data-locale="zh" hidden>重试</span>
-                </button>
-                <button type="button" class="text-link-button" data-action="start-over">
-                    <span data-locale="en">Start over</span>
-                    <span data-locale="zh" hidden>重新开始</span>
-                </button>
-            </div>
-        </div>
-
-        <div id="prompt-content" hidden>
-            <p class="page-kicker">Spotify Prompted Playlist</p>
-            <h1 class="page-title">
-                <span data-locale="en">Copy into Spotify</span>
-                <span data-locale="zh" hidden>复制到 Spotify</span>
-            </h1>
-
-            <div id="prompt-text" class="prompt-block"></div>
-
-            <div class="prompt-footer">
-                <div class="prompt-footer__copy">
-                    <button id="copy-prompt" type="button" class="text-link-button text-link-button--primary">
-                        <span data-locale="en">Copy prompt</span>
-                        <span data-locale="zh" hidden>复制提示词</span>
-                    </button>
-                    <span id="copy-status" class="copy-status" role="status" aria-live="polite"></span>
-                </div>
-
-                <p class="prompt-footer__help">
-                    <span data-locale="en">
-                        Paste into Spotify → Library → Create → <strong>Prompted Playlist</strong>.
-                    </span>
-                    <span data-locale="zh" hidden>
-                        粘贴到 Spotify → 资料库 → 创建 → <strong>Prompted Playlist</strong>。
-                    </span>
+        <div id="prompt-body" hidden>
+            <header class="prompt-page-header">
+                <StepKicker step={3} />
+                <h1 class="page-title">
+                    <span data-locale="en">{FLOW_PAGE_HEADINGS.prompt.en}</span>
+                    <span data-locale="zh" hidden>{FLOW_PAGE_HEADINGS.prompt.zh}</span>
+                </h1>
+                <p class="page-subtitle">
+                    <span data-locale="en">{FLOW_STEP3_PROMPT_SUBTITLE.en}</span>
+                    <span data-locale="zh" hidden>{FLOW_STEP3_PROMPT_SUBTITLE.zh}</span>
                 </p>
+            </header>
 
-                <nav
-                    class="prompt-footer__nav"
-                    aria-label="Prompt page actions"
-                    data-aria-en="Prompt page actions"
-                    data-aria-zh="提示词页操作"
-                >
-                    <a class="text-link-button" href="/delivery">
-                        <span data-locale="en">Other delivery</span>
-                        <span data-locale="zh" hidden>其他交付方式</span>
-                    </a>
-                    <button type="button" class="text-link-button" data-action="start-over">
-                        <span data-locale="en">Start over</span>
-                        <span data-locale="zh" hidden>重新开始</span>
-                    </button>
-                    <a class="text-link-button" href="/">
-                        <span data-locale="en">Home</span>
-                        <span data-locale="zh" hidden>首页</span>
-                    </a>
-                </nav>
+            <div id="prompt-loading">
+                <p class="intro-lead" role="status">
+                    <span data-locale="en">Writing your Spotify prompt…</span>
+                    <span data-locale="zh" hidden>正在生成 Spotify 提示词…</span>
+                </p>
             </div>
+
+            <div id="prompt-error" hidden>
+                <p id="prompt-error-text" class="intro-lead" role="alert"></p>
+                <PageFlowActions>
+                    <button id="prompt-retry" type="button" class="text-link-button text-link-button--primary">
+                        <span data-locale="en">Try again</span>
+                        <span data-locale="zh" hidden>重试</span>
+                    </button>
+                    <button type="button" class="text-link-button" data-action="start-over">
+                        <span data-locale="en">{FLOW_SESSION_ACTIONS.startOver.en}</span>
+                        <span data-locale="zh" hidden>{FLOW_SESSION_ACTIONS.startOver.zh}</span>
+                    </button>
+                </PageFlowActions>
+            </div>
+
+            <div id="prompt-content" hidden>
+                <div id="prompt-text" class="prompt-block"></div>
+
+                <div class="prompt-footer">
+                    <PageFlowActions>
+                        <button id="copy-prompt" type="button" class="text-link-button text-link-button--primary">
+                            <span data-locale="en">Copy prompt</span>
+                            <span data-locale="zh" hidden>复制提示词</span>
+                        </button>
+                        <span id="copy-status" class="copy-status" role="status" aria-live="polite"></span>
+                    </PageFlowActions>
+
+                    <p class="prompt-footer__help">
+                        <span data-locale="en">
+                            Paste into Spotify → Library → Create → <strong>Prompted Playlist</strong>.
+                        </span>
+                        <span data-locale="zh" hidden>
+                            粘贴到 Spotify → 资料库 → 创建 → <strong>Prompted Playlist</strong>。
+                        </span>
+                    </p>
+
+                    <PageFlowActions variant="secondary">
+                        <button type="button" class="text-link-button" data-action="start-over">
+                            <span data-locale="en">{FLOW_SESSION_ACTIONS.startOver.en}</span>
+                            <span data-locale="zh" hidden>{FLOW_SESSION_ACTIONS.startOver.zh}</span>
+                        </button>
+                    </PageFlowActions>
+                </div>
+            </div>
+
+            <PageExitNav ariaLabelEn="Leave prompt page" ariaLabelZh="离开提示词页">
+                <a class="text-link-button" href="/delivery">
+                    <span data-locale="en">{FLOW_EXIT_NAV.otherDelivery.en}</span>
+                    <span data-locale="zh" hidden>{FLOW_EXIT_NAV.otherDelivery.zh}</span>
+                </a>
+                <a class="text-link-button" href="/">
+                    <span data-locale="en">{FLOW_EXIT_NAV.home.en}</span>
+                    <span data-locale="zh" hidden>{FLOW_EXIT_NAV.home.zh}</span>
+                </a>
+            </PageExitNav>
         </div>
     </section>
 </BaseLayout>

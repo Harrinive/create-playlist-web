@@ -3,10 +3,6 @@ import type { Locale } from './locale';
 type Copy = { en: string; zh: string };
 
 export const INTERVIEW_FALLBACK_COPY = {
-    kicker: {
-        en: 'A question lost its footing',
-        zh: '这一题没能成形'
-    },
     title: {
         en: 'We couldn\u2019t shape the next question',
         zh: '下一题没能好好落下'

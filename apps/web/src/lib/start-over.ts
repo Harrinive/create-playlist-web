@@ -7,6 +7,7 @@ import {
     CURATE_MODEL_KEY,
     DRAFT_KEY,
     LAST_DELIVERY_KEY,
+    PENDING_BUILD_KEY,
     PROMPT_READY_KEY,
     PROMPT_TEXT_KEY,
     SESSION_KEY
@@ -20,6 +21,7 @@ export function performStartOver() {
         sessionStorage.removeItem(CURATE_MODEL_KEY);
         sessionStorage.removeItem(LAST_DELIVERY_KEY);
         sessionStorage.removeItem(BUILD_RESULT_KEY);
+        sessionStorage.removeItem(PENDING_BUILD_KEY);
         sessionStorage.removeItem(PROMPT_READY_KEY);
         sessionStorage.removeItem(PROMPT_TEXT_KEY);
         clearRejectedQuestions();

@@ -1,0 +1,15 @@
+---
+import { FLOW_STEP_KICKERS, type FlowStep } from '../lib/flow-steps';
+
+type Props = {
+    step: FlowStep;
+};
+
+const { step } = Astro.props;
+const copy = FLOW_STEP_KICKERS[step];
+---
+
+<p class="page-kicker">
+    <span data-locale="en">{copy.en}</span>
+    <span data-locale="zh" hidden>{copy.zh}</span>
+</p>

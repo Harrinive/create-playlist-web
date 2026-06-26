@@ -1,9 +1,20 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import StepKicker from '../components/StepKicker.astro';
+import PageExitNav from '../components/PageExitNav.astro';
+import { FLOW_PAGE_HEADINGS } from '../lib/flow-steps';
+import { FLOW_EXIT_NAV } from '../lib/flow-nav-copy';
 ---
 
 <BaseLayout title="Interview">
     <section id="interview-wizard">
+        <header class="interview-page-header">
+            <StepKicker step={1} />
+            <h1 class="page-title">
+                <span data-locale="en">{FLOW_PAGE_HEADINGS.interview.en}</span>
+                <span data-locale="zh" hidden>{FLOW_PAGE_HEADINGS.interview.zh}</span>
+            </h1>
+        </header>
         <div id="interview-stack" class="interview-stack">
             <div class="interview-loading" data-interview-boot>
                 <p class="interview-loading__text">
@@ -16,17 +27,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                 </p>
             </div>
         </div>
-        <nav
-            class="actions-row interview-footer-nav"
-            aria-label="Interview page actions"
-            data-aria-en="Interview page actions"
-            data-aria-zh="访谈页操作"
-        >
+        <PageExitNav ariaLabelEn="Leave interview" ariaLabelZh="离开访谈">
             <a class="text-link-button" href="/">
-                <span data-locale="en">Home</span>
-                <span data-locale="zh" hidden>首页</span>
+                <span data-locale="en">{FLOW_EXIT_NAV.home.en}</span>
+                <span data-locale="zh" hidden>{FLOW_EXIT_NAV.home.zh}</span>
             </a>
-        </nav>
+        </PageExitNav>
     </section>
 </BaseLayout>
 

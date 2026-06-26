@@ -1,22 +1,39 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import InterviewMissing from '../components/InterviewMissing.astro';
+import PageExitNav from '../components/PageExitNav.astro';
+import PageFlowActions from '../components/PageFlowActions.astro';
+import StepKicker from '../components/StepKicker.astro';
+import { FLOW_PAGE_HEADINGS } from '../lib/flow-steps';
+import { FLOW_EXIT_NAV } from '../lib/flow-nav-copy';
 ---
 
-<BaseLayout title="Build on Spotify">
+<BaseLayout title="Generate tracklist">
     <section id="build-page">
         <InterviewMissing id="build-missing" />
 
         <div id="build-content" hidden>
             <header class="build-page-header">
-                <p class="page-kicker">
-                    <span data-locale="en">Build on Spotify</span>
-                    <span data-locale="zh" hidden>在 Spotify 上创建</span>
-                </p>
-                <h1 class="page-title">
-                    <span data-locale="en">Create your playlist</span>
-                    <span data-locale="zh" hidden>创建你的歌单</span>
+                <StepKicker step={3} />
+                <h1 id="build-page-title" class="page-title">
+                    <span data-title-mode="flow">
+                        <span data-locale="en">{FLOW_PAGE_HEADINGS.buildFlow.en}</span>
+                        <span data-locale="zh" hidden>{FLOW_PAGE_HEADINGS.buildFlow.zh}</span>
+                    </span>
+                    <span data-title-mode="preview" hidden>
+                        <span data-locale="en">{FLOW_PAGE_HEADINGS.buildPreview.en}</span>
+                        <span data-locale="zh" hidden>{FLOW_PAGE_HEADINGS.buildPreview.zh}</span>
+                    </span>
+                    <span data-title-mode="results" hidden>
+                        <span data-locale="en">{FLOW_PAGE_HEADINGS.buildResults.en}</span>
+                        <span data-locale="zh" hidden>{FLOW_PAGE_HEADINGS.buildResults.zh}</span>
+                    </span>
+                    <span data-title-mode="fallback" hidden>
+                        <span data-locale="en">{FLOW_PAGE_HEADINGS.buildFallback.en}</span>
+                        <span data-locale="zh" hidden>{FLOW_PAGE_HEADINGS.buildFallback.zh}</span>
+                    </span>
                 </h1>
+                <p id="build-page-meta" class="page-subtitle build-page-meta" hidden></p>
                 <p id="build-user-subtitle" class="page-subtitle" hidden>
                     <span data-locale="en">Connected as </span>
                     <span data-locale="zh" hidden>已连接 </span>
@@ -25,6 +42,7 @@ import InterviewMissing from '../components/InterviewMissing.astro';
             </header>
 
             <p id="build-status" class="help-line" hidden role="status"></p>
+            <p id="build-restored-note" class="help-line" hidden role="status"></p>
 
             <div id="build-unconfigured" hidden>
                 <p class="intro-lead">
@@ -36,99 +54,120 @@ import InterviewMissing from '../components/InterviewMissing.astro';
                         构建 API 尚未配置。部署 Fly API 后设置 <code>PUBLIC_API_URL</code>，或暂时使用提示词路径。
                     </span>
                 </p>
-                <div class="actions-row">
+                <PageFlowActions>
                     <a class="text-link-button text-link-button--primary" href="/prompt">
                         <span data-locale="en">Get a prompt instead</span>
                         <span data-locale="zh" hidden>改为获取提示词</span>
                     </a>
-                    <a class="text-link-button" href="/">
-                        <span data-locale="en">Home</span>
-                        <span data-locale="zh" hidden>首页</span>
-                    </a>
-                </div>
-            </div>
-
-            <div id="build-connect" hidden>
-                <p class="intro-lead">
-                    <span data-locale="en">
-                        Connect Spotify to generate ~20 tracks from your interview, verify each line on Spotify, and
-                        publish a private playlist to your account.
-                    </span>
-                    <span data-locale="zh" hidden>
-                        连接 Spotify，根据访谈生成约 20 首曲目，在 Spotify 上验证并发布私密歌单到你的账号。
-                    </span>
-                </p>
-                <div class="actions-row">
-                    <a id="build-connect-btn" class="text-link-button text-link-button--primary" href="#">
-                        <span data-locale="en">Connect Spotify</span>
-                        <span data-locale="zh" hidden>连接 Spotify</span>
-                    </a>
-                    <a class="text-link-button" href="/prompt">
-                        <span data-locale="en">Get a prompt instead</span>
-                        <span data-locale="zh" hidden>改为获取提示词</span>
+                </PageFlowActions>
+                <PageExitNav ariaLabelEn="Leave build page" ariaLabelZh="离开构建页">
+                    <a class="text-link-button" href="/delivery">
+                        <span data-locale="en">{FLOW_EXIT_NAV.backToDelivery.en}</span>
+                        <span data-locale="zh" hidden>{FLOW_EXIT_NAV.backToDelivery.zh}</span>
                     </a>
                     <a class="text-link-button" href="/">
-                        <span data-locale="en">Home</span>
-                        <span data-locale="zh" hidden>首页</span>
+                        <span data-locale="en">{FLOW_EXIT_NAV.home.en}</span>
+                        <span data-locale="zh" hidden>{FLOW_EXIT_NAV.home.zh}</span>
                     </a>
-                </div>
+                </PageExitNav>
             </div>
 
-            <div id="build-connected" hidden>
+            <div id="build-main">
                 <div id="build-flow" class="build-flow">
                     <p id="build-model-label" class="build-flow__model" hidden></p>
                     <p class="build-flow__lead">
                         <span data-locale="en">
-                            We'll generate a ~26-line tracklist from your interview, verify each song on Spotify, trim to
-                            ~20 tracks in listen order, then publish a private playlist.
+                            Generate a ~26-line tracklist from your interview, verify each song on Spotify, and trim to
+                            ~20 tracks. Connect Spotify only when you want a playlist on your account.
                         </span>
                         <span data-locale="zh" hidden>
-                            我们会根据访谈生成约 26 首候选曲目，在 Spotify 上验证，按聆听顺序裁剪到约 20 首，然后发布私密歌单。
+                            根据访谈生成约 26 首候选曲目，在 Spotify 上验证并裁剪到约 20 首。仅在你想导入到自己的
+                            Spotify 账号时才需连接。
                         </span>
                     </p>
-                    <div class="actions-row build-flow__actions">
+                    <PageFlowActions>
                         <button id="build-start-btn" type="button" class="text-link-button text-link-button--primary">
-                            <span data-locale="en">Build playlist</span>
-                            <span data-locale="zh" hidden>创建歌单</span>
+                            <span data-locale="en">Generate tracklist</span>
+                            <span data-locale="zh" hidden>生成曲目</span>
                         </button>
-                    </div>
+                    </PageFlowActions>
                     <p id="build-progress" class="build-flow__progress" hidden role="status"></p>
                 </div>
 
+                <div id="build-preview" class="build-preview" hidden>
+                    <div id="build-preview-sequence" class="build-preview__sequence" hidden></div>
+                    <div id="build-preview-order" class="build-preview__tracks build-tracklist"></div>
+
+                    <footer class="build-preview__footer">
+                        <p id="build-import-note" class="build-preview__import-note">
+                            <span data-locale="en">
+                                Import needs Spotify access. If connect fails, the app may be in Development mode — ask
+                                the site owner to add your Spotify account to the allowlist.
+                            </span>
+                            <span data-locale="zh" hidden>
+                                导入需要 Spotify 授权。若连接失败，应用可能处于开发模式 — 请联系站点管理员将你的
+                                Spotify 账号加入允许列表。
+                            </span>
+                        </p>
+                        <div class="build-preview__primary">
+                            <button
+                                id="build-import-btn"
+                                type="button"
+                                class="text-link-button text-link-button--primary"
+                            >
+                                <span data-locale="en" data-import-label="connect">Connect Spotify to import</span>
+                                <span data-locale="en" data-import-label="import" hidden>Import to Spotify</span>
+                                <span data-locale="zh" hidden data-import-label="connect">连接 Spotify 以导入</span>
+                                <span data-locale="zh" hidden data-import-label="import">导入到 Spotify</span>
+                            </button>
+                        </div>
+                        <PageFlowActions variant="secondary">
+                            <button id="build-regenerate-btn" type="button" class="text-link-button">
+                                <span data-locale="en">Regenerate</span>
+                                <span data-locale="zh" hidden>重新生成</span>
+                            </button>
+                            <a class="text-link-button" href="/prompt">
+                                <span data-locale="en">Use prompt instead</span>
+                                <span data-locale="zh" hidden>改用提示词</span>
+                            </a>
+                        </PageFlowActions>
+                        <p id="build-import-progress" class="build-flow__progress" hidden role="status"></p>
+                    </footer>
+                </div>
+
                 <div id="build-results" class="build-results" hidden>
-                    <h2 class="build-results__title">
-                        <span data-locale="en">Playlist created</span>
-                        <span data-locale="zh" hidden>歌单已创建</span>
-                    </h2>
                     <div id="build-results-summary" class="build-results__summary"></div>
                     <div id="build-results-order" class="build-results__section"></div>
                 </div>
 
                 <div id="build-fallback" class="build-fallback" hidden>
-                    <h2 id="build-fallback-title" class="build-results__title"></h2>
                     <p id="build-fallback-body" class="intro-lead"></p>
-                    <div class="actions-row">
+                    <PageFlowActions>
                         <a class="text-link-button text-link-button--primary" href="/prompt">
                             <span data-locale="en">Get a prompt instead</span>
                             <span data-locale="zh" hidden>改为获取提示词</span>
                         </a>
-                    </div>
+                        <button id="build-fallback-regenerate" type="button" class="text-link-button">
+                            <span data-locale="en">Regenerate</span>
+                            <span data-locale="zh" hidden>重新生成</span>
+                        </button>
+                    </PageFlowActions>
                 </div>
 
-                <div class="actions-row build-footer-actions">
-                    <button id="build-logout-btn" type="button" class="text-link-button">
+                <PageExitNav ariaLabelEn="Leave build page" ariaLabelZh="离开构建页">
+                    <button id="build-logout-btn" type="button" class="text-link-button" hidden>
                         <span data-locale="en">Disconnect</span>
                         <span data-locale="zh" hidden>断开连接</span>
                     </button>
                     <a class="text-link-button" href="/delivery">
-                        <span data-locale="en">Back to delivery</span>
-                        <span data-locale="zh" hidden>返回交付方式</span>
+                        <span data-locale="en">{FLOW_EXIT_NAV.backToDelivery.en}</span>
+                        <span data-locale="zh" hidden>{FLOW_EXIT_NAV.backToDelivery.zh}</span>
                     </a>
                     <a class="text-link-button" href="/">
-                        <span data-locale="en">Home</span>
-                        <span data-locale="zh" hidden>首页</span>
+                        <span data-locale="en">{FLOW_EXIT_NAV.home.en}</span>
+                        <span data-locale="zh" hidden>{FLOW_EXIT_NAV.home.zh}</span>
                     </a>
-                </div>
+                </PageExitNav>
             </div>
         </div>
     </section>

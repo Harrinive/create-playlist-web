@@ -7,16 +7,13 @@ export const DELIVERY_COPY = {
     promptSublabel: { en: 'Paste in the Spotify app', zh: '粘贴到 Spotify 应用' },
     buildFallbackLabel: { en: 'Build on Spotify', zh: '在 Spotify 上创建' },
     buildSublabelSpotify: {
-        en: '~20 verified tracks on your Spotify',
-        zh: '约 20 首验证曲目，发布到你的 Spotify'
+        en: 'Generate ~20 verified tracks; import to Spotify optional',
+        zh: '生成约 20 首验证曲目；导入 Spotify 可选'
     },
     buildSublabelAccount: {
-        en: '~20 verified tracks on your account',
-        zh: '约 20 首验证曲目，发布到你的账号'
+        en: 'Generate ~20 verified tracks; connect to import',
+        zh: '生成约 20 首验证曲目；连接后导入'
     },
-    stepKicker: { en: 'Step 2', zh: '步骤 2' },
-    heading: { en: 'What should we deliver?', zh: '你想怎么交付？' },
-    backToInterview: { en: 'Back to interview', zh: '返回访谈' },
     genreNotePrefix: {
         en: 'Based on your interview, this playlist leans toward',
         zh: '根据你的访谈，歌单可能偏向'

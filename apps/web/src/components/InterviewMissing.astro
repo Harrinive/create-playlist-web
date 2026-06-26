@@ -1,4 +1,8 @@
 ---
+import PageExitNav from './PageExitNav.astro';
+import PageFlowActions from './PageFlowActions.astro';
+import { FLOW_EXIT_NAV } from '../lib/flow-nav-copy';
+
 export type Props = {
     id: string;
 };
@@ -15,10 +19,16 @@ const { id } = Astro.props;
         <span data-locale="en">Complete the interview first — we'll remember your answers for this browser session.</span>
         <span data-locale="zh" hidden>请先完成访谈 — 答案会保存在当前浏览器会话中。</span>
     </p>
-    <div class="actions-row">
+    <PageFlowActions>
         <a class="text-link-button text-link-button--primary" href="/interview">
             <span data-locale="en">Start interview</span>
             <span data-locale="zh" hidden>开始访谈</span>
         </a>
-    </div>
+    </PageFlowActions>
+    <PageExitNav ariaLabelEn="Leave page" ariaLabelZh="离开页面">
+        <a class="text-link-button" href="/">
+            <span data-locale="en">{FLOW_EXIT_NAV.home.en}</span>
+            <span data-locale="zh" hidden>{FLOW_EXIT_NAV.home.zh}</span>
+        </a>
+    </PageExitNav>
 </div>

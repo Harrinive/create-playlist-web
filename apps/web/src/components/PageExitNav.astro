@@ -1,0 +1,17 @@
+---
+export interface Props {
+    ariaLabelEn: string;
+    ariaLabelZh: string;
+}
+
+const { ariaLabelEn, ariaLabelZh } = Astro.props;
+---
+
+<nav
+    class="page-exit-nav"
+    aria-label={ariaLabelEn}
+    data-aria-en={ariaLabelEn}
+    data-aria-zh={ariaLabelZh}
+>
+    <slot />
+</nav>

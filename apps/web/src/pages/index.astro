@@ -1,6 +1,7 @@
 ---
 import siteConfig from '../data/site-config';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { FLOW_HOW_IT_WORKS, FLOW_STEP_KICKERS } from '../lib/flow-steps';
 ---
 
 <BaseLayout>
@@ -35,36 +36,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <span data-locale="zh" hidden>如何使用</span>
     </h2>
     <div class="how-steps">
-        <div>
-            <p class="how-step__label">
-                <span data-locale="en">Step 1</span>
-                <span data-locale="zh" hidden>步骤 1</span>
-            </p>
-            <p class="how-step__text">
-                <span data-locale="en">Scene, emotion, energy, Sound, and avoids — five quick picks.</span>
-                <span data-locale="zh" hidden>场景、情绪、能量、质感与避开项 — 五个快速选择。</span>
-            </p>
-        </div>
-        <div>
-            <p class="how-step__label">
-                <span data-locale="en">Step 2</span>
-                <span data-locale="zh" hidden>步骤 2</span>
-            </p>
-            <p class="how-step__text">
-                <span data-locale="en">Prompt paragraph or ~20 verified tracks — pick your model at delivery.</span>
-                <span data-locale="zh" hidden>提示词段落或约 20 首验证曲目 — 在交付方式步骤选择模型。</span>
-            </p>
-        </div>
-        <div>
-            <p class="how-step__label">
-                <span data-locale="en">Step 3</span>
-                <span data-locale="zh" hidden>步骤 3</span>
-            </p>
-            <p class="how-step__text">
-                <span data-locale="en">Paste into Spotify Prompted Playlist, or generate and publish a playlist to your account.</span>
-                <span data-locale="zh" hidden>粘贴到 Spotify Prompted Playlist，或生成并发布歌单到你的账号。</span>
-            </p>
-        </div>
+        {
+            FLOW_HOW_IT_WORKS.map((item) => (
+                <div>
+                    <p class="how-step__label">
+                        <span data-locale="en">{FLOW_STEP_KICKERS[item.step].en}</span>
+                        <span data-locale="zh" hidden>
+                            {FLOW_STEP_KICKERS[item.step].zh}
+                        </span>
+                    </p>
+                    <p class="how-step__text">
+                        <span data-locale="en">{item.text.en}</span>
+                        <span data-locale="zh" hidden>{item.text.zh}</span>
+                    </p>
+                </div>
+            ))
+        }
     </div>
 </BaseLayout>
 

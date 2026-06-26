@@ -26,7 +26,12 @@ const API_ERROR_MAP: Record<string, Copy> = {
     'Prompt generation failed': { en: 'Prompt generation failed', zh: '提示词生成失败' },
     'Publish failed': { en: 'Publish failed', zh: '发布失败' },
     'Curate failed': { en: 'Curate failed', zh: '曲目生成失败' },
-    'Verify failed': { en: 'Verify failed', zh: '验证失败' }
+    'Verify failed': { en: 'Verify failed', zh: '验证失败' },
+    rate_limited: { en: 'Too many requests — try again later.', zh: '请求过多 — 请稍后再试。' },
+    cooldown_conflict: {
+        en: 'Too few tracks remain after filtering recent playlist repeats.',
+        zh: '过滤近期歌单重复曲目后，剩余曲目过少。'
+    }
 };
 
 const LLM_NOT_CONFIGURED_PREFIX =
@@ -56,7 +61,10 @@ export type BuildErrorKey =
     | 'verifyFailed'
     | 'publishFailed'
     | 'buildFailed'
-    | 'apiUnreachable';
+    | 'apiUnreachable'
+    | 'rateLimited'
+    | 'repeatConflict'
+    | 'spotifyAllowlist';
 
 const BUILD_ERRORS: Record<BuildErrorKey, Copy | ((vars: Record<string, string>) => Copy)> = {
     connectionFailed: (vars) => ({
@@ -82,11 +90,26 @@ const BUILD_ERRORS: Record<BuildErrorKey, Copy | ((vars: Record<string, string>)
     apiUnreachable: {
         en: 'Could not reach the API. Is it running?',
         zh: '无法连接 API。服务是否在运行？'
+    },
+    rateLimited: {
+        en: 'Too many requests — try again later.',
+        zh: '请求过多 — 请稍后再试。'
+    },
+    repeatConflict: {
+        en: 'Too few tracks remain after filtering recent playlist repeats. Regenerate the tracklist.',
+        zh: '过滤近期歌单重复曲目后剩余过少。请重新生成曲目。'
+    },
+    spotifyAllowlist: {
+        en: 'Spotify connect failed. If this app is in Development mode, ask the site owner to add your Spotify account to the allowlist.',
+        zh: 'Spotify 连接失败。若应用处于开发模式，请联系站点管理员将你的 Spotify 账号加入允许列表。'
     }
 };
 
 const OAUTH_ERROR_MAP: Record<string, Copy> = {
-    access_denied: { en: 'access_denied', zh: '已拒绝授权' },
+    access_denied: {
+        en: 'access denied — you may need to be on the app allowlist',
+        zh: '已拒绝授权 — 你可能需要被加入应用允许列表'
+    },
     auth_failed: { en: 'auth_failed', zh: '授权失败' },
     missing_code: { en: 'missing_code', zh: '缺少授权码' },
     invalid_state: { en: 'invalid_state', zh: '无效状态' },

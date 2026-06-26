@@ -11,7 +11,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test:verify": "node --import tsx --test src/llm/interview/__tests__/verify-deterministic.test.ts src/llm/interview/__tests__/verify-severity.test.ts src/llm/interview/__tests__/plan-m1-kinetic.test.ts"
+    "test:verify": "node --import tsx --test src/llm/interview/__tests__/verify-deterministic.test.ts src/llm/interview/__tests__/verify-severity.test.ts src/llm/interview/__tests__/plan-m1-kinetic.test.ts",
+    "test:build": "node --import tsx --test src/spotify/__tests__/client.test.ts src/routes/__tests__/build-auth.test.ts"
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.21",

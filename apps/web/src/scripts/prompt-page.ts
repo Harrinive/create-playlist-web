@@ -31,6 +31,7 @@ export function initPromptPage() {
     const copyBtn = document.getElementById('copy-prompt') as HTMLButtonElement | null;
     const statusEl = document.getElementById('copy-status');
     const missingEl = document.getElementById('prompt-missing');
+    const promptBodyEl = document.getElementById('prompt-body');
     const contentEl = document.getElementById('prompt-content');
     const loadingEl = document.getElementById('prompt-loading');
     const errorEl = document.getElementById('prompt-error');
@@ -44,6 +45,7 @@ export function initPromptPage() {
         !copyBtn ||
         !statusEl ||
         !missingEl ||
+        !promptBodyEl ||
         !contentEl ||
         !loadingEl ||
         !errorEl ||
@@ -72,7 +74,7 @@ export function initPromptPage() {
     });
 
     const answers = readStoredInterviewAnswers();
-    const panels = [contentEl, loadingEl, errorEl, unconfiguredEl];
+    const panels = [contentEl, loadingEl, errorEl, unconfiguredEl, promptBodyEl];
 
     function renderErrorText() {
         const locale = readLocale();
@@ -107,26 +109,30 @@ export function initPromptPage() {
     missingEl.hidden = true;
 
     if (!isApiConfigured()) {
-        crossFadePanels(unconfiguredEl, [contentEl, loadingEl, errorEl]);
+        promptBodyEl.hidden = true;
+        crossFadePanels(unconfiguredEl, [contentEl, loadingEl, errorEl, promptBodyEl]);
         return;
     }
 
+    unconfiguredEl.hidden = true;
+    promptBodyEl.hidden = false;
+
     function showLoading() {
         if (loadingEl.hidden) {
-            crossFadePanels(loadingEl, [contentEl, errorEl, unconfiguredEl]);
+            crossFadePanels(loadingEl, [contentEl, errorEl]);
         }
     }
 
     function showError(message?: string) {
         lastErrorRaw = message;
         renderErrorText();
-        crossFadePanels(errorEl, [loadingEl, contentEl, unconfiguredEl]);
+        crossFadePanels(errorEl, [loadingEl, contentEl]);
     }
 
     function showContent(text: string) {
         paragraph = text;
         promptEl.textContent = text;
-        crossFadePanels(contentEl, [loadingEl, errorEl, unconfiguredEl]);
+        crossFadePanels(contentEl, [loadingEl, errorEl]);
         savePromptText(text);
         document.dispatchEvent(new CustomEvent('last-delivery-changed'));
     }

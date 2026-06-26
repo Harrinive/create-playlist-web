@@ -367,7 +367,7 @@ export async function initInterviewWizard() {
 
         if (mode === 'active') {
             const refreshActions = document.createElement('div');
-            refreshActions.className = 'interview-step__actions interview-step__actions--refresh actions-row';
+            refreshActions.className = 'interview-step__actions interview-step__actions--refresh page-flow-actions';
 
             const refreshBtn = document.createElement('button');
             refreshBtn.type = 'button';
@@ -387,7 +387,7 @@ export async function initInterviewWizard() {
 
         if (step.multi && mode === 'active') {
             const actions = document.createElement('div');
-            actions.className = 'interview-step__actions actions-row';
+            actions.className = 'interview-step__actions page-flow-actions';
             const doneBtn = document.createElement('button');
             doneBtn.type = 'button';
             doneBtn.className = 'text-link-button text-link-button--primary';
@@ -436,7 +436,7 @@ export async function initInterviewWizard() {
         if (!lastStep) return;
 
         const row = document.createElement('div');
-        row.className = 'interview-step__actions actions-row';
+        row.className = 'interview-step__actions page-flow-actions';
         row.dataset.role = 'continue-delivery';
 
         const btn = document.createElement('button');

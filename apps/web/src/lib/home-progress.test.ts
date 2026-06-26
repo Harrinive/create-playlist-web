@@ -88,7 +88,7 @@ describe('getHomeProgressActions', () => {
         store.set(PROMPT_TEXT_KEY, 'A mellow evening playlist with warm guitars.');
         store.set(LAST_DELIVERY_KEY, 'prompt');
         const actions = getHomeProgressActions();
-        expect(actions.lastOutput).toEqual({ href: '/prompt', kind: 'prompt' });
+        expect(actions.lastOutput).toEqual({ href: '/prompt', kind: 'prompt', label: 'prompt' });
     });
 
     it('build snapshot takes priority over prompt', () => {
@@ -104,7 +104,42 @@ describe('getHomeProgressActions', () => {
         );
         store.set(LAST_DELIVERY_KEY, 'build');
         const actions = getHomeProgressActions();
-        expect(actions.lastOutput).toEqual({ href: '/build', kind: 'build' });
+        expect(actions.lastOutput).toEqual({ href: '/build', kind: 'build', label: 'result' });
+    });
+
+    it('pending build snapshot shows tracklist link', () => {
+        store.set(SESSION_KEY, JSON.stringify(validAnswers));
+        store.set(
+            'create-playlist-pending-build',
+            JSON.stringify({
+                brief: {
+                    anchor: 'a',
+                    emotion: 'b',
+                    pace: 'c',
+                    sonic: 'd',
+                    flow: 'e',
+                    reject: [],
+                    seeds: 'none'
+                },
+                sequenceIntent: 'arc',
+                lines: [{ lineNumber: 1, artist: 'A', title: 'T', tags: '', raw: 'A — T' }],
+                verified: {
+                    successRate: 1,
+                    okCount: 1,
+                    proposedCount: 1,
+                    offerPromptFallback: false,
+                    tracks: [
+                        { lineNumber: 1, id: 'id1', artist: 'A', title: 'T', uri: 'spotify:track:1' }
+                    ],
+                    skipped: []
+                },
+                model: 'test',
+                modelLabel: 'Test',
+                generatedAt: new Date().toISOString()
+            })
+        );
+        const actions = getHomeProgressActions();
+        expect(actions.lastOutput).toEqual({ href: '/build', kind: 'build', label: 'tracklist' });
     });
 
     it('legacy prompt-ready flag without text does not show last output', () => {

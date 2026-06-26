@@ -1,14 +1,15 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageExitNav from '../../components/PageExitNav.astro';
+import PageFlowActions from '../../components/PageFlowActions.astro';
+import StepKicker from '../../components/StepKicker.astro';
 import { INTERVIEW_FALLBACK_COPY } from '../../lib/interview-fallback-copy';
+import { FLOW_EXIT_NAV } from '../../lib/flow-nav-copy';
 ---
 
 <BaseLayout title="Interview pause">
     <section id="interview-fallback-page" class="interview-fallback">
-        <p class="page-kicker">
-            <span data-locale="en">{INTERVIEW_FALLBACK_COPY.kicker.en}</span>
-            <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.kicker.zh}</span>
-        </p>
+        <StepKicker step={1} />
         <h1 class="page-title">
             <span data-locale="en">{INTERVIEW_FALLBACK_COPY.title.en}</span>
             <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.title.zh}</span>
@@ -27,7 +28,7 @@ import { INTERVIEW_FALLBACK_COPY } from '../../lib/interview-fallback-copy';
             <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.noCheckpoint.zh}</span>
         </p>
 
-        <div class="actions-row">
+        <PageFlowActions>
             <a
                 id="interview-fallback-resume"
                 class="text-link-button text-link-button--primary"
@@ -41,11 +42,14 @@ import { INTERVIEW_FALLBACK_COPY } from '../../lib/interview-fallback-copy';
                 <span data-locale="en">{INTERVIEW_FALLBACK_COPY.startOverButton.en}</span>
                 <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.startOverButton.zh}</span>
             </button>
+        </PageFlowActions>
+
+        <PageExitNav ariaLabelEn="Leave interview" ariaLabelZh="离开访谈">
             <a class="text-link-button" href="/">
-                <span data-locale="en">{INTERVIEW_FALLBACK_COPY.homeButton.en}</span>
-                <span data-locale="zh" hidden>{INTERVIEW_FALLBACK_COPY.homeButton.zh}</span>
+                <span data-locale="en">{FLOW_EXIT_NAV.home.en}</span>
+                <span data-locale="zh" hidden>{FLOW_EXIT_NAV.home.zh}</span>
             </a>
-        </div>
+        </PageExitNav>
     </section>
 </BaseLayout>
 

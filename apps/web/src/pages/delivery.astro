@@ -1,8 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import InterviewMissing from '../components/InterviewMissing.astro';
+import PageExitNav from '../components/PageExitNav.astro';
+import PageFlowActions from '../components/PageFlowActions.astro';
+import StepKicker from '../components/StepKicker.astro';
 import { CATALOG_CURATE_MODELS } from '../data/model-catalog';
 import { DELIVERY_COPY } from '../lib/delivery-copy';
+import { FLOW_PAGE_HEADINGS } from '../lib/flow-steps';
+import { FLOW_EXIT_NAV } from '../lib/flow-nav-copy';
 ---
 
 <BaseLayout title="Choose delivery">
@@ -10,14 +15,13 @@ import { DELIVERY_COPY } from '../lib/delivery-copy';
         <InterviewMissing id="delivery-missing" hidden />
 
         <div id="delivery-content">
-            <p class="page-kicker">
-                <span data-locale="en">{DELIVERY_COPY.stepKicker.en}</span>
-                <span data-locale="zh" hidden>{DELIVERY_COPY.stepKicker.zh}</span>
-            </p>
-            <h1 class="page-title">
-                <span data-locale="en">{DELIVERY_COPY.heading.en}</span>
-                <span data-locale="zh" hidden>{DELIVERY_COPY.heading.zh}</span>
-            </h1>
+            <header class="delivery-page-header">
+                <StepKicker step={2} />
+                <h1 class="page-title">
+                    <span data-locale="en">{FLOW_PAGE_HEADINGS.delivery.en}</span>
+                    <span data-locale="zh" hidden>{FLOW_PAGE_HEADINGS.delivery.zh}</span>
+                </h1>
+            </header>
 
             <p id="delivery-genre-note" class="delivery-genre-note" hidden></p>
 
@@ -66,16 +70,16 @@ import { DELIVERY_COPY } from '../lib/delivery-copy';
                 }
             </div>
 
-            <div class="actions-row">
+            <PageExitNav ariaLabelEn="Leave delivery page" ariaLabelZh="离开交付页">
                 <a class="text-link-button" href="/interview">
-                    <span data-locale="en">{DELIVERY_COPY.backToInterview.en}</span>
-                    <span data-locale="zh" hidden>{DELIVERY_COPY.backToInterview.zh}</span>
+                    <span data-locale="en">{FLOW_EXIT_NAV.backToInterview.en}</span>
+                    <span data-locale="zh" hidden>{FLOW_EXIT_NAV.backToInterview.zh}</span>
                 </a>
                 <a class="text-link-button" href="/">
-                    <span data-locale="en">Home</span>
-                    <span data-locale="zh" hidden>首页</span>
+                    <span data-locale="en">{FLOW_EXIT_NAV.home.en}</span>
+                    <span data-locale="zh" hidden>{FLOW_EXIT_NAV.home.zh}</span>
                 </a>
-            </div>
+            </PageExitNav>
         </div>
     </section>
 </BaseLayout>

@@ -37,10 +37,10 @@ Spotify Developer redirect URI: `http://127.0.0.1:3001/auth/spotify/callback`
 | POST | `/auth/logout` | Clear session |
 | GET | `/api/me` | Session status |
 | GET | `/api/search?q=` | Track search (auth required) |
-| POST | `/api/curate` | LLM tracklist from interview answers (auth + LLM key) |
+| POST | `/api/curate` | LLM tracklist from interview answers (session optional; cooldown when logged in) |
 | GET | `/api/curate/models` | Available curation models for delivery UI |
-| POST | `/api/verify` | Verify proposed lines on Spotify + trim to ~20 |
-| POST | `/api/publish` | Create private playlist + append per-user memory |
+| POST | `/api/verify` | Verify proposed lines on Spotify + trim to ~20 (session optional; app token for search) |
+| POST | `/api/publish` | Create private playlist + append per-user memory (**auth required**) |
 
 Session cookie: `cp_session` (httpOnly). Production uses `SameSite=Lax` when API and web share `*.dychen.net`.
 

@@ -43,7 +43,7 @@ MCP is **not** used in production. Spotify helpers ported from `spotify-mcp-serv
 | Step 1 interview | LLM chip wizard + model picker | `/interview` |
 | Step 2 delivery | Prompt + per-model build options | `/delivery` |
 | Step 2.1 | Copyable paragraph | `/prompt` |
-| Step 2.2 build | OAuth + curate → verify → publish | `/build` |
+| Step 2.2 build | Generate tracklist → optional OAuth import | `/build` |
 
 **Hard rules:** verify/publish must not re-curate or reorder from scratch; trim preserves propose order; offer prompt fallback if verify &lt;50% ok.
 

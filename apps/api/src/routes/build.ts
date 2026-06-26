@@ -22,10 +22,10 @@ import {
 import { addTracksToPlaylist, createPlaylist } from '../spotify/publish.js';
 import { trimVerifiedLines, verifySuccessRate } from '../spotify/trim.js';
 import { verifyProposedLines } from '../spotify/verify.js';
-import { getValidAccessToken } from '../spotify/client.js';
+import { getAppAccessToken, getValidAccessToken } from '../spotify/client.js';
 import { deriveCooldownSets } from '../store/playlist-memory.js';
 import type { InterviewAnswers } from '../types/interview.js';
-import type { TokenStore } from '../store/types.js';
+import type { TokenStore, UserRecord } from '../store/types.js';
 import { resolveSessionUser } from './auth.js';
 
 const interviewOptionSchema = z.object({
@@ -66,12 +66,25 @@ type AppContext = {
     store: TokenStore;
 };
 
-async function requireUser(request: Parameters<typeof resolveSessionUser>[0], ctx: AppContext) {
+async function resolveOptionalUser(
+    request: Parameters<typeof resolveSessionUser>[0],
+    ctx: AppContext
+): Promise<UserRecord | null> {
     const summary = await resolveSessionUser(request, ctx);
     if (!summary) return null;
-    const user = await ctx.store.getUserById(summary.id);
-    if (!user) return null;
-    return user;
+    return ctx.store.getUserById(summary.id);
+}
+
+async function requireUser(request: Parameters<typeof resolveSessionUser>[0], ctx: AppContext) {
+    return resolveOptionalUser(request, ctx);
+}
+
+async function loadCooldownForUser(ctx: AppContext, user: UserRecord | null) {
+    if (!user) {
+        return deriveCooldownSets([]);
+    }
+    const memory = await ctx.store.getPlaylistMemory(user.id);
+    return deriveCooldownSets(memory);
 }
 
 export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -89,10 +102,7 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
     });
 
     app.post('/api/curate', async (request, reply) => {
-        const user = await requireUser(request, ctx);
-        if (!user) {
-            return reply.code(401).send({ error: 'Not authenticated' });
-        }
+        const user = await resolveOptionalUser(request, ctx);
 
         const body = z
             .object({
@@ -121,8 +131,7 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
             });
         }
 
-        const memory = await ctx.store.getPlaylistMemory(user.id);
-        const cooldown = deriveCooldownSets(memory);
+        const cooldown = await loadCooldownForUser(ctx, user);
         const plannerState = body.data.plannerState
             ? parsePlannerState(body.data.plannerState)
             : null;
@@ -174,10 +183,7 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
     });
 
     app.post('/api/verify', async (request, reply) => {
-        const user = await requireUser(request, ctx);
-        if (!user) {
-            return reply.code(401).send({ error: 'Not authenticated' });
-        }
+        const user = await resolveOptionalUser(request, ctx);
 
         const body = z
             .object({
@@ -190,9 +196,8 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
             return reply.code(400).send({ error: 'Invalid verify payload' });
         }
 
-        const memory = await ctx.store.getPlaylistMemory(user.id);
-        const cooldown = deriveCooldownSets(memory);
-        const accessToken = await getValidAccessToken(ctx.env, ctx.store, user);
+        const cooldown = await loadCooldownForUser(ctx, user);
+        const accessToken = await getAppAccessToken(ctx.env);
         const verified = await verifyProposedLines(accessToken, body.data.lines, cooldown);
         const successRate = verifySuccessRate(verified);
         const trimmed = trimVerifiedLines(verified, cooldown);
@@ -247,6 +252,17 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
             return reply.code(400).send({ error: 'Invalid publish payload' });
         }
 
+        const memory = await ctx.store.getPlaylistMemory(user.id);
+        const cooldown = deriveCooldownSets(memory);
+        const publishTracks = body.data.tracks.filter((track) => !cooldown.hardBlockIds.has(track.id));
+        if (publishTracks.length < 10) {
+            return reply.code(409).send({
+                error: 'cooldown_conflict',
+                trackCount: publishTracks.length,
+                message: 'Too few tracks remain after filtering recent playlist repeats'
+            });
+        }
+
         const accessToken = await getValidAccessToken(ctx.env, ctx.store, user);
         let { name, description } = buildPlaylistMetadata(
             body.data.answers as InterviewAnswers,
@@ -284,7 +300,7 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
             await addTracksToPlaylist(
                 accessToken,
                 playlist.id,
-                body.data.tracks.map((track) => track.uri)
+                publishTracks.map((track) => track.uri)
             );
 
             await ctx.store.appendPlaylistMemory(user.id, {
@@ -292,7 +308,7 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
                 spotifyPlaylistId: playlist.id,
                 name: playlist.name,
                 anchor: body.data.brief.anchor,
-                tracks: body.data.tracks.map((track) => ({
+                tracks: publishTracks.map((track) => ({
                     id: track.id,
                     artist: track.artist,
                     title: track.title
@@ -305,10 +321,10 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
                     url: playlist.url,
                     name: playlist.name
                 },
-                trackCount: body.data.tracks.length,
-                proposedCount: body.data.proposedCount ?? body.data.tracks.length,
+                trackCount: publishTracks.length,
+                proposedCount: body.data.proposedCount ?? publishTracks.length,
                 sequenceIntent,
-                tracks: body.data.tracks,
+                tracks: publishTracks,
                 skipped: body.data.skipped ?? []
             };
         } catch (error) {

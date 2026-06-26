@@ -1,5 +1,9 @@
 import { getApiBaseUrl, hasDevHostMismatch, isApiConfigured } from '../lib/api-config';
 import {
+    buildImportRepeatFallbackCopy,
+    buildImportReverifying,
+    buildPendingRestored,
+    buildPreviewMetaLine,
     buildProgressCurating,
     buildProgressPublishing,
     buildProgressVerifying,
@@ -15,6 +19,12 @@ import {
 } from '../lib/curate-model';
 import { readLocale } from '../lib/locale';
 import { localizeApiError, localizeBuildError, localizeOAuthError } from '../lib/localized-errors';
+import {
+    clearPendingBuild,
+    readPendingBuild,
+    savePendingBuild,
+    type PendingBuildSnapshot
+} from '../lib/pending-build';
 import { readBuildResult, saveBuildResult, type BuildResultSnapshot } from '../lib/last-delivery';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
 import { crossFadePanels, revealPanel } from '../lib/motion';
@@ -23,46 +33,19 @@ type MeResponse =
     | { authenticated: false }
     | { authenticated: true; user: { displayName: string | null; spotifyUserId: string } };
 
-type CompactBrief = {
-    anchor: string;
-    emotion: string;
-    pace: string;
-    sonic: string;
-    flow: string;
-    reject: string[];
-    seeds: string;
-    cooldownText?: string;
-};
-
-type ProposedLine = {
-    lineNumber: number;
-    artist: string;
-    title: string;
-    tags: string;
-    raw: string;
-};
+type CompactBrief = PendingBuildSnapshot['brief'];
+type ProposedLine = PendingBuildSnapshot['lines'][number];
 
 type CurateResponse = {
     brief: CompactBrief;
     sequenceIntent: string;
     lines: ProposedLine[];
     proposedCount: number;
+    model?: string | null;
+    modelLabel?: string | null;
 };
 
-type VerifyResponse = {
-    successRate: number;
-    okCount: number;
-    proposedCount: number;
-    offerPromptFallback: boolean;
-    tracks: Array<{
-        lineNumber: number;
-        id: string;
-        artist: string;
-        title: string;
-        uri: string;
-    }>;
-    skipped: Array<{ proposed: string; reason: string }>;
-};
+type VerifyResponse = PendingBuildSnapshot['verified'];
 
 type PublishResponse = {
     playlist: { id: string; url: string; name: string };
@@ -84,7 +67,8 @@ type BuildStatusState =
 type BuildProgressState =
     | { kind: 'curating'; modelShort: string }
     | { kind: 'verifying'; count: number }
-    | { kind: 'publishing'; count: number };
+    | { kind: 'publishing'; count: number }
+    | { kind: 'reverifying' };
 
 function readUrlFlag(name: string): string | null {
     return new URLSearchParams(window.location.search).get(name);
@@ -116,20 +100,28 @@ export function initBuildPage() {
     const missingEl = document.getElementById('build-missing');
     const contentEl = document.getElementById('build-content');
     const unconfiguredEl = document.getElementById('build-unconfigured');
-    const connectEl = document.getElementById('build-connect');
-    const connectedEl = document.getElementById('build-connected');
+    const mainEl = document.getElementById('build-main');
     const statusEl = document.getElementById('build-status');
+    const restoredNoteEl = document.getElementById('build-restored-note');
     const progressEl = document.getElementById('build-progress');
+    const importProgressEl = document.getElementById('build-import-progress');
     const flowEl = document.getElementById('build-flow');
+    const previewEl = document.getElementById('build-preview');
+    const previewSequence = document.getElementById('build-preview-sequence');
+    const previewOrder = document.getElementById('build-preview-order');
+    const importNoteEl = document.getElementById('build-import-note');
+    const pageTitleEl = document.getElementById('build-page-title');
+    const pageMetaEl = document.getElementById('build-page-meta');
     const resultsEl = document.getElementById('build-results');
     const fallbackEl = document.getElementById('build-fallback');
-    const fallbackTitleEl = document.getElementById('build-fallback-title');
     const fallbackBodyEl = document.getElementById('build-fallback-body');
     const resultsSummary = document.getElementById('build-results-summary');
     const resultsOrder = document.getElementById('build-results-order');
     const startBtn = document.getElementById('build-start-btn') as HTMLButtonElement | null;
+    const importBtn = document.getElementById('build-import-btn') as HTMLButtonElement | null;
+    const regenerateBtn = document.getElementById('build-regenerate-btn') as HTMLButtonElement | null;
+    const fallbackRegenerateBtn = document.getElementById('build-fallback-regenerate') as HTMLButtonElement | null;
     const modelLabelEl = document.getElementById('build-model-label');
-    const connectBtn = document.getElementById('build-connect-btn') as HTMLAnchorElement | null;
     const logoutBtn = document.getElementById('build-logout-btn') as HTMLButtonElement | null;
     const userLabel = document.getElementById('build-user-label');
     const userSubtitleEl = document.getElementById('build-user-subtitle');
@@ -150,6 +142,8 @@ export function initBuildPage() {
 
     let lastStatus: BuildStatusState | null = null;
     let lastProgress: BuildProgressState | null = null;
+    let pendingSnapshot: PendingBuildSnapshot | null = readPendingBuild();
+    let isAuthenticated = false;
 
     function renderStatus() {
         if (!statusEl || !lastStatus) return;
@@ -173,10 +167,17 @@ export function initBuildPage() {
         statusEl.hidden = false;
     }
 
-    function renderVerifyFallback(okCount: number, proposedCount: number, successRate: number) {
-        if (!fallbackTitleEl || !fallbackBodyEl) return;
-        const copy = buildVerifyFallbackCopy(readLocale(), okCount, proposedCount, successRate);
-        fallbackTitleEl.textContent = copy.title;
+    function renderVerifyFallback(
+        okCount: number,
+        proposedCount: number,
+        successRate: number,
+        repeatFallback = false
+    ) {
+        if (!fallbackBodyEl) return;
+        const copy = repeatFallback
+            ? buildImportRepeatFallbackCopy(readLocale())
+            : buildVerifyFallbackCopy(readLocale(), okCount, proposedCount, successRate);
+        setPageHeader('fallback', copy.title);
         fallbackBodyEl.textContent = copy.body;
         if (statusEl) {
             statusEl.hidden = true;
@@ -184,34 +185,44 @@ export function initBuildPage() {
         }
     }
 
-    function renderProgress() {
-        if (!progressEl || !lastProgress) return;
+    function renderProgress(target: HTMLElement | null) {
+        if (!target || !lastProgress) return;
         const locale = readLocale();
         switch (lastProgress.kind) {
             case 'curating':
-                progressEl.textContent = buildProgressCurating(locale, lastProgress.modelShort);
+                target.textContent = buildProgressCurating(locale, lastProgress.modelShort);
                 break;
             case 'verifying':
-                progressEl.textContent = buildProgressVerifying(locale, lastProgress.count);
+                target.textContent = buildProgressVerifying(locale, lastProgress.count);
                 break;
             case 'publishing':
-                progressEl.textContent = buildProgressPublishing(locale, lastProgress.count);
+                target.textContent = buildProgressPublishing(locale, lastProgress.count);
+                break;
+            case 'reverifying':
+                target.textContent = buildImportReverifying(locale);
                 break;
         }
-        progressEl.hidden = false;
+        target.hidden = false;
     }
 
-    document.addEventListener(
+        document.addEventListener(
         'locale-changed',
         () => {
             if (lastStatus) renderStatus();
-            if (lastProgress && !progressEl?.hidden) renderProgress();
+            if (lastProgress) {
+                renderProgress(progressEl);
+                renderProgress(importProgressEl);
+            }
+            if (pendingSnapshot && previewEl && !previewEl.hidden) {
+                renderPreview(pendingSnapshot, !restoredNoteEl?.hidden);
+            }
         },
         { signal }
     );
 
     const error = readUrlFlag('error');
-    if (error) clearUrlParams();
+    const connected = readUrlFlag('connected');
+    if (error || connected) clearUrlParams();
 
     if (statusEl && error) {
         lastStatus = { kind: 'oauth', code: error };
@@ -219,12 +230,35 @@ export function initBuildPage() {
     }
 
     if (!isApiConfigured()) {
-        crossFadePanels(unconfiguredEl!, [connectEl!, connectedEl!].filter(Boolean) as HTMLElement[]);
+        if (mainEl) mainEl.hidden = true;
+        unconfiguredEl!.hidden = false;
         return;
     }
 
     const api = getApiBaseUrl();
-    if (connectBtn) connectBtn.href = `${api}/auth/spotify`;
+
+    function updateImportButtonLabels() {
+        if (!importBtn) return;
+        const mode = isAuthenticated ? 'import' : 'connect';
+        importBtn.querySelectorAll<HTMLElement>('[data-import-label]').forEach((el) => {
+            el.hidden = el.dataset.importLabel !== mode;
+        });
+    }
+
+    function updateAuthUi(user?: { displayName: string | null; spotifyUserId: string }) {
+        if (user) {
+            isAuthenticated = true;
+            if (userLabel) userLabel.textContent = user.displayName ?? user.spotifyUserId;
+            if (userSubtitleEl) userSubtitleEl.hidden = false;
+            if (logoutBtn) logoutBtn.hidden = false;
+        } else {
+            isAuthenticated = false;
+            if (userSubtitleEl) userSubtitleEl.hidden = true;
+            if (logoutBtn) logoutBtn.hidden = true;
+        }
+        updateImportButtonLabels();
+        updateImportNoteVisibility();
+    }
 
     async function syncCurateModelLabel() {
         if (!modelLabelEl || !api || signal.aborted) return;
@@ -264,32 +298,109 @@ export function initBuildPage() {
         }
     }
 
-    function setProgress(state: BuildProgressState) {
+    function setPageHeader(mode: 'flow' | 'preview' | 'results' | 'fallback', titleOverride?: string) {
+        if (pageTitleEl) {
+            pageTitleEl.querySelectorAll<HTMLElement>('[data-title-mode]').forEach((el) => {
+                el.hidden = el.dataset.titleMode !== mode;
+            });
+            if (titleOverride && mode === 'fallback') {
+                const active = pageTitleEl.querySelector<HTMLElement>(`[data-title-mode="${mode}"]`);
+                if (active) {
+                    const locale = readLocale();
+                    const span = active.querySelector<HTMLElement>(`[data-locale="${locale}"]`);
+                    if (span) span.textContent = titleOverride;
+                }
+            }
+        }
+        if (pageMetaEl && mode !== 'preview') {
+            pageMetaEl.hidden = true;
+            pageMetaEl.textContent = '';
+        }
+    }
+
+    function updateImportNoteVisibility() {
+        if (!importNoteEl) return;
+        importNoteEl.hidden = isAuthenticated;
+    }
+
+    function setProgress(state: BuildProgressState, target: 'generate' | 'import' = 'generate') {
         lastProgress = state;
-        renderProgress();
+        if (target === 'generate') {
+            renderProgress(progressEl);
+            if (importProgressEl) importProgressEl.hidden = true;
+        } else {
+            renderProgress(importProgressEl);
+            if (progressEl) progressEl.hidden = true;
+        }
     }
 
     function hideProgress() {
         lastProgress = null;
         if (progressEl) progressEl.hidden = true;
+        if (importProgressEl) importProgressEl.hidden = true;
     }
 
-    async function showConnect() {
-        if (userSubtitleEl) userSubtitleEl.hidden = true;
-        crossFadePanels(connectEl!, [unconfiguredEl!, connectedEl!].filter(Boolean) as HTMLElement[]);
+    function showPanel(panel: HTMLElement) {
+        const others = [flowEl, previewEl, resultsEl, fallbackEl].filter(
+            (el): el is HTMLElement => Boolean(el) && el !== panel
+        );
+        crossFadePanels(panel, others);
     }
 
-    async function showConnected(user: { displayName: string | null; spotifyUserId: string }) {
-        crossFadePanels(connectedEl!, [unconfiguredEl!, connectEl!].filter(Boolean) as HTMLElement[]);
-        if (userLabel) {
-            userLabel.textContent = user.displayName ?? user.spotifyUserId;
+    function renderPreview(snapshot: PendingBuildSnapshot, showRestoredNote: boolean) {
+        if (!previewEl || !previewOrder) return;
+        pendingSnapshot = snapshot;
+        const locale = readLocale();
+        const sequence = snapshot.sequenceIntent ? formatSequenceIntent(snapshot.sequenceIntent) : '';
+
+        setPageHeader('preview');
+        if (pageMetaEl) {
+            pageMetaEl.textContent = buildPreviewMetaLine(
+                locale,
+                snapshot.verified.tracks.length,
+                snapshot.verified.proposedCount,
+                snapshot.modelLabel
+            );
+            pageMetaEl.hidden = false;
         }
-        if (userSubtitleEl) userSubtitleEl.hidden = false;
-        if (statusEl && statusEl.dataset.modelError !== 'true') {
-            statusEl.hidden = true;
-            statusEl.textContent = '';
-            lastStatus = null;
+
+        if (previewSequence) {
+            if (sequence) {
+                previewSequence.innerHTML = `
+                    <h2 class="build-preview__heading">${escapeHtml(resultLabel(locale, 'sequence'))}</h2>
+                    <p class="build-preview__sequence-text">${escapeHtml(sequence)}</p>
+                `;
+                previewSequence.hidden = false;
+            } else {
+                previewSequence.innerHTML = '';
+                previewSequence.hidden = true;
+            }
         }
+
+        const orderItems = snapshot.verified.tracks
+            .map(
+                (track) =>
+                    `<li class="build-tracklist__item">${escapeHtml(track.artist)} — ${escapeHtml(track.title)}</li>`
+            )
+            .join('');
+        previewOrder.innerHTML = `
+            <h2 class="build-preview__heading">${escapeHtml(resultLabel(locale, 'order'))}</h2>
+            <ol class="build-tracklist__list">${orderItems}</ol>
+        `;
+
+        if (restoredNoteEl) {
+            if (showRestoredNote) {
+                restoredNoteEl.textContent = buildPendingRestored(locale);
+                restoredNoteEl.hidden = false;
+            } else {
+                restoredNoteEl.hidden = true;
+                restoredNoteEl.textContent = '';
+            }
+        }
+
+        updateImportNoteVisibility();
+        showPanel(previewEl);
+        document.dispatchEvent(new CustomEvent('last-delivery-changed'));
     }
 
     function renderSavedBuildResult(snapshot: BuildResultSnapshot) {
@@ -314,14 +425,15 @@ export function initBuildPage() {
             </dl>
         `;
         resultsOrder.innerHTML = '';
-
-        crossFadePanels(resultsEl, [flowEl!, fallbackEl!].filter(Boolean) as HTMLElement[]);
+        setPageHeader('results');
+        showPanel(resultsEl);
     }
 
     function renderResults(data: PublishResponse) {
         if (signal.aborted) return;
         if (!resultsEl || !resultsSummary || !resultsOrder) return;
 
+        setPageHeader('results');
         const locale = readLocale();
         const sequence = data.sequenceIntent ? formatSequenceIntent(data.sequenceIntent) : '';
 
@@ -343,7 +455,7 @@ export function initBuildPage() {
             ${
                 sequence
                     ? `<div class="build-results__sequence">
-                        <h3 class="build-results__heading">${escapeHtml(resultLabel(locale, 'sequence'))}</h3>
+                        <h2 class="build-preview__heading">${escapeHtml(resultLabel(locale, 'sequence'))}</h2>
                         <p class="build-results__sequence-text">${escapeHtml(sequence)}</p>
                        </div>`
                     : ''
@@ -353,15 +465,16 @@ export function initBuildPage() {
         const orderItems = data.tracks
             .map(
                 (track) =>
-                    `<li><span class="build-results__track">${escapeHtml(track.artist)} — ${escapeHtml(track.title)}</span></li>`
+                    `<li class="build-tracklist__item">${escapeHtml(track.artist)} — ${escapeHtml(track.title)}</li>`
             )
             .join('');
         resultsOrder.innerHTML = `
-            <h3 class="build-results__heading">${escapeHtml(resultLabel(locale, 'order'))}</h3>
-            <ol class="build-results__list">${orderItems}</ol>
+            <h2 class="build-preview__heading">${escapeHtml(resultLabel(locale, 'order'))}</h2>
+            <ol class="build-tracklist__list">${orderItems}</ol>
         `;
 
-        crossFadePanels(resultsEl, [flowEl!, fallbackEl!].filter(Boolean) as HTMLElement[]);
+        showPanel(resultsEl);
+        clearPendingBuild();
         saveBuildResult({
             playlistName: data.playlist.name,
             playlistUrl: data.playlist.url,
@@ -370,14 +483,66 @@ export function initBuildPage() {
         document.dispatchEvent(new CustomEvent('last-delivery-changed'));
     }
 
-    async function runBuild() {
+    async function fetchCurate(modelId: string): Promise<CurateResponse> {
+        const curateResponse = await fetch(`${api}/api/curate`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ answers, model: modelId }),
+            signal
+        });
+        if (!curateResponse.ok) {
+            const err = (await curateResponse.json().catch(() => null)) as { error?: string } | null;
+            throw new Error(err?.error ?? 'Curate failed');
+        }
+        return (await curateResponse.json()) as CurateResponse;
+    }
+
+    async function fetchVerify(lines: ProposedLine[], brief: CompactBrief): Promise<VerifyResponse> {
+        const verifyResponse = await fetch(`${api}/api/verify`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lines, brief }),
+            signal
+        });
+        if (!verifyResponse.ok) {
+            const err = (await verifyResponse.json().catch(() => null)) as { error?: string } | null;
+            throw new Error(err?.error ?? 'Verify failed');
+        }
+        return (await verifyResponse.json()) as VerifyResponse;
+    }
+
+    function snapshotFromCurated(
+        curated: CurateResponse,
+        verified: VerifyResponse,
+        modelId: string,
+        modelLabel: string
+    ): PendingBuildSnapshot {
+        return {
+            brief: curated.brief,
+            sequenceIntent: curated.sequenceIntent,
+            lines: curated.lines,
+            verified,
+            model: modelId,
+            modelLabel,
+            generatedAt: new Date().toISOString()
+        };
+    }
+
+    async function runGenerate() {
         if (!startBtn || signal.aborted) return;
         startBtn.disabled = true;
+        if (regenerateBtn) regenerateBtn.disabled = true;
         if (resultsEl) resultsEl.hidden = true;
         if (fallbackEl) fallbackEl.hidden = true;
         if (statusEl) {
             statusEl.hidden = true;
             delete statusEl.dataset.modelError;
+        }
+        if (restoredNoteEl) {
+            restoredNoteEl.hidden = true;
+            restoredNoteEl.textContent = '';
         }
 
         try {
@@ -393,78 +558,27 @@ export function initBuildPage() {
                 kind: 'curating',
                 modelShort: curateModelShortLabel(model, readLocale())
             });
-            const curateResponse = await fetch(`${api}/api/curate`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    answers,
-                    model: model.id
-                }),
-                signal
-            });
-            if (signal.aborted) return;
-            if (!curateResponse.ok) {
-                const err = (await curateResponse.json().catch(() => null)) as { error?: string } | null;
-                throw new Error(err?.error ?? 'Curate failed');
-            }
-            const curated = (await curateResponse.json()) as CurateResponse;
+            setPageHeader('flow');
+            showPanel(flowEl!);
+
+            const curated = await fetchCurate(model.id);
             if (signal.aborted) return;
 
             setProgress({ kind: 'verifying', count: curated.proposedCount });
-            const verifyResponse = await fetch(`${api}/api/verify`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    lines: curated.lines,
-                    brief: curated.brief
-                }),
-                signal
-            });
-            if (signal.aborted) return;
-            if (!verifyResponse.ok) {
-                const err = (await verifyResponse.json().catch(() => null)) as { error?: string } | null;
-                throw new Error(err?.error ?? 'Verify failed');
-            }
-            const verified = (await verifyResponse.json()) as VerifyResponse;
+            const verified = await fetchVerify(curated.lines, curated.brief);
             if (signal.aborted) return;
 
             if (verified.offerPromptFallback || verified.tracks.length < 10) {
                 hideProgress();
-                if (signal.aborted) return;
                 renderVerifyFallback(verified.okCount, verified.proposedCount, verified.successRate);
-                if (fallbackEl) {
-                    crossFadePanels(fallbackEl, [resultsEl!, flowEl!].filter(Boolean) as HTMLElement[]);
-                }
+                if (fallbackEl) showPanel(fallbackEl);
                 return;
             }
 
-            setProgress({ kind: 'publishing', count: verified.tracks.length });
-            const publishResponse = await fetch(`${api}/api/publish`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    brief: curated.brief,
-                    answers,
-                    locale: readLocale(),
-                    sequenceIntent: curated.sequenceIntent,
-                    proposedCount: curated.proposedCount,
-                    tracks: verified.tracks,
-                    skipped: verified.skipped
-                }),
-                signal
-            });
-            if (signal.aborted) return;
-            if (!publishResponse.ok) {
-                const err = (await publishResponse.json().catch(() => null)) as { error?: string } | null;
-                throw new Error(err?.error ?? 'Publish failed');
-            }
-            const published = (await publishResponse.json()) as PublishResponse;
-            if (signal.aborted) return;
             hideProgress();
-            renderResults(published);
+            const snapshot = snapshotFromCurated(curated, verified, model.id, curateLabel);
+            savePendingBuild(snapshot);
+            renderPreview(snapshot, false);
         } catch (buildError) {
             if (signal.aborted) return;
             hideProgress();
@@ -475,8 +589,97 @@ export function initBuildPage() {
                 renderStatus();
             }
         } finally {
-            if (!signal.aborted && startBtn) {
-                startBtn.disabled = false;
+            if (!signal.aborted) {
+                if (startBtn) startBtn.disabled = false;
+                if (regenerateBtn) regenerateBtn.disabled = false;
+            }
+        }
+    }
+
+    async function runImport() {
+        if (!importBtn || !pendingSnapshot || signal.aborted) return;
+
+        if (!isAuthenticated) {
+            savePendingBuild(pendingSnapshot);
+            window.location.href = `${api}/auth/spotify`;
+            return;
+        }
+
+        importBtn.disabled = true;
+        if (regenerateBtn) regenerateBtn.disabled = true;
+        if (statusEl) {
+            statusEl.hidden = true;
+            statusEl.textContent = '';
+        }
+
+        try {
+            setProgress({ kind: 'reverifying' }, 'import');
+            const verified = await fetchVerify(pendingSnapshot.lines, pendingSnapshot.brief);
+            if (signal.aborted) return;
+
+            if (verified.offerPromptFallback || verified.tracks.length < 10) {
+                hideProgress();
+                renderVerifyFallback(
+                    verified.okCount,
+                    verified.proposedCount,
+                    verified.successRate,
+                    true
+                );
+                if (fallbackEl) showPanel(fallbackEl);
+                return;
+            }
+
+            pendingSnapshot = {
+                ...pendingSnapshot,
+                verified,
+                generatedAt: new Date().toISOString()
+            };
+            savePendingBuild(pendingSnapshot);
+
+            setProgress({ kind: 'publishing', count: verified.tracks.length }, 'import');
+            const publishResponse = await fetch(`${api}/api/publish`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    brief: pendingSnapshot.brief,
+                    answers,
+                    locale: readLocale(),
+                    sequenceIntent: pendingSnapshot.sequenceIntent,
+                    proposedCount: pendingSnapshot.verified.proposedCount,
+                    tracks: verified.tracks,
+                    skipped: verified.skipped
+                }),
+                signal
+            });
+            if (signal.aborted) return;
+            if (!publishResponse.ok) {
+                const err = (await publishResponse.json().catch(() => null)) as {
+                    error?: string;
+                } | null;
+                const code = err?.error ?? 'Publish failed';
+                if (code === 'cooldown_conflict') {
+                    throw new Error('cooldown_conflict');
+                }
+                throw new Error(code);
+            }
+            const published = (await publishResponse.json()) as PublishResponse;
+            if (signal.aborted) return;
+            hideProgress();
+            renderResults(published);
+        } catch (buildError) {
+            if (signal.aborted) return;
+            hideProgress();
+            if (statusEl) {
+                const raw =
+                    buildError instanceof Error ? buildError.message : 'Publish failed';
+                lastStatus = { kind: 'api', raw };
+                renderStatus();
+            }
+        } finally {
+            if (!signal.aborted) {
+                importBtn.disabled = false;
+                if (regenerateBtn) regenerateBtn.disabled = false;
             }
         }
     }
@@ -486,23 +689,33 @@ export function initBuildPage() {
             const response = await fetch(`${api}/api/me`, { credentials: 'include', signal });
             if (signal.aborted) return;
             if (!response.ok) {
-                await showConnect();
+                updateAuthUi();
                 return;
             }
             const data = (await response.json()) as MeResponse;
             if (data.authenticated) {
-                await showConnected(data.user);
-                const snapshot = readBuildResult();
-                if (snapshot) renderSavedBuildResult(snapshot);
+                updateAuthUi(data.user);
             } else {
-                await showConnect();
+                updateAuthUi();
             }
         } catch {
             if (statusEl) {
                 lastStatus = { kind: 'apiUnreachable' };
                 renderStatus();
             }
-            await showConnect();
+            updateAuthUi();
+        }
+    }
+
+    function initPanels() {
+        const published = readBuildResult();
+        if (pendingSnapshot) {
+            renderPreview(pendingSnapshot, true);
+        } else if (published) {
+            renderSavedBuildResult(published);
+        } else {
+            setPageHeader('flow');
+            showPanel(flowEl!);
         }
     }
 
@@ -510,21 +723,33 @@ export function initBuildPage() {
         'click',
         async () => {
             await fetch(`${api}/auth/logout`, { method: 'POST', credentials: 'include' });
-            if (resultsEl) resultsEl.hidden = true;
-            if (fallbackEl) fallbackEl.hidden = true;
-            if (flowEl) flowEl.hidden = false;
-            await showConnect();
+            updateAuthUi();
         },
         { signal }
     );
 
-    startBtn?.addEventListener(
+    startBtn?.addEventListener('click', () => void runGenerate(), { signal });
+    regenerateBtn?.addEventListener(
         'click',
         () => {
-            void runBuild();
+            clearPendingBuild();
+            pendingSnapshot = null;
+            void runGenerate();
         },
         { signal }
     );
+    fallbackRegenerateBtn?.addEventListener(
+        'click',
+        () => {
+            clearPendingBuild();
+            pendingSnapshot = null;
+            void runGenerate();
+        },
+        { signal }
+    );
+    importBtn?.addEventListener('click', () => void runImport(), { signal });
 
-    void loadSession();
+    void loadSession().then(() => {
+        initPanels();
+    });
 }
