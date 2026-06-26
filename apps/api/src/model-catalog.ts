@@ -45,7 +45,7 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
         id: 'anthropic:claude-haiku-4-5',
         provider: 'anthropic',
         interview: true,
-        curation: true,
+        curation: false,
         labelEn: 'Claude Haiku 4.5',
         labelZh: 'Claude Haiku 4.5',
         curationLabelEn: 'Generate tracklist by Claude Haiku 4.5',
@@ -60,6 +60,16 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
         labelZh: 'Claude Sonnet 4.6',
         curationLabelEn: 'Generate tracklist by Claude Sonnet 4.6',
         curationLabelZh: '用 Claude Sonnet 4.6 生成曲目列表'
+    },
+    {
+        id: 'anthropic:claude-opus-4-8',
+        provider: 'anthropic',
+        interview: false,
+        curation: true,
+        labelEn: 'Claude Opus 4.8',
+        labelZh: 'Claude Opus 4.8',
+        curationLabelEn: 'Generate tracklist by Claude Opus 4.8',
+        curationLabelZh: '用 Claude Opus 4.8 生成曲目列表'
     }
 ];
 

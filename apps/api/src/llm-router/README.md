@@ -22,6 +22,7 @@ cursor:composer-2.5
 openai:gpt-5.4-mini
 anthropic:claude-haiku-4-5
 anthropic:claude-sonnet-4-6
+anthropic:claude-opus-4-8
 composer-2.5              # auto-detect cursor
 ```
 
