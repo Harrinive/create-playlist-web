@@ -8,8 +8,8 @@ export default {
         zh: '想要什么氛围？'
     },
     quote: {
-        en: 'Five questions.\nOne mood brief.\nSpotify-ready.',
-        zh: '五个选择。\n一种氛围。\n直达 Spotify。'
+        en: 'A few quick picks.\nOne mood brief.\nSpotify-ready.',
+        zh: '几步快速选择。\n一种氛围。\n直达 Spotify。'
     },
     description: {
         en: 'A short mood interview that turns into a spotify playlist.',

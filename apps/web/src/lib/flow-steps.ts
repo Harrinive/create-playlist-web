@@ -29,8 +29,8 @@ export const FLOW_HOW_IT_WORKS: Array<{ step: FlowStep; text: Bilingual }> = [
     {
         step: 1,
         text: {
-            en: 'Scene, emotion, energy, Sound, and avoids — five quick picks.',
-            zh: '场景、情绪、能量、质感与避开项 — 五个快速选择。'
+            en: 'Scene, mood, energy, and what to avoid — a few quick picks.',
+            zh: '场景、情绪、能量与避开项 — 几步快速选择。'
         }
     },
     {
