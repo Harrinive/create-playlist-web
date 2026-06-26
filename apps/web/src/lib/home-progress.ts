@@ -1,5 +1,4 @@
-import { isInterviewComplete } from './interview-draft';
-import { hasInterviewProgress, readInterviewDraft } from './interview-progress';
+import { hasInterviewProgress } from './interview-progress';
 import { readBuildResult, readPromptReady, type LastDelivery } from './last-delivery';
 import { readStoredInterviewAnswers } from './session-answers';
 
@@ -10,9 +9,7 @@ export type HomeProgressActions = {
 };
 
 export function getHomeProgressActions(): HomeProgressActions {
-    const draft = readInterviewDraft();
     const inProgress = hasInterviewProgress();
-    const midInterview = inProgress && !isInterviewComplete(draft);
     const answers = readStoredInterviewAnswers();
     const buildSnapshot = readBuildResult();
 
@@ -25,7 +22,7 @@ export function getHomeProgressActions(): HomeProgressActions {
 
     return {
         interviewLabel: inProgress ? 'continue' : 'start',
-        showStartOver: midInterview,
+        showStartOver: inProgress,
         lastOutput
     };
 }

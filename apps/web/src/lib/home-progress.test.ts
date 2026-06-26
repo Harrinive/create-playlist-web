@@ -75,11 +75,11 @@ describe('getHomeProgressActions', () => {
         expect(actions.lastOutput).toBeNull();
     });
 
-    it('complete draft shows continue without start over', () => {
+    it('complete draft shows continue and start over', () => {
         seedPartialDraft(5);
         const actions = getHomeProgressActions();
         expect(actions.interviewLabel).toBe('continue');
-        expect(actions.showStartOver).toBe(false);
+        expect(actions.showStartOver).toBe(true);
         expect(actions.lastOutput).toBeNull();
     });
 
