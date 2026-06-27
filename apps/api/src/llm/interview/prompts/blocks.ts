@@ -107,11 +107,11 @@ export function m4PlainRejectBlock(): string {
 Each non-"none" option = one plain sentence naming what to skip (playlist trap, production cliché).
 **EN template:** "Skip …" or "Avoid …" + trap lexicon word (muzak, hype, cliché, swell, rabbit hole, Discover Weekly rut, etc.)
 **ZH template:** 别要… / 避开… / 不要… — parallel trap name, not scene poetry
-When option id matches a trap cluster, use these canonical labels exactly:
+When option id matches a trap cluster, use these canonical labels exactly — copy verify must accept them unchanged:
 
 ${trapLabelTemplatesBlock()}
 
-Anti-patterns: poetic metaphor mains that need a decoder; mood-adjective ids (too-*); vague "feels too bright" wording; scene nouns inside option labels.`;
+Anti-patterns: poetic metaphor mains that need a decoder; mood-adjective ids (too-*); vague "feels too bright" wording; scene nouns inside option labels; rewriting canonical trap labels into imagist scene chips.`;
 }
 
 /** @deprecated Use m4PlainRejectBlock — kept for import compatibility. */

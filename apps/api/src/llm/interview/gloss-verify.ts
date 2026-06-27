@@ -18,8 +18,15 @@ const CONCRETE_EN_WORDS =
 const CONCRETE_ZH =
     /[灯杯门桌椅墙窗雨钥匙盘碗瓶烟街车房手袋鞋书笔纸箱花树风云山河海滩厨房阳台走廊台阶栏杆毛巾蒸汽人群朋友声音歌曲霓虹冰镜电梯楼梯床枕钟屏幕包袋火锅叉刀碗杯钥匙钱包卡片服务员吧台舞台麦克风饮料外套堆夹克]/;
 
+const CONCRETE_ACTION_EN =
+    /\b(stand|standing|sit|sitting|walk|walking|open|close|fold|refold|refolding|tap|tapping|watch|watching|wait|waiting|share|sharing|lean|leaning|drift|drifting|move|moving|hold|holding|stack|stacking|bounce|bouncing|write|writing|pass|passing|slide|sliding|lingering|settle|settling|smil|knees|deciding|lingers|rests|turns|spills|peels|stacked|folded|lingering)\b/i;
+
 function hasConcreteAnchor(labelEn: string, labelZh: string): boolean {
-    return CONCRETE_EN_WORDS.test(labelEn) || CONCRETE_ZH.test(labelZh);
+    return (
+        CONCRETE_EN_WORDS.test(labelEn) ||
+        CONCRETE_ACTION_EN.test(labelEn) ||
+        CONCRETE_ZH.test(labelZh)
+    );
 }
 
 function sceneStepId(stepId: string): boolean {

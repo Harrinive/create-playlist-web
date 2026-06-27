@@ -98,7 +98,7 @@ export function resolveTurnConfig(
                         discriminantBlockForMode(m4Mode)
                     ],
                     logicVerifyIntro:
-                        '## Logic verify focus\nM4 discriminant: single-select; NO "none"; felt motion/groove/space in plain labels; advances M3 prop.',
+                        '## Logic verify focus\nM4 discriminant ONLY — apply check 9b, NOT check 9. NO "none" required. NO Skip/Avoid labels. Positive fit stem + felt groove/space options.',
                     copyVerifyIntro:
                         '## Copy verify focus\nPlain felt sonic/motion wording in both languages.'
                 };
@@ -108,7 +108,8 @@ export function resolveTurnConfig(
                 draftBlocks: [clearDiscriminantBlock(), m4ExampleBlock(), m4PlainRejectBlock()],
                 logicVerifyIntro:
                     '## Logic verify focus\nM4: stem advances M3 prop; distinct trap clusters in plain labels; includes "none"; only eligible trap clusters.',
-                copyVerifyIntro: '## Copy verify focus\nPlain reject trap wording in both languages.'
+                copyVerifyIntro:
+                    '## Copy verify focus\nPlain Skip/Avoid trap wording in both languages — preserve trap register; no imagist rewrite.'
             };
         }
 

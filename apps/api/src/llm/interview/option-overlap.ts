@@ -54,9 +54,10 @@ function jaccardSimilarity(a: string[], b: string[]): number {
     return union === 0 ? 0 : inter / union;
 }
 
-/** Flag overlapping or same-template options (M1–M3). */
+/** Flag overlapping or same-template options (M1–M3). M4 avoid distinctness is by trap cluster id, not label token overlap. */
 export function verifyOptionOverlap(stepId: string, draft: LlmStepDraft): string[] {
-    if (!['m1', 'm2', 'm3', 'm_clarify', 'm4'].includes(stepId)) return [];
+    if (stepId === 'm4') return [];
+    if (!['m1', 'm2', 'm3', 'm_clarify'].includes(stepId)) return [];
 
     const failures: string[] = [];
     const options = draft.options;

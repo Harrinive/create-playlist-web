@@ -10,6 +10,8 @@ import { computeEligibleTraps } from '../src/llm/interview/m4-eligibility.js';
 import type { InterviewAnswers } from '../src/types/interview.js';
 import { emptyPlannerState, type InterviewPlannerState } from '../src/types/interview-planner.js';
 
+import { INTERVIEW_PATHS } from './interview-paths.js';
+
 export type M4Scenario = {
     id: string;
     description: string;
@@ -17,39 +19,19 @@ export type M4Scenario = {
     planner: InterviewPlannerState;
 };
 
-export const M4_SCENARIOS: M4Scenario[] = [
-    {
-        id: 'kinetic-neon',
-        description: 'Neon doorway → crowd spills → peels for corner (avoid mode, kinetic-high)',
-        priorAnswers: {
-            m1: { id: 'neon-doorway', label: 'Neon doorway, shoulders brushing fast' },
-            m2: { id: 'crowd-spills', label: 'The door opens, crowd spills out' },
-            m3: { id: 'peel-corner', label: 'One person peels off for the corner' }
-        },
-        planner: {
-            version: 1,
-            hypotheses: ['alt-r&b night', 'indie dance', 'electronic street'],
-            coverageRisk: false,
-            m1RegionId: 'kinetic-high',
-            reachableGenresNote: 'alt-r&b and indie dance still reachable; acoustic folk ruled out'
-        }
-    },
-    {
-        id: 'car-rain-wistful',
-        description: 'Car rain nostalgic drift (avoid mode, sad-acoustic false-positive kept)',
-        priorAnswers: {
-            m1: { id: 'car-rain', label: 'Car in the rain, windows fogged' },
-            m2: { id: 'nostalgic', label: 'Nostalgic, watching wipers trace the glass' },
-            m3: { id: 'drifting', label: 'Drifting slow, not going anywhere yet' }
-        },
-        planner: {
-            version: 1,
-            hypotheses: ['indie folk', 'sad indie', 'ambient drift'],
-            coverageRisk: false,
-            m1RegionId: 'intimate-still',
-            reachableGenresNote: 'indie folk and ambient drift; club energy ruled out'
-        }
-    },
+function pathToM4Scenario(
+    path: (typeof INTERVIEW_PATHS)[number]
+): M4Scenario {
+    return {
+        id: path.id,
+        description: path.description,
+        priorAnswers: path.priorAnswers,
+        planner: { ...emptyPlannerState(), ...path.planner }
+    };
+}
+
+/** M4-only extras not in full path matrix. */
+const M4_ONLY_SCENARIOS: M4Scenario[] = [
     {
         id: 'post-party-kitchen',
         description: 'Post-party kitchen aftermath (party traps dropped)',
@@ -64,25 +46,6 @@ export const M4_SCENARIOS: M4Scenario[] = [
             coverageRisk: false,
             m1RegionId: 'social-mid',
             reachableGenresNote: 'soft indie unwind; peak club ruled out by aftermath'
-        }
-    },
-    {
-        id: 'tight-discriminant',
-        description:
-            'Kinetic Q1 region but M2–M3 wind-down — 2 eligible traps → discriminant-1b fallback',
-        priorAnswers: {
-            m1: { id: 'solo-bed', label: 'Solo in bed, quiet late night' },
-            m2: { id: 'calm-tender', label: 'Calm peaceful tender wistful slow drift' },
-            m3: { id: 'barely-moving', label: 'Still drifting, barely moving' }
-        },
-        planner: {
-            version: 1,
-            hypotheses: ['ambient', 'classical minimal'],
-            coverageRisk: true,
-            needsGrooveGrain: false,
-            m1RegionId: 'kinetic-high',
-            reachableGenresNote:
-                'ambient minimal after wind-down; most hype/club traps ruled out by M2–M3 still drift'
         }
     },
     {
@@ -102,6 +65,11 @@ export const M4_SCENARIOS: M4Scenario[] = [
             reachableGenresNote: 'post-punk and dark electronic; soft acoustic ruled out'
         }
     }
+];
+
+export const M4_SCENARIOS: M4Scenario[] = [
+    ...INTERVIEW_PATHS.map(pathToM4Scenario),
+    ...M4_ONLY_SCENARIOS
 ];
 
 export async function runM4Scenario(

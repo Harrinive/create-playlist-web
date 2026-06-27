@@ -37,7 +37,8 @@ Multi-select negatives; include id "none".
 
 **Stem shape:** advance one concrete prop/beat from M3 in the SAME scene world. Ask what the **soundtrack must NOT sound like** — sonic reject only.
 - REQUIRED: scene prop from M3 + plain reject question ("what should this NOT sound like?" / "这配乐最不该像什么？")
-- FORBIDDEN in stem: scene-transformation asks ("turn into", "become", "shift into"); poetic metaphor; vague "feels wrong/off in the room"; guardian/meta; "must not enter" language
+- FORBIDDEN in stem: scene-transformation ("turn into", "become", "shift into"); guardian/meta ("feel wrong", "soundtrack trap", "never become", "make this moment"); vague "feels off in the room"; quiz framing ("which trap would…")
+- Shape vs anti-pattern: ask **what to skip sonically** — not **what would ruin the mood** (guardian drift)
 
 **Options — trap names only (no scene nouns):**
 - labelEn MUST start with **Skip** or **Avoid** + a trap-lexicon word (muzak, hype, cliché, swell, rabbit hole, etc.)

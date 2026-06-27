@@ -32,6 +32,7 @@ import {
     synthesizeInterviewStory
 } from './story-synthesize.js';
 import { partitionDeterministicFailures } from './verify-severity.js';
+import { draftUsesCanonicalTrapLabels } from './m4-eligibility.js';
 
 export type GenerateInterviewStepInput = InterviewTurnContext & {
     algorithmMode?: 'fast' | 'full';
@@ -378,8 +379,13 @@ async function generateInterviewStepFull(
         const logic = await verifyLogicInterviewStep(env, ctxWithStep, fittedPlan, draft, model);
         logicFailures = logic.passed ? [] : logic.failures;
 
+        const skipM4CopyVerify =
+            stepId === 'm4' &&
+            (plannerState.m4Mode === 'avoid' || !plannerState.m4Mode) &&
+            draftUsesCanonicalTrapLabels(draft);
+
         const copy =
-            runCopyVerify && det.passed && logic.passed
+            runCopyVerify && !skipM4CopyVerify && det.passed && logic.passed
                 ? await verifyCopyInterviewStep(env, ctxWithStep, draft, model)
                 : { passed: true, failures: [] as string[] };
         copyFailures = copy.passed ? [] : copy.failures;

@@ -4,7 +4,8 @@ import {
     buildDraftUserPrompt,
     buildReviseUserPrompt,
     draftSystemPrompt,
-    reviseCopySystemPrompt
+    reviseCopySystemPrompt,
+    type DraftPromptContext
 } from './prompts.js';
 import { resolveTurnConfig } from './turn-config.js';
 import { resolveInterviewStep, stepMetaForId } from './resolve-step.js';
@@ -15,6 +16,10 @@ import {
     type LlmStepDraft,
     type TurnPlan
 } from './shared.js';
+
+function draftPromptContext(ctx: InterviewTurnContext, stepId: string): DraftPromptContext {
+    return { stepId, m4Mode: ctx.plannerState?.m4Mode };
+}
 
 export async function draftInterviewStep(
     env: Env,
@@ -37,6 +42,7 @@ export async function draftInterviewStep(
             : `${meta.optionMin}–${meta.optionMax}`;
     const turnConfig = resolveTurnConfig(stepId, plan, ctx.priorAnswers, ctx.plannerState);
     const totalSteps = ctx.plannerState?.stepIds?.length ?? resolved.totalSteps;
+    const draftCtx = draftPromptContext(ctx, stepId);
 
     const userPrompt = buildDraftUserPrompt(
         ctx.stepIndex,
@@ -47,17 +53,16 @@ export async function draftInterviewStep(
         JSON.stringify(plan, null, 2),
         optionCount,
         turnConfig.draftBlocks,
-        plan.q1RegionsToCover
+        plan.q1RegionsToCover,
+        ctx.plannerState?.m4Mode,
+        totalSteps
     );
 
     const raw = await completeChat(
         env,
         [
-            { role: 'system', content: draftSystemPrompt() },
-            { role: 'user', content: userPrompt.replace(
-                `Question ${ctx.stepIndex + 1} of 5`,
-                `Question ${ctx.stepIndex + 1} of ${totalSteps}`
-            ) }
+            { role: 'system', content: draftSystemPrompt(draftCtx) },
+            { role: 'user', content: userPrompt }
         ],
         { model }
     );
@@ -79,6 +84,8 @@ export async function reviseInterviewStep(
     model?: string,
     kind: 'all' | 'logic' | 'copy' = 'all'
 ): Promise<LlmStepDraft> {
+    const stepId = ctx.stepId ?? 'm1';
+    const draftCtx = draftPromptContext(ctx, stepId);
     const userPrompt = buildReviseUserPrompt(
         ctx.priorAnswers,
         ctx.rejectedStems,
@@ -87,7 +94,8 @@ export async function reviseInterviewStep(
         failures
     );
 
-    const systemPrompt = kind === 'copy' ? reviseCopySystemPrompt() : draftSystemPrompt();
+    const systemPrompt =
+        kind === 'copy' ? reviseCopySystemPrompt(draftCtx) : draftSystemPrompt(draftCtx);
 
     const raw = await completeChat(
         env,

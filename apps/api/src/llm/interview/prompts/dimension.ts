@@ -1,4 +1,5 @@
 import { interviewStepMeta } from '../../../types/interview-step.js';
+import type { M4Mode } from '../m4-eligibility.js';
 
 const DIMENSION_LINES: Record<string, string> = {
     m1: 'M1 Scene — user picks a place (film-still). Stem = one concrete sensory scene beat + invitation to enter the still. No music/soundtrack vocabulary in stems. 4–6 scene options spanning social heat AND setting type.',
@@ -8,13 +9,22 @@ const DIMENSION_LINES: Record<string, string> = {
     m_clarify: 'Optional clarify — film-still fork when coverageRisk.'
 };
 
-export function dimensionGuidance(stepIndex: number, stepId?: string): string {
-    const meta = stepId
-        ? { id: stepId }
-        : interviewStepMeta(stepIndex);
+function m4DimensionLine(m4Mode?: M4Mode): string {
+    if (m4Mode && m4Mode !== 'avoid') {
+        return `M4 Discriminant (${m4Mode}) — positive felt fit: advance M3 prop, ask which groove/pace/space fits. Single-select plain felt labels; NO "none"; NO Skip/Avoid trap wording.`;
+    }
+    return DIMENSION_LINES.m4;
+}
+
+export function dimensionGuidance(
+    stepIndex: number,
+    stepId?: string,
+    m4Mode?: M4Mode
+): string {
+    const meta = stepId ? { id: stepId } : interviewStepMeta(stepIndex);
     if (!meta) return 'Unknown step';
     const id = stepId ?? interviewStepMeta(stepIndex)?.id ?? 'm1';
-    const line = DIMENSION_LINES[id] ?? '';
+    const line = id === 'm4' ? m4DimensionLine(m4Mode) : (DIMENSION_LINES[id] ?? '');
     const fullMeta = interviewStepMeta(stepIndex);
     const min = fullMeta?.optionMin ?? (id === 'm1' ? 4 : 2);
     const max = fullMeta?.optionMax ?? 6;
@@ -24,9 +34,14 @@ export function dimensionGuidance(stepIndex: number, stepId?: string): string {
     return `${String(id).toUpperCase()} (${dimEn}): ${line} Target ${min}–${max} options.`;
 }
 
-export function turnLabel(stepIndex: number, stepId?: string, totalSteps = 5): string {
+export function turnLabel(
+    stepIndex: number,
+    stepId?: string,
+    totalSteps = 5,
+    m4Mode?: M4Mode
+): string {
     const id = stepId ?? interviewStepMeta(stepIndex)?.id ?? 'm1';
-    return `Question ${stepIndex + 1} of ${totalSteps} — ${dimensionGuidance(stepIndex, id)}`;
+    return `Question ${stepIndex + 1} of ${totalSteps} — ${dimensionGuidance(stepIndex, id, m4Mode)}`;
 }
 
 export function isQ1Step(stepIndex: number): boolean {

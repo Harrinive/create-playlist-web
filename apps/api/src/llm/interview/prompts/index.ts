@@ -43,7 +43,8 @@ export { planSystemPrompt, buildPlanUserPrompt } from './plan.js';
 export {
     draftSystemPrompt,
     buildDraftUserPrompt,
-    reviseCopySystemPrompt
+    reviseCopySystemPrompt,
+    type DraftPromptContext
 } from './draft-system.js';
 
 export {
@@ -59,4 +60,10 @@ export { fastSystemPrompt, buildFastUserPrompt } from './fast-system.js';
 
 export { storySystemPrompt, buildStoryUserPrompt } from './story-prompts.js';
 
-export { BILINGUAL_COPY_RULES, CHINESE_LOCALIZATION_RULES } from './sections/bilingual.js';
+export {
+    BILINGUAL_COPY_RULES,
+    CHINESE_LOCALIZATION_RULES,
+    buildSceneCopyRules,
+    buildM4AvoidCopyRules,
+    buildM4DiscriminantCopyRules
+} from './sections/bilingual.js';

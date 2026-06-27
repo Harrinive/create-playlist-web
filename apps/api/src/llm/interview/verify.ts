@@ -28,6 +28,16 @@ function resolveStepId(ctx: InterviewTurnContext): string {
     ).stepId;
 }
 
+function resolveTotalSteps(ctx: InterviewTurnContext): number {
+    if (ctx.plannerState?.stepIds?.length) return ctx.plannerState.stepIds.length;
+    return resolveInterviewStep(
+        ctx.stepIndex,
+        ctx.priorAnswers,
+        ctx.plannerState,
+        ctx.openingContext
+    ).totalSteps;
+}
+
 function resolveVerifyModel(env: Env, model?: string): string | undefined {
     return env.INTERVIEW_VERIFY_MODEL ?? model ?? resolveInterviewDefaultModel(env) ?? undefined;
 }
@@ -64,6 +74,8 @@ export async function verifyLogicInterviewStep(
     model?: string
 ): Promise<VerifyResult> {
     const stepId = resolveStepId(ctx);
+    const m4Mode = ctx.plannerState?.m4Mode;
+    const totalSteps = resolveTotalSteps(ctx);
     const turnConfig = resolveTurnConfig(stepId, plan, ctx.priorAnswers, ctx.plannerState);
     const userPrompt = buildLogicVerifyUserPrompt(
         ctx.stepIndex,
@@ -72,7 +84,8 @@ export async function verifyLogicInterviewStep(
         JSON.stringify(plan, null, 2),
         JSON.stringify(draft, null, 2),
         turnConfig.logicVerifyIntro,
-        ctx.plannerState?.m4Mode
+        m4Mode,
+        totalSteps
     );
 
     return runVerifyLlm(env, logicVerifySystemPrompt(), userPrompt, model);
@@ -85,16 +98,20 @@ export async function verifyCopyInterviewStep(
     model?: string
 ): Promise<VerifyResult> {
     const stepId = resolveStepId(ctx);
+    const m4Mode = ctx.plannerState?.m4Mode;
+    const totalSteps = resolveTotalSteps(ctx);
     const turnConfig = resolveTurnConfig(stepId, {} as TurnPlan, ctx.priorAnswers, ctx.plannerState);
     const userPrompt = buildCopyVerifyUserPrompt(
         ctx.stepIndex,
         stepId,
         ctx.priorAnswers,
         JSON.stringify(draft, null, 2),
-        turnConfig.copyVerifyIntro
+        turnConfig.copyVerifyIntro,
+        m4Mode,
+        totalSteps
     );
 
-    return runVerifyLlm(env, copyVerifySystemPrompt(), userPrompt, model);
+    return runVerifyLlm(env, copyVerifySystemPrompt(stepId, m4Mode), userPrompt, model);
 }
 
 /** @deprecated Use verifyLogicInterviewStep + verifyCopyInterviewStep */

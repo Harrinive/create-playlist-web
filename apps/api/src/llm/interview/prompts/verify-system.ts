@@ -1,5 +1,9 @@
 import { joinSections } from './join.js';
-import { buildBilingualCopyRules } from './sections/bilingual.js';
+import {
+    buildM4AvoidCopyRules,
+    buildM4DiscriminantCopyRules,
+    buildSceneCopyRules
+} from './sections/bilingual.js';
 import { verifyOutputSchema } from './sections/schemas.js';
 import type { InterviewAnswers } from '../../../types/interview.js';
 import { formatPriorAnswers } from './fragments.js';
@@ -13,6 +17,7 @@ import { noGlossOutputBlock, concreteStoryRules } from './sections/gloss-rules.j
 export function logicVerifySystemPrompt(): string {
     return joinSections(
         'Verify interview LOGIC only (v4 slim). Output JSON only.',
+        'Apply only checks listed in the user message focus block for this step/mode — ignore inapplicable M4 avoid vs discriminant rules.',
         musicPatternBan,
         '## Checks (same principles as draft)',
         `1. **Stem-option coherence** — stem sets the scene/question; every option belongs in that frame (no orphan beats or mismatched register)
@@ -24,8 +29,8 @@ export function logicVerifySystemPrompt(): string {
 6. **No gloss fields** — omit stemGlossEn/stemGlossZh and option glossEn/glossZh on all steps; full meaning in main labels
 7. **Q1** — 4–6 options; distinct scenes; span social heat AND setting type; no overlapping beats
 8. **M2 register spread** — when kinetic genres survive, options partition distinct moments across social heat — not 3+ crowd-mood variants
-9. **M4 avoid** — includes "none"; non-none labels use plain trap language; no duplicate trap clusters; drop already-implied avoids
-9b. **M4 discriminant** — NO "none"; positive felt pace/groove/space labels; NO Skip/Avoid trap wording; stem asks what fits
+9. **M4 avoid only** — includes "none"; non-none labels use plain trap language; distinct trap clusters; drop already-implied avoids
+9b. **M4 discriminant only** — NO "none"; positive felt pace/groove/space labels; NO Skip/Avoid trap wording; stem asks what fits
 10. **Filter drops** — no option matches filterDrops`,
         noGlossOutputBlock,
         concreteStoryRules,
@@ -33,10 +38,20 @@ export function logicVerifySystemPrompt(): string {
     );
 }
 
-export function copyVerifySystemPrompt(): string {
+export function copyVerifySystemPrompt(stepId?: string, m4Mode?: M4Mode): string {
+    let copyRules;
+    if (stepId === 'm4' && m4Mode && m4Mode !== 'avoid') {
+        copyRules = buildM4DiscriminantCopyRules();
+    } else if (stepId === 'm4') {
+        copyRules = buildM4AvoidCopyRules();
+    } else {
+        copyRules = buildSceneCopyRules();
+    }
+
     return joinSections(
         'Verify bilingual COPY only. Output JSON only.',
-        buildBilingualCopyRules(),
+        'Preserve the register for this step — do not rewrite M4 plain Skip/Avoid traps into imagist scene chips.',
+        copyRules,
         verifyOutputSchema
     );
 }
@@ -52,7 +67,8 @@ export function buildLogicVerifyUserPrompt(
     planJson: string,
     draftJson: string,
     logicVerifyIntro: string,
-    m4Mode?: M4Mode
+    m4Mode?: M4Mode,
+    totalSteps = 5
 ): string {
     const focus =
         stepId === 'm1'
@@ -60,11 +76,11 @@ export function buildLogicVerifyUserPrompt(
             : stepId === 'm4' && m4Mode && m4Mode !== 'avoid'
               ? `## M4 discriminant focus\n${discriminantBlockForMode(m4Mode)}`
               : stepId === 'm4'
-                ? `## M4 focus\n${m4PlainRejectBlock()}`
+                ? `## M4 avoid focus\n${m4PlainRejectBlock()}`
                 : logicVerifyIntro;
 
     return joinSections(
-        turnLabel(stepIndex, stepId),
+        turnLabel(stepIndex, stepId, totalSteps, m4Mode),
         focus,
         `## Turn plan\n${planJson}`,
         `## Draft\n${draftJson}`,
@@ -78,10 +94,12 @@ export function buildCopyVerifyUserPrompt(
     stepId: string,
     priorAnswers: Partial<InterviewAnswers>,
     draftJson: string,
-    copyVerifyIntro: string
+    copyVerifyIntro: string,
+    m4Mode?: M4Mode,
+    totalSteps = 5
 ): string {
     return joinSections(
-        turnLabel(stepIndex, stepId),
+        turnLabel(stepIndex, stepId, totalSteps, m4Mode),
         copyVerifyIntro,
         `## Draft\n${draftJson}`,
         `## Prior answers\n${formatPriorAnswers(priorAnswers)}`,

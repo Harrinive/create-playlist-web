@@ -42,6 +42,9 @@ const PLAIN_REJECT_KEYWORDS =
 
 const SKIP_AVOID_PREFIX = /^(Skip|Avoid)\s+/i;
 
+const M4_AVOID_STEM_GUARDIAN_BAN =
+    /\b(feel wrong|feels wrong|soundtrack trap|never become|make this moment|which trap would|would make this)\b/i;
+
 const KINETIC_LABEL =
     /\b(crowd|packed|dance|club|party|bar|floor|bodies|neon spill|moving|speakers|gym|parade|block party)\b/i;
 
@@ -159,6 +162,11 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
             const hasNone = options.some((o) => o.id === 'none');
             if (!hasNone) {
                 failures.push('M4 missing id "none" option');
+            }
+            if (M4_AVOID_STEM_GUARDIAN_BAN.test(draft.stemEn)) {
+                failures.push(
+                    `M4 avoid stem uses forbidden guardian framing: ${draft.stemEn.slice(0, 60)}`
+                );
             }
             const { dropped } = computeEligibleTraps(priorAnswers ?? {}, planner);
             const nonNoneCount = options.filter((o) => o.id !== 'none').length;

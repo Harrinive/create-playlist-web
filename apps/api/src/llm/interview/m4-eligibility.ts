@@ -103,6 +103,14 @@ export function buildM4Context(
         'shoulder',
         'corner',
         'spill',
+        'warehouse',
+        'orbit',
+        'bass',
+        'groove',
+        'sway',
+        'dancefloor',
+        'dance floor',
+        'red light',
         '派对',
         '人群',
         '夜店',
@@ -152,7 +160,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
             !ctx.kinetic,
         impliedAvoidEn: 'workout hype and gym motivation playlists',
         labelEnTemplate: 'Skip gym hype and workout playlists',
-        labelZhTemplate: '别要健身 hype 和 workout 歌单'
+        labelZhTemplate: '避开健身打鸡血和运动歌单'
     },
     {
         id: 'peak-club-banger',
@@ -163,7 +171,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
             ctx.postParty,
         impliedAvoidEn: 'peak club bangers and EDM drop energy',
         labelEnTemplate: 'Avoid peak-club bangers and EDM drops',
-        labelZhTemplate: '别像最嗨夜店舞曲和 EDM drop'
+        labelZhTemplate: '避开夜店顶嗨舞曲和爆炸 drop'
     },
     {
         id: 'aggressive-distortion',
@@ -184,7 +192,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
             (ctx.melancholy && !ctx.kinetic),
         impliedAvoidEn: 'corporate elevator muzak and hold music',
         labelEnTemplate: 'Skip elevator muzak and hold music',
-        labelZhTemplate: '别要电梯 muzak 和 hold music'
+        labelZhTemplate: '别要电梯背景音乐和等候音乐'
     },
     {
         id: 'coffee-shop-template',
@@ -202,7 +210,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
         dropWhen: (ctx) => ctx.kineticSocialRegion || ctx.kinetic,
         impliedAvoidEn: 'generic lo-fi study loops',
         labelEnTemplate: 'Avoid generic lo-fi study loops',
-        labelZhTemplate: '别要 lo-fi 复习循环'
+        labelZhTemplate: '别要通用复习背景循环'
     },
     {
         id: 'grief-dirge',
@@ -210,7 +218,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
         dropWhen: (ctx) => ctx.kineticSocialRegion || ctx.kinetic,
         impliedAvoidEn: 'grief dirges and funeral pacing',
         labelEnTemplate: 'Skip grief dirges and funeral pacing',
-        labelZhTemplate: '别要 grief dirge 和丧葬挽歌'
+        labelZhTemplate: '别要丧葬挽歌式慢歌'
     },
     {
         id: 'sad-acoustic-cliche',
@@ -220,7 +228,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
         keepWhen: (ctx) => ctx.melancholy && !ctx.kineticSocialRegion,
         impliedAvoidEn: 'sad-acoustic cliché playlists',
         labelEnTemplate: 'Skip sad-acoustic cliché playlists',
-        labelZhTemplate: '别要 sad-acoustic 伤感木吉他套路'
+        labelZhTemplate: '别要伤感木吉他套路歌单'
     },
     {
         id: 'trailer-swell',
@@ -228,7 +236,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
         dropWhen: (ctx) => ctx.m3StillOrDrift && ctx.calm && !ctx.kinetic,
         impliedAvoidEn: 'overly cinematic trailer swells',
         labelEnTemplate: 'Avoid overly cinematic trailer swells',
-        labelZhTemplate: '别要预告片式 trailer swell'
+        labelZhTemplate: '别要预告片式大 swell'
     },
     {
         id: 'algorithm-rabbit-hole',
@@ -237,7 +245,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
         dropWhen: () => false,
         impliedAvoidEn: 'algorithm comfort-zone rabbit holes',
         labelEnTemplate: 'Skip the algorithm rabbit hole and Discover Weekly rut',
-        labelZhTemplate: '别掉进算法 rabbit hole 和 Discover Weekly 老路'
+        labelZhTemplate: '别掉进算法推荐老路'
     },
     {
         id: 'hyperpop-sheen',
@@ -245,7 +253,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
         dropWhen: (ctx) => ctx.intimate && ctx.calm && !ctx.kinetic,
         impliedAvoidEn: 'glossy hyperpop sheen',
         labelEnTemplate: 'Avoid glossy hyperpop sheen',
-        labelZhTemplate: '别要 glossy hyperpop 高光'
+        labelZhTemplate: '别要闪耀 hyperpop 光泽'
     },
     {
         id: 'glossy-motivational',
@@ -253,7 +261,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
         dropWhen: (ctx) => (ctx.calm || ctx.melancholy) && !ctx.kinetic,
         impliedAvoidEn: 'motivational self-help energy',
         labelEnTemplate: 'Skip motivational self-help and glossy pep talk',
-        labelZhTemplate: '别要 motivational 鸡汤和 glossy pep talk'
+        labelZhTemplate: '别要励志鸡汤和打鸡血喊话'
     }
 ];
 
@@ -377,6 +385,23 @@ export function trapLabelTemplatesBlock(): string {
     return TRAP_CLUSTERS.map(
         (c) => `- ${c.id}: "${c.labelEnTemplate}" / "${c.labelZhTemplate}"`
     ).join('\n');
+}
+
+type TrapLabelDraft = {
+    options: Array<{ id: string; labelEn: string; labelZh: string }>;
+};
+
+/** True when every non-none option uses registry labelEn/labelZh exactly. */
+export function draftUsesCanonicalTrapLabels(draft: TrapLabelDraft): boolean {
+    const nonNone = draft.options.filter((o) => o.id !== 'none');
+    if (nonNone.length === 0) return false;
+    for (const opt of nonNone) {
+        const cluster = trapClusterById(opt.id);
+        if (!cluster) return false;
+        if (opt.labelEn.trim() !== cluster.labelEnTemplate) return false;
+        if (opt.labelZh.trim() !== cluster.labelZhTemplate) return false;
+    }
+    return true;
 }
 
 export function resolveM4Gate(

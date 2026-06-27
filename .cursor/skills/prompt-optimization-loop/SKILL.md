@@ -1,16 +1,20 @@
 ---
 name: prompt-optimization-loop-playlist
 description: >-
-  Repo pointer for interview prompt tuning on create-playlist-web. Loads the
-  global prompt-optimization-loop skill plus playlist-specific harness paths
+  Repo pointer for interview prompt tuning on create-playlist-web. Loads
+  grader-editor-loop, prompt-editing, and playlist-specific runner scripts
   and canon. Use when optimizing apps/api interview prompts in this repository.
 ---
 
 # Prompt optimization loop — create-playlist-web
 
-**Read the global skill first:** `~/.cursor/skills/prompt-optimization-loop/SKILL.md`
+**Load order:**
 
-This file adds **repo-specific** paths and context for the Vibelist interview pipeline.
+1. `~/.cursor/skills/grader-editor-loop/SKILL.md` — process
+2. `~/.cursor/skills/prompt-editing/SKILL.md` — prompt-editing principles
+3. `~/.cursor/skills/prompt-optimization-loop/SKILL.md` — composer (optional; same as 1+2)
+
+This file adds **repo-specific** paths for the Vibelist interview pipeline.
 
 ## Canon (grader sources)
 
@@ -20,28 +24,32 @@ This file adds **repo-specific** paths and context for the Vibelist interview pi
 | `docs/INTERVIEW-M4-AVOID.md` | M4 trap eligibility, avoid vs discriminant modes |
 | `~/.cursor/skills/create-playlist/` | Product skill (Step 1 interview spec) |
 
-## Prompt tree
+## Prompt tree (editor artifacts)
 
 `apps/api/src/llm/interview/prompts/` — plan, draft, verify, blocks, sections, turn-config
 
-Key code validators (mechanical enforcement, not prompt prose):
+Mechanical validators (code, not prompt prose):
 
 - `apps/api/src/llm/interview/verify-deterministic.ts`
 - `apps/api/src/llm/interview/verify-severity.ts`
 - `apps/api/src/llm/interview/m4-eligibility.ts`
 
-## Harness scripts
+## Runner scripts
 
 | Script | Use |
 |--------|-----|
 | `apps/api/scripts/orchestrate-step.ts` | One step + custom prior answers JSON |
 | `apps/api/scripts/orchestrate-flow.ts` | Full chain with auto-pick |
 | `apps/api/scripts/orchestrate-to-step.ts` | Run to target step with explicit picks |
+| `apps/api/scripts/orchestrate-path.ts` | Full chain for a fixed story path |
+| `apps/api/scripts/run-interview-path-matrix.ts` | All paths M1→M4 regression matrix |
+| `apps/api/scripts/interview-paths.ts` | Fixed path presets (incl. deep-prog-house) |
 | `apps/api/scripts/test-m4-scenarios.ts` | Batch M4 scenarios (avoid + discriminant paths) |
 | `apps/api/scripts/test-interview-step.ts` | Single step smoke test |
 
 ```bash
-cd apps/api && npx tsx scripts/orchestrate-step.ts m2 '{"m1":{"id":"…","label":"…"}}'
+cd apps/api && npx tsx scripts/run-interview-path-matrix.ts
+cd apps/api && npx tsx scripts/orchestrate-path.ts deep-prog-house
 cd apps/api && npx tsx scripts/test-m4-scenarios.ts
 cd apps/api && npm run test:verify
 ```
@@ -51,6 +59,10 @@ cd apps/api && npm run test:verify
 **Sequential (Q1→M4):** orchestrate-step with answer history; grader against `INTERVIEW-STRATEGY.md`; editor touches plan + draft + verify prompts.
 
 **Batch (M4):** test-m4-scenarios (5 presets); grader reviews cross-cutting register/trap failures; editor applies general M4 principles (not per-scenario wording).
+
+## Context-dependent validation (interview)
+
+Per `prompt-editing` principle F: each **question and option** depends on the prompt **and** prior interview answers (M1→M3 history, planner state). Validate with **≥2 divergent story paths** — e.g. post-party aftermath vs crowded kitchen / house-electronic — not only the path that triggered the failure. Use `run-interview-path-matrix.ts` or `orchestrate-path.ts` with different presets; track pass rate per path.
 
 ## Prior sessions (reference)
 
