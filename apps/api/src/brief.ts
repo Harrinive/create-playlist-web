@@ -1,7 +1,68 @@
 import type { CompactBrief, InterviewAnswers } from './types/interview.js';
+import type { InterviewPlannerState } from './types/interview-planner.js';
 import type { CooldownSets } from './store/playlist-memory.js';
 
 export type ContentLocale = 'en' | 'zh';
+
+function dedupeStrings(items: string[]): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const item of items) {
+        const key = item.trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(item.trim());
+    }
+    return out;
+}
+
+function rejectFromAnswers(
+    answers: InterviewAnswers,
+    planner?: InterviewPlannerState | null
+): string[] {
+    const isDiscriminant = planner?.m4Mode?.startsWith('discriminant-');
+    const userRejects = isDiscriminant
+        ? []
+        : answers.m4
+              .filter((item) => item.id !== 'none')
+              .map((item) => phraseEn(AVOID_PHRASES, item.id, item.label));
+    const implied = planner?.impliedAvoids ?? [];
+    return dedupeStrings([...userRejects, ...implied]);
+}
+
+function sonicFromAnswers(
+    answers: InterviewAnswers,
+    inferredSonic?: string,
+    planner?: InterviewPlannerState | null
+): string {
+    if (answers.m5) {
+        return phraseEn(SONIC_PHRASES, answers.m5.id, answers.m5.label);
+    }
+    const discriminantPick =
+        planner?.m4Mode?.startsWith('discriminant-') &&
+        (planner.m4Mode === 'discriminant-1b' || planner.m4Mode === 'discriminant-1c') &&
+        answers.m4.length === 1 &&
+        answers.m4[0]?.id !== 'none'
+            ? answers.m4[0].label
+            : '';
+    if (discriminantPick) return discriminantPick;
+    return inferredSonic ?? 'warm intimate air with room for varied timbres';
+}
+
+function paceFromAnswers(
+    answers: InterviewAnswers,
+    storyPace: string,
+    planner?: InterviewPlannerState | null
+): string {
+    const discriminantEnergy =
+        planner?.m4Mode === 'discriminant-1a' &&
+        answers.m4.length === 1 &&
+        answers.m4[0]?.id !== 'none'
+            ? answers.m4[0].label
+            : '';
+    if (discriminantEnergy) return discriminantEnergy;
+    return storyPace;
+}
 
 const SCENE_PHRASES: Record<string, string> = {
     hallway: 'standing in a quiet hallway with keys just set down',
@@ -192,8 +253,10 @@ export function buildCompactBrief(
     extras?: {
         interviewStory?: { en: string };
         reachableGenresNote?: string;
+        plannerState?: InterviewPlannerState | null;
     }
 ): CompactBrief {
+    const planner = extras?.plannerState;
     const story = extras?.interviewStory?.en?.trim();
     const anchor = story
         ? story.split(/[.!?]/)[0]?.trim() || phraseEn(SCENE_PHRASES, answers.m1.id, answers.m1.label)
@@ -201,17 +264,14 @@ export function buildCompactBrief(
     const emotion = story
         ? story.split(/[.!?]/)[1]?.trim() || phraseEn(EMOTION_PHRASES, answers.m2.id, answers.m2.label)
         : phraseEn(EMOTION_PHRASES, answers.m2.id, answers.m2.label);
-    const pace = story
+    const storyPace = story
         ? story.split(/[.!?]/)[2]?.trim() || phraseEn(PACE_PHRASES, answers.m3.id, answers.m3.label)
         : phraseEn(PACE_PHRASES, answers.m3.id, answers.m3.label);
-    const sonic = answers.m5
-        ? phraseEn(SONIC_PHRASES, answers.m5.id, answers.m5.label)
-        : inferredSonic ?? 'warm intimate air with room for varied timbres';
+    const pace = paceFromAnswers(answers, storyPace, planner);
+    const sonic = sonicFromAnswers(answers, inferredSonic, planner);
     const flow = phraseEn(FLOW_PHRASES, answers.m3.id, answers.m3.label);
 
-    const reject = answers.m4
-        .filter((item) => item.id !== 'none')
-        .map((item) => phraseEn(AVOID_PHRASES, item.id, item.label));
+    const reject = rejectFromAnswers(answers, planner);
 
     return {
         anchor,

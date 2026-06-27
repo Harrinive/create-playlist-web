@@ -30,13 +30,18 @@ Each option = one story beat (1–2 sentences max). Same M1 world.
 export const logicalDecisionBlock = `## M3 LogicalDecision — groove grain (only when coverageRisk + needsGrooveGrain)
 Plain body-move main lines + you-decide / 你来定. Put groove read in the main label (even pulse, loose sway) — never name genres.`;
 
-export const clearDiscriminantBlock = `## ClearDiscriminant mode (M4 avoid)
+export const clearDiscriminantBlock = `## ClearDiscriminant mode (M4 avoid) — register flip
+M1–M3 = story film-stills. **M4 avoid = plain skip/avoid trap sentences — NOT scene poetry.**
+
 Multi-select negatives; include id "none".
 
 **Stem shape:** advance one concrete prop/beat from M3 in the SAME scene world. Ask what the **soundtrack must NOT sound like** — sonic reject only.
-- REQUIRED: scene prop from M3 + reject question ("what should this NOT sound like?" / "这配乐最不该像什么？")
-- FORBIDDEN framing: scene-transformation asks ("turn into", "become", "shift into"); vague "feels wrong/off in the room"; guardian/meta; or "must not enter" language
+- REQUIRED: scene prop from M3 + plain reject question ("what should this NOT sound like?" / "这配乐最不该像什么？")
+- FORBIDDEN in stem: scene-transformation asks ("turn into", "become", "shift into"); poetic metaphor; vague "feels wrong/off in the room"; guardian/meta; "must not enter" language
 
-**Options:** plain reject language in labelEn/labelZh — name the playlist trap directly (elevator muzak, gym hype, sad-acoustic cliché, trailer swell, etc.).
-- **Id shape:** name the trap cluster — not mood-adjective template ids (too-* pattern)
-- **Filter coherence:** drop rejects already ruled out by M1–M3 (e.g. party/club/crowded when scene implies winding-down). Keep aesthetic false positives the user might still accidentally match.`;
+**Options — trap names only (no scene nouns):**
+- labelEn MUST start with **Skip** or **Avoid** + a trap-lexicon word (muzak, hype, cliché, swell, rabbit hole, etc.)
+- labelZh = parallel plain reject (别要… / 避开… / 不要…) — same trap, not scene poetry
+- **Id shape:** trap cluster id from eligible roster — not mood-adjective template ids (too-* pattern)
+- **No scene nouns in options:** no bed, kitchen, rain, neon, crowd, etc. — traps only
+- **Filter coherence:** plannedOptionIds must come ONLY from eligible trap clusters in filter hints; honor mandatory keepers (e.g. "Do NOT drop aggressive"). Each trap guards a different remaining hypothesis.`;

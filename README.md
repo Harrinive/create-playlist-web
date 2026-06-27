@@ -79,6 +79,7 @@ Dashboard settings and secret names: [docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OP
 |-----|----------|
 | [AGENTS.md](./AGENTS.md) | Cursor agents — architecture, rules, key files |
 | [docs/INTERVIEW-STRATEGY.md](./docs/INTERVIEW-STRATEGY.md) | Interview design (implemented) |
+| [docs/INTERVIEW-M4-AVOID.md](./docs/INTERVIEW-M4-AVOID.md) | M4 avoid gate, trap eligibility, discriminant fallback |
 | [docs/DASHBOARD-OPS.md](./docs/DASHBOARD-OPS.md) | CF / Fly / Spotify / GitHub ops |
 | [apps/api/README.md](./apps/api/README.md) | API local dev and Fly deploy |
 

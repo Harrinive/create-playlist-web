@@ -5,6 +5,8 @@ import type { InterviewAnswers } from '../../../types/interview.js';
 import { formatPriorAnswers } from './fragments.js';
 import { turnLabel } from './dimension.js';
 import { m4PlainRejectBlock, q1VerifyContextBlock } from './blocks.js';
+import { discriminantBlockForMode } from './sections/positive-discriminant.js';
+import type { M4Mode } from '../m4-eligibility.js';
 import { musicPatternBan } from './sections/bans.js';
 import { noGlossOutputBlock, concreteStoryRules } from './sections/gloss-rules.js';
 
@@ -22,7 +24,8 @@ export function logicVerifySystemPrompt(): string {
 6. **No gloss fields** — omit stemGlossEn/stemGlossZh and option glossEn/glossZh on all steps; full meaning in main labels
 7. **Q1** — 4–6 options; distinct scenes; span social heat AND setting type; no overlapping beats
 8. **M2 register spread** — when kinetic genres survive, options partition distinct moments across social heat — not 3+ crowd-mood variants
-9. **M4** — includes "none"; non-none labels use plain trap language (elevator muzak, gym hype, etc.); no duplicate trap clusters; drop already-implied avoids
+9. **M4 avoid** — includes "none"; non-none labels use plain trap language; no duplicate trap clusters; drop already-implied avoids
+9b. **M4 discriminant** — NO "none"; positive felt pace/groove/space labels; NO Skip/Avoid trap wording; stem asks what fits
 10. **Filter drops** — no option matches filterDrops`,
         noGlossOutputBlock,
         concreteStoryRules,
@@ -48,14 +51,17 @@ export function buildLogicVerifyUserPrompt(
     priorAnswers: Partial<InterviewAnswers>,
     planJson: string,
     draftJson: string,
-    logicVerifyIntro: string
+    logicVerifyIntro: string,
+    m4Mode?: M4Mode
 ): string {
     const focus =
         stepId === 'm1'
             ? q1VerifyContextBlock()
-            : stepId === 'm4'
-              ? `## M4 focus\n${m4PlainRejectBlock()}`
-              : logicVerifyIntro;
+            : stepId === 'm4' && m4Mode && m4Mode !== 'avoid'
+              ? `## M4 discriminant focus\n${discriminantBlockForMode(m4Mode)}`
+              : stepId === 'm4'
+                ? `## M4 focus\n${m4PlainRejectBlock()}`
+                : logicVerifyIntro;
 
     return joinSections(
         turnLabel(stepIndex, stepId),

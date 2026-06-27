@@ -7,6 +7,8 @@ import {
     storyM2Block,
     storyM3Block
 } from './sections/story-native.js';
+import type { M4Mode } from '../m4-eligibility.js';
+import { trapLabelTemplatesBlock } from '../m4-eligibility.js';
 
 export function sceneFeelingBlock(): string {
     return sceneFeelingText;
@@ -58,30 +60,58 @@ export function q1VerifyContextBlock(): string {
 4–6 options; distinct scenes; span social heat AND setting type; kinetic + intimate coverage; no overlapping beats.`;
 }
 
-export function m4PlanContextBlock(): string {
-    return `## M4 plan requirements
+const m4PlanAvoidBlock = `## M4 plan — avoid mode (ClearDiscriminant)
 **questionMode:** ClearDiscriminant
-**plannedOptionIds:** name trap clusters (playlist/production cliché) — e.g. elevator-muzak, trailer-swell, sad-acoustic-cliche, gym-hype, coffee-shop-template, grief-dirge, hyperpop-sheen, lo-fi-study, peak-club-banger.
+**plannedOptionIds:** pick ONLY from **Eligible trap clusters** in filter hints (plus id "none"). Do not invent ids outside that roster.
+**Mandatory keepers:** when filter hints say "Do NOT drop …" — include those trap ids even if tempting to omit.
 **Anti-pattern ids:** mood-template too-* prefix (too-shiny, too-sad, too-mellow, etc.) — verify rejects these.
 **reachableGenresNote:** re-read Q1 social heat and region; crowded/kinetic scenes keep social house/dance warmth reachable unless answers explicitly wind down.
-**optionGuidance:** each non-none trap = distinct accidental playlist cluster in plain labelEn/labelZh; omit traps already ruled out by M1–M3.`;
+**optionGuidance:** each non-none trap = distinct accidental playlist cluster; plain Skip/Avoid label shape in plan notes; omit traps already ruled out by M1–M3 and filter DROP lines.`;
+
+const m4PlanDiscriminantBlock = `## M4 plan — discriminant fallback (PositiveDiscriminant)
+**questionMode:** PositiveDiscriminant
+**plannedOptionIds:** 2–6 felt motion/groove/space options — NO id "none"; NO trap-cluster ids.
+**reachableGenresNote:** name which hypotheses the discriminant axis still splits.
+**optionGuidance:** single-select felt registers (pace, groove grain, or latent space) — plain labels, no genre names.`;
+
+/** Mode-conditional M4 planner context — avoid vs discriminant variants. */
+export function m4PlanContextBlockForMode(m4Mode: M4Mode = 'avoid'): string {
+    if (m4Mode === 'avoid') return m4PlanAvoidBlock;
+    return `${m4PlanDiscriminantBlock}\n**discriminantKind:** ${m4Mode}`;
+}
+
+/** @deprecated Use m4PlanContextBlockForMode(m4Mode) */
+export function m4PlanContextBlock(): string {
+    return m4PlanAvoidBlock;
 }
 
 export function m4ExampleBlock(): string {
-    return `## M4 structural shape (invent fresh wording — do not copy prompt canon)
-**Stem:** one M3 prop/beat still visible + reject question in the same scene world.
-**Options:** multi-select plain trap labels + id "none". Each non-none = distinct accidental match still plausible after M1–M3.
-**Ids:** name trap clusters — not mood-adjective quartet pattern (too-X ids).
-**Labels:** plain trap language in labelEn/labelZh (skip elevator muzak, avoid gym hype) — self-contained, no secondary decoder fields.
-**Filter:** omit avoids already implied by prior answers; keep aesthetic false positives user might still hit.`;
+    return `## M4 avoid — structural shape (invent fresh STEM wording only)
+**Stem (film-still register):** one M3 prop/beat still visible + plain sonic-reject question in the same scene world. Invent new wording each time — do not copy prompt canon.
+**Options (plain reject register):** multi-select trap labels + id "none". Labels follow fixed template — do NOT invent poetic scene lines for options.
+
+**Label template (mandatory for every non-none option):**
+- labelEn: starts with **Skip** or **Avoid** + trap lexicon (e.g. "Skip elevator muzak and hold music", "Avoid gym hype and workout playlists", "Skip the algorithm rabbit hole / Discover Weekly rut")
+- labelZh: parallel plain reject (e.g. "别要电梯音乐和背景 Muzak", "避开健身 hype 歌单", "别掉进算法推荐的老路")
+
+**algorithm-rabbit-hole trap:** when eligible, label must use plain **algorithm rabbit hole** or **Discover Weekly rut** wording — not vague "usual mix" alone.
+
+**Kinetic neon example (eligible roster):** trailer-swell, hyperpop-sheen, algorithm-rabbit-hole, glossy-motivational — NOT coffee-shop, lo-fi-study, elevator-muzak (filter DROP).
+**Ids:** trap cluster ids from eligible roster — not mood-adjective quartet (too-X ids).
+**Stem vs options:** stem may name scene props; options name traps only — zero scene nouns in option labels.`;
 }
 
-/** Plain M4 reject labels — no separate gloss fields. */
+/** Plain M4 reject labels — canonical templates from trap registry. */
 export function m4PlainRejectBlock(): string {
     return `## M4 plain reject labels
-Each non-"none" option = one plain sentence in labelEn/labelZh naming what to skip (playlist trap, production cliché).
-Good shape: "Skip elevator muzak and hold music" / "Avoid gym hype and workout playlists"
-Anti-patterns: poetic metaphor mains that need a decoder; mood-adjective ids (too-*); vague "feels too bright" wording.`;
+Each non-"none" option = one plain sentence naming what to skip (playlist trap, production cliché).
+**EN template:** "Skip …" or "Avoid …" + trap lexicon word (muzak, hype, cliché, swell, rabbit hole, Discover Weekly rut, etc.)
+**ZH template:** 别要… / 避开… / 不要… — parallel trap name, not scene poetry
+When option id matches a trap cluster, use these canonical labels exactly:
+
+${trapLabelTemplatesBlock()}
+
+Anti-patterns: poetic metaphor mains that need a decoder; mood-adjective ids (too-*); vague "feels too bright" wording; scene nouns inside option labels.`;
 }
 
 /** @deprecated Use m4PlainRejectBlock — kept for import compatibility. */

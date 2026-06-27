@@ -33,7 +33,8 @@ Output JSON only:
 Rules:
 - When hypotheses are plural, describe a broad shared room — not one subgenre
 - Felt-first: close/far, weight, density, warmth — not instrument menus
-- Honor M4 avoids literally
+- Honor M4 avoids literally; honor impliedAvoids from planner when present
+- When discriminantSonicSeed is set, build M5 prose around that felt floor
 - English prose in inferredM5Prose`;
 
 function formatAnswersForInfer(answers: Partial<InterviewAnswers>): string {
@@ -64,6 +65,17 @@ export async function inferSonic(
         };
     }
 
+    const discriminantPick =
+        plannerState?.m4Mode?.startsWith('discriminant-') &&
+        answers.m4.length === 1 &&
+        answers.m4[0]?.id !== 'none'
+            ? answers.m4[0].label
+            : '';
+    const discriminantMode = plannerState?.m4Mode ?? '';
+    const impliedAvoids = plannerState?.impliedAvoids?.length
+        ? plannerState.impliedAvoids.join('; ')
+        : '';
+
     const resolvedModel = model ?? resolveInterviewDefaultModel(env);
     if (!resolvedModel) {
         throw new Error('No interview model configured for sonic inference');
@@ -83,7 +95,12 @@ ${formatAnswersForInfer(answers)}
 hypotheses: ${hypotheses}
 coverageRisk: ${plannerState?.coverageRisk ?? false}
 inferredM5Draft: ${draft || '(none)'}
+m4Mode: ${discriminantMode || 'avoid'}
+discriminantSonicSeed: ${discriminantPick || '(none)'}
+impliedAvoids: ${impliedAvoids || '(none)'}
 
+When discriminantSonicSeed is set (1b/1c), treat it as primary M5 floor — do not contradict.
+When impliedAvoids present, honor them literally alongside user M4 selections.
 Return JSON only.`;
 
     const raw = await completeChat(

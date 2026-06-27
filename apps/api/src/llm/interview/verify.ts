@@ -64,14 +64,15 @@ export async function verifyLogicInterviewStep(
     model?: string
 ): Promise<VerifyResult> {
     const stepId = resolveStepId(ctx);
-    const turnConfig = resolveTurnConfig(stepId, plan, ctx.priorAnswers);
+    const turnConfig = resolveTurnConfig(stepId, plan, ctx.priorAnswers, ctx.plannerState);
     const userPrompt = buildLogicVerifyUserPrompt(
         ctx.stepIndex,
         stepId,
         ctx.priorAnswers,
         JSON.stringify(plan, null, 2),
         JSON.stringify(draft, null, 2),
-        turnConfig.logicVerifyIntro
+        turnConfig.logicVerifyIntro,
+        ctx.plannerState?.m4Mode
     );
 
     return runVerifyLlm(env, logicVerifySystemPrompt(), userPrompt, model);
@@ -84,7 +85,7 @@ export async function verifyCopyInterviewStep(
     model?: string
 ): Promise<VerifyResult> {
     const stepId = resolveStepId(ctx);
-    const turnConfig = resolveTurnConfig(stepId, {} as TurnPlan, ctx.priorAnswers);
+    const turnConfig = resolveTurnConfig(stepId, {} as TurnPlan, ctx.priorAnswers, ctx.plannerState);
     const userPrompt = buildCopyVerifyUserPrompt(
         ctx.stepIndex,
         stepId,

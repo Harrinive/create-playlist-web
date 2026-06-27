@@ -23,6 +23,15 @@ export const interviewStorySchema = z.object({
     zh: z.string().min(1)
 });
 
+export const m4ModeSchema = z.enum([
+    'avoid',
+    'discriminant-1a',
+    'discriminant-1b',
+    'discriminant-1c'
+]);
+
+export type M4Mode = z.infer<typeof m4ModeSchema>;
+
 export const interviewPlannerStateSchema = z.object({
     version: z.literal(1),
     hypotheses: z.array(z.string()).default([]),
@@ -38,7 +47,13 @@ export const interviewPlannerStateSchema = z.object({
     inferredM5Draft: z.string().optional(),
     openingContext: openingContextSchema.optional(),
     /** Resolved step ids for this interview session (may grow after M3). */
-    stepIds: z.array(z.string()).optional()
+    stepIds: z.array(z.string()).optional(),
+    /** M4 turn mode — avoid multi-select or discriminant single-select */
+    m4Mode: m4ModeSchema.optional(),
+    eligibleTrapCount: z.number().optional(),
+    impliedAvoids: z.array(z.string()).optional(),
+    eligibleTrapIds: z.array(z.string()).optional(),
+    discriminantAxis: z.string().optional()
 });
 
 export type InterviewPlannerState = z.infer<typeof interviewPlannerStateSchema>;

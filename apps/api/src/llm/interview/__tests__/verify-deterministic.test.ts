@@ -356,3 +356,76 @@ test('fails when stem duplicates an option chip (production M2 bug)', () => {
     assert.ok(result.failures.some((f) => f.includes('stemEn duplicates option')));
     assert.ok(result.failures.some((f) => f.includes('stemZh duplicates option')));
 });
+
+test('fails M4 avoid option matching dropped trap on kinetic path', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        questionMode: 'ClearDiscriminant',
+        optionSlots: {},
+        plannedOptionIds: []
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'The door swings open — what should this NOT sound like?',
+        stemZh: '门一开——这配乐最不该像什么？',
+        options: [
+            {
+                id: 'coffee-shop',
+                labelEn: 'Skip coffee-shop acoustic',
+                labelZh: '别要咖啡馆木吉他'
+            },
+            {
+                id: 'trailer-swell',
+                labelEn: 'Skip trailer swell',
+                labelZh: '别要预告片大起势'
+            },
+            {
+                id: 'hyperpop',
+                labelEn: 'Skip hyperpop sheen',
+                labelZh: '别要 glossy hyperpop'
+            },
+            { id: 'none', labelEn: "None — I'm open", labelZh: '都可以' }
+        ]
+    };
+    const priorAnswers = {
+        m1: { id: 'neon', label: 'Neon doorway, shoulders brushing fast' },
+        m2: { id: 'crowd', label: 'The door opens, crowd spills out' },
+        m3: { id: 'corner', label: 'One person peels off for the corner' }
+    };
+    const result = verifyDeterministic({
+        stepId: 'm4',
+        plan,
+        draft,
+        optionMin: 2,
+        optionMax: 6,
+        priorAnswers,
+        planner: { version: 1, hypotheses: [], coverageRisk: false, m1RegionId: 'kinetic-high' }
+    });
+    assert.equal(result.passed, false);
+    assert.ok(
+        result.failures.some((f) => f.includes('coffee-shop-template') || f.includes('dropped trap'))
+    );
+});
+
+test('fails M4 discriminant with none option', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        questionMode: 'PositiveDiscriminant'
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'At the open door — which beat feels most like you?',
+        stemZh: '门一开——哪一下最像你？',
+        options: [
+            { id: 'steady', labelEn: 'Steady pulse under the sign', labelZh: '招牌下稳定的脉动' },
+            { id: 'none', labelEn: "None — I'm open", labelZh: '都可以' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm4',
+        plan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('must not include id "none"')));
+});

@@ -55,7 +55,10 @@ function englishLine(option: PromptInterviewOption): string {
     return option.label.trim();
 }
 
-function formatAnswersBlock(answers: PromptInterviewAnswers): string {
+function formatAnswersBlock(
+    answers: PromptInterviewAnswers,
+    plannerState?: InterviewPlannerState | null
+): string {
     const lines = [
         `${DIMENSION_LABELS.m1}: ${englishLine(answers.m1)}`,
         `${DIMENSION_LABELS.m2}: ${englishLine(answers.m2)}`,
@@ -70,12 +73,19 @@ function formatAnswersBlock(answers: PromptInterviewAnswers): string {
         lines.push(`Clarifying moment: ${englishLine(answers.m_clarify)}`);
     }
 
-    const avoids = answers.m4
-        .filter((item) => item.id !== 'none')
-        .map((item) => englishLine(item));
+    const isDiscriminant = plannerState?.m4Mode?.startsWith('discriminant-');
+    const avoids = isDiscriminant
+        ? []
+        : answers.m4
+              .filter((item) => item.id !== 'none')
+              .map((item) => englishLine(item));
+    const implied = plannerState?.impliedAvoids ?? [];
+    const allAvoids = [...avoids, ...implied];
 
-    if (avoids.length > 0) {
-        lines.push(`${DIMENSION_LABELS.m4}: ${avoids.join('; ')}`);
+    if (allAvoids.length > 0) {
+        lines.push(`${DIMENSION_LABELS.m4}: ${allAvoids.join('; ')}`);
+    } else if (isDiscriminant && answers.m4.length === 1 && answers.m4[0]?.id !== 'none') {
+        lines.push(`M4 discriminant (${plannerState?.m4Mode}): ${englishLine(answers.m4[0])}`);
     } else {
         lines.push(`${DIMENSION_LABELS.m4}: none specified`);
     }
@@ -114,7 +124,7 @@ export async function generateSpotifyPrompt(
 
     const userPrompt = `Write one Spotify Prompted Playlist paragraph from these interview answers.
 
-${formatAnswersBlock(answers)}${storyBlock}${reachableBlock}${hypothesesBlock}
+${formatAnswersBlock(answers, plannerState)}${storyBlock}${reachableBlock}${hypothesesBlock}
 
 Weave the dimensions into natural sentences — not a checklist. Output JSON only.`;
 

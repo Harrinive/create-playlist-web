@@ -11,7 +11,9 @@ import {
     sceneFeelingBlock,
     storyM1Block
 } from './prompts.js';
+import { discriminantBlockForMode } from './prompts/sections/positive-discriminant.js';
 import type { InterviewAnswers } from '../../types/interview.js';
+import type { InterviewPlannerState, M4Mode } from '../../types/interview-planner.js';
 import { buildSceneAnchorBlock } from './scene-anchor.js';
 
 export type TurnConfig = {
@@ -24,7 +26,8 @@ export type TurnConfig = {
 export function resolveTurnConfig(
     stepId: string,
     plan: TurnPlan,
-    priorAnswers: Partial<InterviewAnswers>
+    priorAnswers: Partial<InterviewAnswers>,
+    planner?: InterviewPlannerState | null
 ): TurnConfig {
     const mode = plan.questionMode;
 
@@ -85,14 +88,29 @@ export function resolveTurnConfig(
                 copyVerifyIntro: '## Copy verify focus\nBilingual film-still copy.'
             };
 
-        case 'm4':
+        case 'm4': {
+            const m4Mode: M4Mode = planner?.m4Mode ?? 'avoid';
+            if (m4Mode !== 'avoid') {
+                return {
+                    questionMode: 'PositiveDiscriminant',
+                    draftBlocks: [
+                        buildSceneAnchorBlock(priorAnswers, true),
+                        discriminantBlockForMode(m4Mode)
+                    ],
+                    logicVerifyIntro:
+                        '## Logic verify focus\nM4 discriminant: single-select; NO "none"; felt motion/groove/space in plain labels; advances M3 prop.',
+                    copyVerifyIntro:
+                        '## Copy verify focus\nPlain felt sonic/motion wording in both languages.'
+                };
+            }
             return {
                 questionMode: 'ClearDiscriminant',
                 draftBlocks: [clearDiscriminantBlock(), m4ExampleBlock(), m4PlainRejectBlock()],
                 logicVerifyIntro:
-                    '## Logic verify focus\nM4: stem advances M3 prop; distinct trap clusters in plain labels; includes "none".',
+                    '## Logic verify focus\nM4: stem advances M3 prop; distinct trap clusters in plain labels; includes "none"; only eligible trap clusters.',
                 copyVerifyIntro: '## Copy verify focus\nPlain reject trap wording in both languages.'
             };
+        }
 
         case 'm5':
             return {

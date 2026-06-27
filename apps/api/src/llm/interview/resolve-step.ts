@@ -1,6 +1,7 @@
 import type { InterviewAnswers } from '../../types/interview.js';
 import type { InterviewPlannerState, OpeningContext } from '../../types/interview-planner.js';
 import { emptyPlannerState } from '../../types/interview-planner.js';
+import { resolveM4Gate } from './m4-eligibility.js';
 import { sanitizeDeliveryGenreNote } from './story-synthesize.js';
 
 export type ResolvedInterviewStep = {
@@ -50,17 +51,55 @@ export function resolveInterviewStep(
         stepIds,
         optionalClarifyIncluded: stepIds.includes('m_clarify'),
         confidenceDiscriminantIncluded:
-            planner.lastQuestionMode === 'discriminant' && planner.coverageRisk
+            planner.m4Mode != null &&
+            planner.m4Mode !== 'avoid' &&
+            planner.lastQuestionMode === 'discriminant'
     };
 }
 
-export function stepMetaForId(stepId: string): {
+/** Compute M4 gate from prior answers and merge into planner (after M3 / m_clarify). */
+export function applyM4GateToPlanner(
+    planner: InterviewPlannerState,
+    prior: Partial<InterviewAnswers>
+): InterviewPlannerState {
+    const gate = resolveM4Gate(prior, planner);
+    return {
+        ...planner,
+        m4Mode: gate.m4Mode,
+        lastQuestionMode: gate.lastQuestionMode,
+        eligibleTrapCount: gate.eligibleTrapCount,
+        impliedAvoids: gate.impliedAvoids,
+        eligibleTrapIds: gate.eligibleTrapIds,
+        discriminantAxis: gate.discriminantAxis
+    };
+}
+
+export function stepMetaForId(
+    stepId: string,
+    planner?: InterviewPlannerState | null
+): {
     id: string;
     dimension: { en: string; zh: string };
     multi: boolean;
     optionMin: number;
     optionMax: number;
 } {
+    if (stepId === 'm4' && planner?.m4Mode && planner.m4Mode !== 'avoid') {
+        const dim =
+            planner.m4Mode === 'discriminant-1a'
+                ? { en: 'Energy', zh: '能量' }
+                : planner.m4Mode === 'discriminant-1b'
+                  ? { en: 'Sound', zh: '质感' }
+                  : { en: 'Feel', zh: '感觉' };
+        return {
+            id: 'm4',
+            dimension: dim,
+            multi: false,
+            optionMin: 2,
+            optionMax: 6
+        };
+    }
+
     switch (stepId) {
         case 'm1':
             return {
@@ -137,7 +176,8 @@ export function mergePlanIntoPlannerState(
         questionMode?: string;
     },
     stepId: string,
-    chosenOptionId?: string
+    chosenOptionId?: string,
+    priorAnswers?: Partial<InterviewAnswers>
 ): InterviewPlannerState {
     const next: InterviewPlannerState = {
         ...planner,
@@ -163,7 +203,13 @@ export function mergePlanIntoPlannerState(
         m1SceneId: stepId === 'm1' && chosenOptionId ? chosenOptionId : planner.m1SceneId
     };
 
-    return refreshStepIds(next);
+    const refreshed = refreshStepIds(next);
+
+    if ((stepId === 'm3' || stepId === 'm_clarify') && priorAnswers) {
+        return applyM4GateToPlanner(refreshed, priorAnswers);
+    }
+
+    return refreshed;
 }
 
 /** Legacy fixed sequence for backward compat tests. */

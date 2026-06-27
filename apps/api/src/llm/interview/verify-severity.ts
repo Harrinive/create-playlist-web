@@ -34,6 +34,12 @@ function isHardDeterministicFailure(failure: string): boolean {
         /Q1 only \d+ distinct regions/i.test(failure) ||
         /rejectCluster collision/i.test(failure) ||
         /M4 option id .* mood-template too-/i.test(failure) ||
+        /M4 discriminant must not include id "none"/i.test(failure) ||
+        /M4 discriminant stem uses avoid/i.test(failure) ||
+        /M4 discriminant option .* uses avoid label/i.test(failure) ||
+        /M4 discriminant option .* reuses trap-cluster id/i.test(failure) ||
+        /M4 option .* matches dropped trap cluster/i.test(failure) ||
+        /M4 avoid needs >=3 non-none options/i.test(failure) ||
         /stemEn duplicates option/i.test(failure) ||
         /stemZh duplicates option/i.test(failure);
 

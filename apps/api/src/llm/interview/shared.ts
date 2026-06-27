@@ -22,12 +22,13 @@ export const llmStepSchema = z.object({
 
 export type LlmStepDraft = z.infer<typeof llmStepSchema>;
 
-export type QuestionMode = 'SceneFeeling' | 'LogicalDecision' | 'ClearDiscriminant';
+export type QuestionMode = 'SceneFeeling' | 'LogicalDecision' | 'ClearDiscriminant' | 'PositiveDiscriminant';
 
 const QUESTION_MODE_VALUES = [
     'SceneFeeling',
     'LogicalDecision',
-    'ClearDiscriminant'
+    'ClearDiscriminant',
+    'PositiveDiscriminant'
 ] as const satisfies readonly QuestionMode[];
 
 /** LLMs often emit dimension names (Emotion) instead of planner enum — normalize before validate. */
@@ -42,7 +43,10 @@ const QUESTION_MODE_ALIASES: Record<string, QuestionMode> = {
     Logical: 'LogicalDecision',
     ClearDiscriminant: 'ClearDiscriminant',
     Discriminant: 'ClearDiscriminant',
-    Avoid: 'ClearDiscriminant'
+    Avoid: 'ClearDiscriminant',
+    PositiveDiscriminant: 'PositiveDiscriminant',
+    Positive: 'PositiveDiscriminant',
+    SonicDiscriminant: 'PositiveDiscriminant'
 };
 
 function normalizeQuestionMode(val: unknown): QuestionMode | undefined {
@@ -75,8 +79,11 @@ function preprocessTurnPlan(val: unknown): unknown {
     const plannedIds = o.plannedOptionIds;
     const idCount = Array.isArray(plannedIds) ? plannedIds.length : 0;
 
+    const cappedIds = Array.isArray(plannedIds) ? plannedIds.slice(0, 6) : plannedIds;
+
     return {
         ...o,
+        plannedOptionIds: cappedIds,
         gaps: Array.isArray(o.gaps) ? o.gaps : [],
         reachableGenresNote:
             typeof o.reachableGenresNote === 'string' && o.reachableGenresNote.trim()

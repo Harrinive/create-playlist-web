@@ -22,6 +22,11 @@ export type InterviewPlannerState = {
     inferredM5Draft?: string;
     openingContext?: OpeningContext;
     stepIds?: string[];
+    m4Mode?: 'avoid' | 'discriminant-1a' | 'discriminant-1b' | 'discriminant-1c';
+    eligibleTrapCount?: number;
+    impliedAvoids?: string[];
+    eligibleTrapIds?: string[];
+    discriminantAxis?: string;
 };
 
 export const DEFAULT_STEP_IDS = ['m1', 'm2', 'm3', 'm4'] as const;

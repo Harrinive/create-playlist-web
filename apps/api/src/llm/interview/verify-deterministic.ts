@@ -1,3 +1,10 @@
+import type { InterviewAnswers } from '../../types/interview.js';
+import type { InterviewPlannerState } from '../../types/interview-planner.js';
+import {
+    computeEligibleTraps,
+    optionMatchesAnyDroppedTrap,
+    trapClusterById
+} from './m4-eligibility.js';
 import type { LlmStepDraft, TurnPlan } from './shared.js';
 import { Q1_REGION_IDS } from './prompts.js';
 import { M4_TRAP_LEXICON, verifyGlossAndConcreteness } from './gloss-verify.js';
@@ -12,6 +19,8 @@ export type DeterministicVerifyInput = {
     optionMin: number;
     optionMax: number;
     priorLabels?: string[];
+    priorAnswers?: Partial<InterviewAnswers>;
+    planner?: InterviewPlannerState | null;
 };
 
 export type DeterministicVerifyResult = {
@@ -29,7 +38,9 @@ const SURVEY_STEM_BAN =
     /what kind of place|how does the track|what does the room take|which scene steps forward|choose the scene/i;
 
 const PLAIN_REJECT_KEYWORDS =
-    /\b(gym|workout|club|edm|sad.?acoustic|elevator|trailer|polish|hype|distort|aggressive)\b/i;
+    /\b(gym|workout|club|edm|sad.?acoustic|elevator|trailer|polish|hype|distort|aggressive|muzak|clich|rabbit|algorithm|motivational|hyperpop|lo-fi|banger|swell|dirge|grief|discover weekly)\b/i;
+
+const SKIP_AVOID_PREFIX = /^(Skip|Avoid)\s+/i;
 
 const KINETIC_LABEL =
     /\b(crowd|packed|dance|club|party|bar|floor|bodies|neon spill|moving|speakers|gym|parade|block party)\b/i;
@@ -44,13 +55,20 @@ function wordCountEn(text: string): number {
     return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-function isPlainRejectLabel(label: string): boolean {
-    return PLAIN_REJECT_KEYWORDS.test(label);
+function isPlainRejectLabel(label: string, optionId?: string): boolean {
+    if (PLAIN_REJECT_KEYWORDS.test(label) || M4_TRAP_LEXICON.test(label)) {
+        return true;
+    }
+    if (SKIP_AVOID_PREFIX.test(label.trim()) && optionId && trapClusterById(optionId)) {
+        return true;
+    }
+    return false;
 }
 
 export function verifyDeterministic(input: DeterministicVerifyInput): DeterministicVerifyResult {
     const failures: string[] = [];
-    const { stepId, plan, draft, optionMin, optionMax, priorLabels } = input;
+    const { stepId, plan, draft, optionMin, optionMax, priorLabels, priorAnswers, planner } =
+        input;
     const options = draft.options;
 
     if (options.length < optionMin || options.length > optionMax) {
@@ -59,7 +77,9 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
         );
     }
 
-    const plannedIds = plan.plannedOptionIds ?? Object.keys(plan.optionSlots ?? {});
+    const plannedIds = (plan.plannedOptionIds ?? Object.keys(plan.optionSlots ?? {})).filter(
+        (id) => !(plan.questionMode === 'PositiveDiscriminant' && id === 'none')
+    );
     if (plannedIds.length > 0) {
         const draftIds = options.map((o) => o.id);
         for (const id of plannedIds) {
@@ -104,30 +124,79 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
     }
 
     if (stepId === 'm4') {
-        const hasNone = options.some((o) => o.id === 'none');
-        if (!hasNone) {
-            failures.push('M4 missing id "none" option');
-        }
-        for (const opt of options) {
-            if (opt.id === 'none') continue;
-            if (/^too-/.test(opt.id)) {
+        const isDiscriminant = plan.questionMode === 'PositiveDiscriminant';
+
+        if (isDiscriminant) {
+            const hasNone = options.some((o) => o.id === 'none');
+            if (hasNone) {
+                failures.push('M4 discriminant must not include id "none"');
+            }
+            const avoidStem =
+                /\b(not sound like|must not|should not|not turn into|not become|avoid|skip|不该|不要像|最不该|不能变成)\b/i;
+            if (avoidStem.test(draft.stemEn) || avoidStem.test(draft.stemZh)) {
                 failures.push(
-                    `M4 option id "${opt.id}" mood-template too-* — name trap cluster instead`
+                    'M4 discriminant stem uses avoid/reject framing — ask what fits (pace/groove/space)'
                 );
             }
-            if (opt.glossEn?.trim() || opt.glossZh?.trim()) {
-                failures.push(
-                    `M4 option "${opt.id}" must not use gloss — put trap name in labelEn/labelZh`
-                );
+            for (const opt of options) {
+                if (MUSIC_PATTERN_BAN.test(opt.labelEn)) {
+                    failures.push(
+                        `music-pattern word on M4 discriminant option "${opt.id}": ${opt.labelEn}`
+                    );
+                }
+                if (/^(Skip|Avoid)\s+/i.test(opt.labelEn.trim())) {
+                    failures.push(
+                        `M4 discriminant option "${opt.id}" uses avoid label — use positive felt groove/space language`
+                    );
+                }
+                if (trapClusterById(opt.id)) {
+                    failures.push(
+                        `M4 discriminant option "${opt.id}" reuses trap-cluster id — use felt-axis ids instead`
+                    );
+                }
             }
-            const plain =
-                isPlainRejectLabel(opt.labelEn) ||
-                isPlainRejectLabel(opt.labelZh) ||
-                M4_TRAP_LEXICON.test(opt.labelEn);
-            if (!plain) {
-                failures.push(
-                    `M4 option "${opt.id}" needs plain trap language in labelEn/labelZh`
+        } else {
+            const hasNone = options.some((o) => o.id === 'none');
+            if (!hasNone) {
+                failures.push('M4 missing id "none" option');
+            }
+            const { dropped } = computeEligibleTraps(priorAnswers ?? {}, planner);
+            const nonNoneCount = options.filter((o) => o.id !== 'none').length;
+            if (nonNoneCount < 3) {
+                failures.push(`M4 avoid needs >=3 non-none options, got ${nonNoneCount}`);
+            }
+            for (const opt of options) {
+                if (opt.id === 'none') continue;
+                if (/^too-/.test(opt.id)) {
+                    failures.push(
+                        `M4 option id "${opt.id}" mood-template too-* — name trap cluster instead`
+                    );
+                }
+                if (opt.glossEn?.trim() || opt.glossZh?.trim()) {
+                    failures.push(
+                        `M4 option "${opt.id}" must not use gloss — put trap name in labelEn/labelZh`
+                    );
+                }
+                const matchedDrop = optionMatchesAnyDroppedTrap(
+                    opt.id,
+                    opt.labelEn,
+                    opt.labelZh,
+                    dropped
                 );
+                if (matchedDrop) {
+                    failures.push(
+                        `M4 option "${opt.id}" matches dropped trap cluster "${matchedDrop.id}" — already ruled out by prior answers`
+                    );
+                }
+                const plain =
+                    isPlainRejectLabel(opt.labelEn, opt.id) ||
+                    isPlainRejectLabel(opt.labelZh, opt.id) ||
+                    M4_TRAP_LEXICON.test(opt.labelEn);
+                if (!plain) {
+                    failures.push(
+                        `M4 option "${opt.id}" needs plain trap language in labelEn/labelZh`
+                    );
+                }
             }
         }
     }
@@ -180,7 +249,7 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
         }
     }
 
-    if (stepId === 'm4') {
+    if (stepId === 'm4' && plan.questionMode !== 'PositiveDiscriminant') {
         const slots = plan.optionSlots ?? {};
         const rejectClusters: string[] = [];
         for (const opt of options) {

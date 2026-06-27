@@ -1,5 +1,6 @@
 import type { InterviewAnswers } from '../../types/interview.js';
 import type { InterviewPlannerState } from '../../types/interview-planner.js';
+import { computeEligibleTraps } from './m4-eligibility.js';
 
 function labelBlob(prior: Partial<InterviewAnswers>): string {
     const parts: string[] = [];
@@ -102,8 +103,15 @@ export function buildFilterHints(
 
     const kineticSocialRegion =
         m1Region === 'kinetic-high' || m1Region === 'rhythm-social';
+    const postParty = hasAny(blob, ['cake', 'candle', 'party', '蛋糕', '蜡烛']);
 
     if (stepId === 'm4') {
+        const { droppedIds, eligibleIds } = computeEligibleTraps(prior, planner);
+        for (const id of droppedIds) {
+            hints.push(`DROP trap cluster: ${id}`);
+        }
+        hints.push(`Eligible trap clusters only: ${eligibleIds.join(', ')}`);
+
         if (kineticSocialRegion) {
             hints.push(
                 'Kinetic/social Q1 region — house/dance warmth and peak-club energy stay reachable unless M2–M3 explicitly ruled them out; do not narrow to folk/ambient from setting nouns alone.'
@@ -111,8 +119,11 @@ export function buildFilterHints(
             hints.push(
                 'Do NOT drop club/party/dance/house avoids — kinetic scene may still need those discriminant negatives.'
             );
+            hints.push(
+                'DO drop calm/acoustic/study/elevator traps — kinetic social scene already ruled them out.'
+            );
         }
-        if (hasAny(blob, ['cake', 'candle', 'party', '蛋糕', '蜡烛'])) {
+        if (postParty) {
             hints.push(
                 'Drop celebration/party/confetti avoids — scene is already post-party aftermath.'
             );
@@ -134,7 +145,7 @@ export function buildFilterHints(
             hints.push('Keep M4 avoids discriminating — drop options that are already ruled out by prior picks.');
         }
         hints.push(
-            'If fewer than 4 non-obvious avoids remain after filtering, prefer softer / aesthetic avoids over redundant energy negatives.'
+            'Each trap must guard a different remaining hypothesis — name the accidental playlist it would wrongly pull toward.'
         );
     }
 

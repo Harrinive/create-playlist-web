@@ -151,7 +151,8 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
 
         const brief = buildCompactBrief(answers, cooldown, inferredProse, {
             interviewStory: plannerState?.interviewStory,
-            reachableGenresNote: plannerState?.reachableGenresNote
+            reachableGenresNote: plannerState?.reachableGenresNote,
+            plannerState
         });
 
         try {

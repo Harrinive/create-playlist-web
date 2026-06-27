@@ -3,6 +3,7 @@ import { buildBilingualCopyRules } from './sections/bilingual.js';
 import { creativityRules, musicPatternBan, twoLayerRule } from './sections/bans.js';
 import { draftOutputSchema } from './sections/schemas.js';
 import type { InterviewAnswers } from '../../../types/interview.js';
+import type { InterviewPlannerState } from '../../../types/interview-planner.js';
 import { freshInterviewBlock, priorContextBlock, refreshLine } from './fragments.js';
 import { turnLabel } from './dimension.js';
 import { buildFastTurnBlocks } from '../fast-turn-config.js';
@@ -18,7 +19,8 @@ export function fastSystemPrompt(): string {
         '- M1 stems: place-neutral threshold + pick-a-still invitation — options are different places, so stem must not lock one interior most options ignore',
         '- M2: concrete moment in M1 scene; BGM test; stem must ask/frame — never copy an option chip verbatim',
         '- M3: night-chapter beat in same world; no tempo/body/production vocabulary',
-        '- M4: sonic reject question + plain trap-cluster labels + id "none"',
+        '- M4 avoid: M3 prop in stem (film-still) + plain Skip/Avoid trap labels (no scene nouns in options) + id "none"; pick traps only from eligible roster',
+        '- M4 discriminant: single-select felt motion/groove/space; NO "none"; stem stays scene, options stay plain felt',
         '- Bilingual EN + ZH; option ids lowercase kebab-case',
         noGlossOutputBlock,
         buildBilingualCopyRules(),
@@ -34,14 +36,19 @@ export function buildFastUserPrompt(
     rejectedStems: string[],
     refresh: boolean,
     totalSteps = 4,
-    verifyFailures: string[] = []
+    verifyFailures: string[] = [],
+    planner?: InterviewPlannerState | null
 ): string {
     const meta = stepId;
+    const isDiscriminant =
+        stepId === 'm4' && planner?.m4Mode != null && planner.m4Mode !== 'avoid';
     const optionHint =
         stepId === 'm1'
             ? 'Provide exactly 4–6 options.'
             : stepId === 'm4'
-              ? 'Provide 3–5 reject traps plus id "none" (4–6 total).'
+              ? isDiscriminant
+                  ? 'Provide 2–6 single-select felt options. NO id "none". Stem = scene prop; options = plain felt motion/groove/space — no trap-cluster ids.'
+                  : 'Provide 3–5 reject traps plus id "none" (4–6 total). Only eligible trap clusters from filter hints. labelEn starts Skip/Avoid; options name traps only — no scene nouns.'
               : 'Provide 2–6 options.';
 
     const failureBlock =
@@ -57,7 +64,7 @@ export function buildFastUserPrompt(
         refreshLine(refresh, 'fast'),
         freshInterviewBlock(priorAnswers),
         priorContextBlock(priorAnswers, rejectedStems),
-        ...buildFastTurnBlocks(meta, priorAnswers),
+        ...buildFastTurnBlocks(meta, priorAnswers, planner),
         failureBlock,
         optionHint,
         'Return JSON only.'

@@ -13,7 +13,8 @@ import {
     refreshLine
 } from './fragments.js';
 import { turnLabel } from './dimension.js';
-import { q1PlanContextBlock, m4PlanContextBlock } from './blocks.js';
+import { q1PlanContextBlock, m4PlanContextBlockForMode } from './blocks.js';
+import type { InterviewPlannerState } from '../../../types/interview-planner.js';
 
 export function planSystemPrompt(): string {
     return joinSections(
@@ -34,7 +35,8 @@ export function buildPlanUserPrompt(
     rejectedStems: string[],
     refresh: boolean,
     filterHints: string[],
-    totalSteps = 4
+    totalSteps = 4,
+    planner?: InterviewPlannerState | null
 ): string {
     const filterBlock =
         filterHints.length > 0
@@ -49,7 +51,9 @@ export function buildPlanUserPrompt(
         freshInterviewBlock(priorAnswers),
         filterBlock,
         stepId === 'm1' ? q1PlanContextBlock() : '',
-        stepId === 'm4' ? m4PlanContextBlock() : '',
+        stepId === 'm4'
+            ? m4PlanContextBlockForMode(planner?.m4Mode ?? 'avoid')
+            : '',
         'Return JSON only.'
     );
 }

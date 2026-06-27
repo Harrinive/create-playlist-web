@@ -5,6 +5,7 @@ import { draftInterviewStep, reviseInterviewStep } from './draft.js';
 import { planInterviewTurn } from './plan.js';
 import { buildFastUserPrompt, fastSystemPrompt } from './prompts.js';
 import {
+    applyM4GateToPlanner,
     mergePlanIntoPlannerState,
     resolveInterviewStep,
     stepMetaForId
@@ -19,7 +20,7 @@ import {
     type TurnPlan
 } from './shared.js';
 import { verifyDeterministic } from './verify-deterministic.js';
-import { fitDraftOptionCount, fitPlanOptionIds, normalizeDraftM4Ids } from './normalize-draft.js';
+import { fitDraftOptionCount, fitPlanOptionIds, normalizeM4Draft } from './normalize-draft.js';
 import {
     classifyReviseKind,
     verifyCopyInterviewStep,
@@ -50,8 +51,12 @@ export type GenerateInterviewStepResult = {
 const EMIT_OPTION_GLOSS = false;
 const EMIT_STEM_GLOSS = false;
 
-function toBilingualStep(stepId: string, parsed: LlmStepDraft): BilingualInterviewStep {
-    const meta = stepMetaForId(stepId);
+function toBilingualStep(
+    stepId: string,
+    parsed: LlmStepDraft,
+    planner?: InterviewPlannerState | null
+): BilingualInterviewStep {
+    const meta = stepMetaForId(stepId, planner);
 
     let options = parsed.options.map((option) => {
         const entry: BilingualInterviewStep['options'][number] = {
@@ -117,7 +122,13 @@ async function generateInterviewStepFast(
         input.openingContext
     );
     const stepId = resolved.stepId;
-    const meta = stepMetaForId(stepId);
+    let plannerState = input.plannerState ?? emptyPlannerState(input.openingContext);
+
+    if (stepId === 'm4' && !plannerState.m4Mode) {
+        plannerState = applyM4GateToPlanner(plannerState, input.priorAnswers);
+    }
+
+    const meta = stepMetaForId(stepId, plannerState);
     const totalSteps = resolved.totalSteps;
     const emptyPlan: TurnPlan = {
         gaps: [],
@@ -130,9 +141,14 @@ async function generateInterviewStepFast(
         filterDrops: [],
         stemGuidance: '',
         optionGuidance: '',
-        questionMode: stepId === 'm4' ? 'ClearDiscriminant' : 'SceneFeeling',
+        questionMode:
+            stepId === 'm4'
+                ? plannerState.m4Mode === 'avoid' || !plannerState.m4Mode
+                    ? 'ClearDiscriminant'
+                    : 'PositiveDiscriminant'
+                : 'SceneFeeling',
         optionSlots: {},
-        lastQuestionMode: 'avoid'
+        lastQuestionMode: plannerState.lastQuestionMode ?? 'avoid'
     };
 
     const priorLabels = [
@@ -152,7 +168,8 @@ async function generateInterviewStepFast(
             input.rejectedStems,
             input.refresh || attempt > 0,
             totalSteps,
-            attempt > 0 ? verifyFailures : []
+            attempt > 0 ? verifyFailures : [],
+            plannerState
         );
 
         const raw = await completeChat(
@@ -174,7 +191,7 @@ async function generateInterviewStepFast(
         }
 
         draft = fitDraftOptionCount(
-            stripSceneStemGloss(normalizeDraftM4Ids(parsed.data, stepId), stepId),
+            stripSceneStemGloss(normalizeM4Draft(parsed.data, stepId, emptyPlan), stepId),
             emptyPlan,
             stepId,
             meta.optionMax
@@ -186,7 +203,9 @@ async function generateInterviewStepFast(
             draft,
             optionMin: meta.optionMin,
             optionMax: meta.optionMax,
-            priorLabels
+            priorLabels,
+            priorAnswers: input.priorAnswers,
+            planner: plannerState
         });
 
         verifyFailures = det.failures;
@@ -211,10 +230,8 @@ async function generateInterviewStepFast(
         throw new Error('Fast interview produced no draft');
     }
 
-    const plannerState = input.plannerState ?? emptyPlannerState(input.openingContext);
-
     return {
-        step: toBilingualStep(stepId, draft),
+        step: toBilingualStep(stepId, draft, plannerState),
         plannerState,
         totalSteps: resolved.totalSteps,
         stepIds: resolved.stepIds,
@@ -283,12 +300,22 @@ async function generateInterviewStepFull(
         }
     }
 
-    const plan = await planInterviewTurn(env, ctxWithStep, model);
-    const meta = stepMetaForId(stepId);
+    if (stepId === 'm4' && !plannerState.m4Mode) {
+        plannerState = applyM4GateToPlanner(plannerState, input.priorAnswers);
+    }
+
+    const plan = await planInterviewTurn(env, { ...ctxWithStep, plannerState }, model);
+    const meta = stepMetaForId(stepId, plannerState);
     const fittedPlan = fitPlanOptionIds(plan, stepId, meta.optionMax);
 
     if (stepId === 'm3') {
-        plannerState = mergePlanIntoPlannerState(plannerState, fittedPlan, stepId);
+        plannerState = mergePlanIntoPlannerState(
+            plannerState,
+            fittedPlan,
+            stepId,
+            undefined,
+            input.priorAnswers
+        );
         const refreshed = resolveInterviewStep(
             input.stepIndex,
             input.priorAnswers,
@@ -296,14 +323,23 @@ async function generateInterviewStepFull(
             input.openingContext
         );
         plannerState = { ...plannerState, stepIds: refreshed.stepIds };
+    } else if (stepId === 'm_clarify') {
+        plannerState = mergePlanIntoPlannerState(
+            plannerState,
+            fittedPlan,
+            stepId,
+            undefined,
+            input.priorAnswers
+        );
     } else {
         plannerState = mergePlanIntoPlannerState(plannerState, fittedPlan, stepId);
     }
 
     let draft = fitDraftOptionCount(
-        normalizeDraftM4Ids(
+        normalizeM4Draft(
             await draftInterviewStep(env, ctxWithStep, fittedPlan, model),
-            stepId
+            stepId,
+            fittedPlan
         ),
         fittedPlan,
         stepId,
@@ -333,7 +369,9 @@ async function generateInterviewStepFull(
             draft,
             optionMin: meta.optionMin,
             optionMax: meta.optionMax,
-            priorLabels
+            priorLabels,
+            priorAnswers: input.priorAnswers,
+            planner: plannerState
         });
         deterministicFailures = det.failures;
 
@@ -366,7 +404,7 @@ async function generateInterviewStepFull(
 
         const kind = classifyReviseKind(deterministicFailures, logicFailures, copyFailures);
         draft = fitDraftOptionCount(
-            normalizeDraftM4Ids(
+            normalizeM4Draft(
                 await reviseInterviewStep(
                     env,
                     ctxWithStep,
@@ -376,7 +414,8 @@ async function generateInterviewStepFull(
                     model,
                     kind
                 ),
-                stepId
+                stepId,
+                fittedPlan
             ),
             fittedPlan,
             stepId,
@@ -392,7 +431,7 @@ async function generateInterviewStepFull(
     );
 
     return {
-        step: toBilingualStep(stepId, draft),
+        step: toBilingualStep(stepId, draft, plannerState),
         plannerState,
         totalSteps: finalResolved.totalSteps,
         stepIds: finalResolved.stepIds,

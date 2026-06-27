@@ -8,7 +8,9 @@ import {
     sceneFeelingBlock,
     storyM1Block
 } from './prompts/blocks.js';
+import { discriminantBlockForMode } from './prompts/sections/positive-discriminant.js';
 import type { InterviewAnswers } from '../../types/interview.js';
+import type { InterviewPlannerState } from '../../types/interview-planner.js';
 
 export function fastM1DiversityBlock(): string {
     return `## Fast M1 diversity (mandatory)
@@ -44,10 +46,15 @@ export function fastM3ContextBlock(prior: Partial<InterviewAnswers>): string {
     return ['## Fast M3 continuity', anchor].filter(Boolean).join('\n\n');
 }
 
-export function fastM4ContextBlock(prior: Partial<InterviewAnswers>): string {
+export function fastM4ContextBlock(
+    prior: Partial<InterviewAnswers>,
+    discriminant = false
+): string {
     const m3 = prior.m3?.label?.trim();
     const anchor = m3
-        ? `M3 beat to advance in stem: "${m3}" — ask what soundtrack must NOT sound like.`
+        ? discriminant
+            ? `M3 beat to advance in stem: "${m3}" — ask which felt motion/groove/texture fits.`
+            : `M3 beat to advance in stem: "${m3}" — ask what soundtrack must NOT sound like.`
         : '';
     return ['## Fast M4 continuity', anchor].filter(Boolean).join('\n\n');
 }
@@ -55,7 +62,8 @@ export function fastM4ContextBlock(prior: Partial<InterviewAnswers>): string {
 /** Per-step principle blocks for fast mode (mirrors full draftBlocks, no plan JSON). */
 export function buildFastTurnBlocks(
     stepId: string,
-    priorAnswers: Partial<InterviewAnswers> = {}
+    priorAnswers: Partial<InterviewAnswers> = {},
+    planner?: InterviewPlannerState | null
 ): string[] {
     switch (stepId) {
         case 'm1':
@@ -70,13 +78,21 @@ export function buildFastTurnBlocks(
             return [sceneFeelingBlock(), fastM3ContextBlock(priorAnswers), concreteM3Block()];
         case 'm_clarify':
             return [sceneFeelingBlock()];
-        case 'm4':
+        case 'm4': {
+            const m4Mode = planner?.m4Mode ?? 'avoid';
+            if (m4Mode !== 'avoid') {
+                return [
+                    discriminantBlockForMode(m4Mode),
+                    fastM4ContextBlock(priorAnswers, true)
+                ];
+            }
             return [
                 clearDiscriminantBlock(),
-                fastM4ContextBlock(priorAnswers),
+                fastM4ContextBlock(priorAnswers, false),
                 m4ExampleBlock(),
                 m4PlainRejectBlock()
             ];
+        }
         default:
             return [sceneFeelingBlock()];
     }

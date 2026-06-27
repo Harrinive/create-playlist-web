@@ -17,7 +17,7 @@ Web version of the **create-playlist skill**: Astro interview UI on Cloudflare P
 | Frontend | `apps/web/` — Astro 6, Whono-style UI |
 | API | `apps/api/` — Fastify on Fly, `api.vibelist.dychen.net` |
 | Database | Supabase Postgres (`DATABASE_URL` on Fly) |
-| Interview | LLM chip wizard — story-native M2/M3, `reachableGenresNote`, 2–6 options, auto 3-sentence story |
+| Interview | LLM chip wizard — story-native M2/M3, adaptive M4 (avoid gate or discriminant 1a/1b/1c), implied avoids in curate, inferred M5 |
 | Curate | Node `llm-router` in `apps/api/src/llm-router/` — OpenAI, Anthropic, Cursor |
 
 ---

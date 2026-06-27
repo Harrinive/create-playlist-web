@@ -2,8 +2,9 @@ import type { Env } from '../../config.js';
 import { completeChat } from '../../llm-router/index.js';
 import { buildFilterHints } from './filter.js';
 import { buildPlanUserPrompt, planSystemPrompt, Q1_REGION_IDS } from './prompts.js';
-import { resolveInterviewStep } from './resolve-step.js';
+import { applyM4GateToPlanner, resolveInterviewStep } from './resolve-step.js';
 import { extractJson, turnPlanSchema, type InterviewTurnContext, type TurnPlan } from './shared.js';
+import { emptyPlannerState } from '../../types/interview-planner.js';
 
 function defaultQ1Regions(): string[] {
     return [...Q1_REGION_IDS];
@@ -46,6 +47,14 @@ export async function planInterviewTurn(
     );
     const stepId = ctx.stepId ?? resolved.stepId;
     const filterHints = buildFilterHints(stepId, ctx.priorAnswers, ctx.plannerState);
+    const plannerForM4 =
+        stepId === 'm4'
+            ? applyM4GateToPlanner(
+                  ctx.plannerState ?? emptyPlannerState(),
+                  ctx.priorAnswers
+              )
+            : ctx.plannerState;
+
     const userPrompt = buildPlanUserPrompt(
         ctx.stepIndex,
         stepId,
@@ -53,7 +62,8 @@ export async function planInterviewTurn(
         ctx.rejectedStems,
         ctx.refresh,
         filterHints,
-        resolved.totalSteps
+        resolved.totalSteps,
+        plannerForM4
     );
 
     const raw = await completeChat(
@@ -91,7 +101,19 @@ export async function planInterviewTurn(
     }
 
     if (stepId === 'm4') {
-        plan.questionMode = 'ClearDiscriminant';
+        const m4Mode = plannerForM4?.m4Mode ?? 'avoid';
+        plan.questionMode =
+            m4Mode === 'avoid' ? 'ClearDiscriminant' : 'PositiveDiscriminant';
+        plan.lastQuestionMode =
+            m4Mode === 'avoid'
+                ? 'avoid'
+                : 'discriminant';
+        if (plan.questionMode === 'PositiveDiscriminant') {
+            plan.plannedOptionIds = plan.plannedOptionIds?.filter((id) => id !== 'none');
+            const slots = { ...(plan.optionSlots ?? {}) };
+            delete slots.none;
+            plan.optionSlots = slots;
+        }
     }
 
     if (stepId === 'm1') {

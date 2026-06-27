@@ -1,4 +1,5 @@
 import type { LlmStepDraft, TurnPlan } from './shared.js';
+import { trapClusterById } from './m4-eligibility.js';
 
 /** Trim excess LLM options — keeps planned ids and Q1 region coverage first. */
 export function fitDraftOptionCount(
@@ -66,6 +67,44 @@ export function normalizeDraftM4Ids(draft: LlmStepDraft, stepId: string): LlmSte
             id: sanitizeM4TrapId(opt.id)
         }))
     };
+}
+
+/** Apply canonical trap label templates when option id matches registry (avoid mode). */
+export function normalizeM4AvoidLabels(draft: LlmStepDraft, plan: TurnPlan): LlmStepDraft {
+    if (plan.questionMode !== 'ClearDiscriminant') return draft;
+    return {
+        ...draft,
+        options: draft.options.map((opt) => {
+            if (opt.id === 'none') return opt;
+            const cluster = trapClusterById(opt.id);
+            if (!cluster) return opt;
+            return {
+                ...opt,
+                labelEn: cluster.labelEnTemplate,
+                labelZh: cluster.labelZhTemplate
+            };
+        })
+    };
+}
+
+/** Strip none and avoid-framing leakage on discriminant drafts. */
+export function normalizeM4DiscriminantDraft(draft: LlmStepDraft, plan: TurnPlan): LlmStepDraft {
+    if (plan.questionMode !== 'PositiveDiscriminant') return draft;
+    const filtered = draft.options.filter((o) => o.id !== 'none');
+    return { ...draft, options: filtered };
+}
+
+export function normalizeM4Draft(
+    draft: LlmStepDraft,
+    stepId: string,
+    plan: TurnPlan
+): LlmStepDraft {
+    let next = normalizeDraftM4Ids(draft, stepId);
+    if (stepId !== 'm4') return next;
+    if (plan.questionMode === 'PositiveDiscriminant') {
+        return normalizeM4DiscriminantDraft(next, plan);
+    }
+    return normalizeM4AvoidLabels(next, plan);
 }
 
 /** Cap planner output so verify does not inherit oversized option lists. */

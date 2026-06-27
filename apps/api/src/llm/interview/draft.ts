@@ -29,13 +29,13 @@ export async function draftInterviewStep(
         ctx.openingContext
     );
     const stepId = ctx.stepId ?? resolved.stepId;
-    const meta = stepMetaForId(stepId);
+    const meta = stepMetaForId(stepId, ctx.plannerState);
     const plannedCount = plan.plannedOptionCount;
     const optionCount =
         plannedCount >= meta.optionMin && plannedCount <= meta.optionMax
             ? String(plannedCount)
             : `${meta.optionMin}–${meta.optionMax}`;
-    const turnConfig = resolveTurnConfig(stepId, plan, ctx.priorAnswers);
+    const turnConfig = resolveTurnConfig(stepId, plan, ctx.priorAnswers, ctx.plannerState);
     const totalSteps = ctx.plannerState?.stepIds?.length ?? resolved.totalSteps;
 
     const userPrompt = buildDraftUserPrompt(
