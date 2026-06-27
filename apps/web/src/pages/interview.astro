@@ -39,5 +39,9 @@ import { FLOW_EXIT_NAV } from '../lib/flow-nav-copy';
 <script>
     import { initInterviewWizard } from '../scripts/interview-wizard.ts';
 
-    document.addEventListener('astro:page-load', () => initInterviewWizard());
+    document.addEventListener('astro:page-load', () => {
+        void initInterviewWizard().catch((error) => {
+            if (import.meta.env.DEV) console.error('[interview]', error);
+        });
+    });
 </script>

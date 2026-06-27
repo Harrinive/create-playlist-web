@@ -1,5 +1,6 @@
 import { applyAriaLabels } from '../lib/aria-labels';
-import { applyLocaleToDocument, readLocale, writeLocale, type Locale } from '../lib/locale';
+import { applyLocaleToDocument, onLocaleChange, readLocale, writeLocale, type Locale } from '../lib/locale';
+import { sameModelIds } from '../lib/model-utils';
 import {
     CATALOG_INTERVIEW_MODELS,
     fetchInterviewModels,
@@ -7,7 +8,6 @@ import {
     readInterviewModel,
     saveInterviewModel,
     pickInterviewModelOption,
-    sameModelIds,
     type InterviewModelOption
 } from '../lib/interview-model';
 import {
@@ -50,25 +50,22 @@ function localeOptionDescription(option: (typeof LOCALE_OPTIONS)[number], locale
     return locale === 'zh' ? option.descZh : option.descEn;
 }
 
+function refreshToolbarLocaleLabels(locale: Locale = readLocale()) {
+    updateLocaleLabel();
+    refreshLocaleMenuLabels();
+    updateInterviewModelLabel(interviewModelCatalog);
+    refreshInterviewModelMenuLabels(interviewModelCatalog);
+    updateInterviewAlgorithmLabel();
+    refreshInterviewAlgorithmMenuLabels();
+}
+
 function setLocale(locale: Locale) {
     writeLocale(locale);
     closeMobileToolbar();
-    applyLocaleToDocument(locale, {
-        animate: true,
-        onSwap: () => {
-            applyAriaLabels(locale);
-            updateLocaleLabel();
-            refreshLocaleMenuLabels();
-            updateInterviewModelLabel(interviewModelCatalog);
-            refreshInterviewModelMenuLabels(interviewModelCatalog);
-            updateInterviewAlgorithmLabel();
-            refreshInterviewAlgorithmMenuLabels();
-        },
-        onComplete: () => {
-            document.dispatchEvent(new CustomEvent('locale-changed', { detail: { locale } }));
-        }
-    });
+    applyLocaleToDocument(locale, { animate: true });
 }
+
+onLocaleChange(refreshToolbarLocaleLabels);
 
 /** Keep in sync with --layout-shell-max-inline-size (1100px) in global.css */
 function isCompactToolbar(): boolean {
@@ -241,6 +238,43 @@ function renderLocaleMenu() {
     });
 }
 
+function bindListboxKeyboard(menuId: string) {
+    const menu = document.getElementById(menuId);
+    if (!menu || menu.dataset.keyboardBound === 'true') return;
+    menu.dataset.keyboardBound = 'true';
+
+    menu.addEventListener('keydown', (event) => {
+        const options = [...menu.querySelectorAll<HTMLElement>('[role="option"]')];
+        if (options.length === 0) return;
+
+        const current = Math.max(
+            0,
+            options.findIndex((option) => option.getAttribute('aria-selected') === 'true')
+        );
+        let next = current;
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            next = (current + 1) % options.length;
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            next = (current - 1 + options.length) % options.length;
+        } else if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            options[current]?.click();
+            return;
+        } else {
+            return;
+        }
+
+        options.forEach((option, index) => {
+            const selected = index === next;
+            option.classList.toggle('is-selected', selected);
+            option.setAttribute('aria-selected', selected ? 'true' : 'false');
+        });
+    });
+}
+
 function bindLocaleDropdown() {
     const dropdown = document.getElementById('locale-dropdown');
     const trigger = document.getElementById('locale-trigger');
@@ -262,6 +296,8 @@ function bindLocaleDropdown() {
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') closeLocaleMenu();
     });
+
+    bindListboxKeyboard('locale-menu');
 }
 
 function updateInterviewModelLabel(catalog: InterviewModelOption[]) {
@@ -477,6 +513,8 @@ function bindInterviewAlgorithmDropdown() {
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') closeInterviewAlgorithmMenu();
     });
+
+    bindListboxKeyboard('interview-algorithm-menu');
 }
 
 let interviewModelCatalog: InterviewModelOption[] = [];
@@ -501,6 +539,8 @@ async function bindInterviewModelDropdown() {
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') closeInterviewModelMenu();
         });
+
+        bindListboxKeyboard('interview-model-menu');
     }
 
     const catalogData = {

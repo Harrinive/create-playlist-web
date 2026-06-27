@@ -6,6 +6,9 @@ export function initInterviewFallbackPage() {
     const root = document.getElementById('interview-fallback-page');
     if (!root) return;
 
+    if (root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
     const locale = readLocale();
     applyLocaleToDocument(locale);
 

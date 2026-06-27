@@ -8,6 +8,7 @@ export const INTERVIEW_STEP_IDS_KEY = `${SESSION_KEY}-step-ids`;
 export const INTERVIEW_FALLBACK_KEY = `${SESSION_KEY}-fallback`;
 export const CURATE_MODEL_KEY = 'create-playlist-curate-model';
 export const INTERVIEW_MODEL_KEY = 'create-playlist-interview-model';
+export const INTERVIEW_ALGORITHM_MODE_KEY = 'create-playlist-interview-algorithm-mode';
 export const LAST_DELIVERY_KEY = 'create-playlist-last-delivery';
 export const BUILD_RESULT_KEY = 'create-playlist-build-result';
 export const PENDING_BUILD_KEY = 'create-playlist-pending-build';

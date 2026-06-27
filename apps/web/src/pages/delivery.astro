@@ -17,7 +17,7 @@ import { FLOW_EXIT_NAV } from '../lib/flow-nav-copy';
         <div id="delivery-content">
             <header class="delivery-page-header">
                 <StepKicker step={2} />
-                <h1 class="page-title">
+                <h1 id="delivery-page-title" class="page-title">
                     <span data-locale="en">{FLOW_PAGE_HEADINGS.delivery.en}</span>
                     <span data-locale="zh" hidden>{FLOW_PAGE_HEADINGS.delivery.zh}</span>
                 </h1>
@@ -25,7 +25,7 @@ import { FLOW_EXIT_NAV } from '../lib/flow-nav-copy';
 
             <p id="delivery-genre-note" class="delivery-genre-note" hidden></p>
 
-            <div id="delivery-options" class="chip-grid" role="group">
+            <div id="delivery-options" class="chip-grid" role="group" aria-labelledby="delivery-page-title">
                 <button type="button" class="chip-option chip-option--delivery" data-delivery="prompt">
                     <span class="chip-option__label">
                         <span data-locale="en">{DELIVERY_COPY.promptLabel.en}</span>

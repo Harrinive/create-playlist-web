@@ -66,13 +66,24 @@ export type InterviewLoadingHandle = {
     element: HTMLElement;
     /** Await before removing the loading UI so verify stage is visible. */
     stop: () => Promise<void>;
+    /** Refresh visible copy while keeping progress and stage timing. */
+    relocalize: (locale: Locale) => void;
 };
+
+function noopLoadingHandle(element: HTMLElement): InterviewLoadingHandle {
+    return {
+        element,
+        stop: async () => {},
+        relocalize: () => {}
+    };
+}
 
 export function mountInterviewLoading(
     locale: Locale,
     mode: InterviewAlgorithmMode
 ): InterviewLoadingHandle {
-    const copy = LOADING_COPY[locale];
+    let currentLocale = locale;
+    const copy = LOADING_COPY[currentLocale];
     const block = document.createElement('div');
     block.className = 'interview-loading';
 
@@ -81,7 +92,21 @@ export function mountInterviewLoading(
             <p class="interview-loading__text">${copy.fastTitle}</p>
             <p class="interview-loading__hint">${copy.fastSubtitle}</p>
         `;
-        return { element: block, stop: async () => {} };
+        const titleEl = block.querySelector<HTMLElement>('.interview-loading__text');
+        const hintEl = block.querySelector<HTMLElement>('.interview-loading__hint');
+        if (!titleEl || !hintEl) return noopLoadingHandle(block);
+
+        return {
+            element: block,
+            stop: async () => {},
+            relocalize: (nextLocale) => {
+                if (nextLocale === currentLocale) return;
+                currentLocale = nextLocale;
+                const nextCopy = LOADING_COPY[nextLocale];
+                titleEl.textContent = nextCopy.fastTitle;
+                hintEl.textContent = nextCopy.fastSubtitle;
+            }
+        };
     }
 
     const profile = copy.fullModeProfile;
@@ -102,11 +127,13 @@ export function mountInterviewLoading(
         <p class="interview-loading__stage" aria-live="polite">${profile.stages[0]}</p>
     `;
 
+    const badgeEl = block.querySelector<HTMLElement>('.interview-loading__badge');
+    const titleEl = block.querySelector<HTMLElement>('.interview-loading__text');
     const progress = block.querySelector<HTMLElement>('.interview-loading__progress');
     const bar = block.querySelector<HTMLElement>('.interview-loading__progress-bar');
     const stageEl = block.querySelector<HTMLElement>('.interview-loading__stage');
-    if (!progress || !bar || !stageEl) {
-        return { element: block, stop: async () => {} };
+    if (!badgeEl || !titleEl || !progress || !bar || !stageEl) {
+        return noopLoadingHandle(block);
     }
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -115,6 +142,10 @@ export function mountInterviewLoading(
     const timeouts: ReturnType<typeof setTimeout>[] = [];
     let creepInterval: ReturnType<typeof setInterval> | null = null;
 
+    function activeProfile() {
+        return LOADING_COPY[currentLocale].fullModeProfile;
+    }
+
     function setProgress(pct: number) {
         progressPct = Math.min(pct, 96);
         progress.setAttribute('aria-valuenow', String(progressPct));
@@ -122,10 +153,18 @@ export function mountInterviewLoading(
     }
 
     function setStage(index: number) {
+        const profile = activeProfile();
         const clamped = Math.min(index, profile.stages.length - 1);
         currentStageIndex = clamped;
         stageEl.textContent = profile.stages[clamped];
         setProgress(profile.progressAtStage[clamped] ?? progressPct);
+    }
+
+    function refreshStaticCopy() {
+        const copy = LOADING_COPY[currentLocale];
+        badgeEl.textContent = copy.badge;
+        titleEl.textContent = copy.title;
+        progress.setAttribute('aria-label', copy.title);
     }
 
     setStage(0);
@@ -155,6 +194,7 @@ export function mountInterviewLoading(
     return {
         element: block,
         stop: async () => {
+            const profile = activeProfile();
             for (const id of timeouts) clearTimeout(id);
             if (creepInterval) clearInterval(creepInterval);
 
@@ -167,6 +207,12 @@ export function mountInterviewLoading(
 
             setProgress(100);
             stageEl.textContent = profile.stages[profile.stages.length - 1];
+        },
+        relocalize: (nextLocale) => {
+            if (nextLocale === currentLocale) return;
+            currentLocale = nextLocale;
+            refreshStaticCopy();
+            setStage(currentStageIndex);
         }
     };
 }

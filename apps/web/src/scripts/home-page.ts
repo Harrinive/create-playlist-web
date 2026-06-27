@@ -1,7 +1,8 @@
 import { getHomeProgressActions, type HomeLastOutputLabel } from '../lib/home-progress';
 import type { LastDelivery } from '../lib/last-delivery';
-import { applyLocaleToDocument, readLocale } from '../lib/locale';
+import { onLocaleChange, readLocale, syncLocaleNodes, type Locale } from '../lib/locale';
 import { normalizeSessionState } from '../lib/session-normalize';
+import { FLOW_SESSION_ACTIONS } from '../lib/flow-nav-copy';
 import { performStartOver } from '../lib/start-over';
 
 function clearDynamicHomeActions(root: HTMLElement) {
@@ -14,8 +15,8 @@ function mountStartOverButton(): HTMLButtonElement {
     btn.className = 'text-link-button';
     btn.dataset.homeDynamic = '';
     btn.innerHTML = `
-        <span data-locale="en">Start over</span>
-        <span data-locale="zh" hidden>重新开始</span>
+        <span data-locale="en">${FLOW_SESSION_ACTIONS.startOver.en}</span>
+        <span data-locale="zh" hidden>${FLOW_SESSION_ACTIONS.startOver.zh}</span>
     `;
     btn.addEventListener('click', () => performStartOver());
     return btn;
@@ -48,6 +49,13 @@ function mountLastOutputLink(
     return link;
 }
 
+function syncInterviewLabelVisibility(root: HTMLElement) {
+    const actions = getHomeProgressActions();
+    root.querySelectorAll<HTMLElement>('[data-home-interview-label]').forEach((el) => {
+        el.hidden = el.dataset.homeInterviewLabel !== actions.interviewLabel;
+    });
+}
+
 export function renderHomeActions() {
     const root = document.getElementById('home-interview-actions');
     if (!root) return;
@@ -55,9 +63,7 @@ export function renderHomeActions() {
     normalizeSessionState();
     const actions = getHomeProgressActions();
 
-    root.querySelectorAll<HTMLElement>('[data-home-interview-label]').forEach((el) => {
-        el.hidden = el.dataset.homeInterviewLabel !== actions.interviewLabel;
-    });
+    syncInterviewLabelVisibility(root);
 
     clearDynamicHomeActions(root);
 
@@ -68,7 +74,15 @@ export function renderHomeActions() {
         root.appendChild(mountLastOutputLink(actions.lastOutput.href, actions.lastOutput.kind, actions.lastOutput.label));
     }
 
-    applyLocaleToDocument(readLocale());
+    // Nodes ship with en-visible markup; sync hidden attrs (also safe mid-crossfade).
+    syncLocaleNodes(readLocale());
+}
+
+function onHomeLocaleChange(_locale: Locale) {
+    const root = document.getElementById('home-interview-actions');
+    if (!root) return;
+    // Keep mounted data-locale nodes — applyLocaleInstant already swapped them at fade midpoint.
+    syncInterviewLabelVisibility(root);
 }
 
 let homeListenersBound = false;
@@ -77,7 +91,7 @@ function bindHomeListeners() {
     if (homeListenersBound) return;
     homeListenersBound = true;
     document.addEventListener('last-delivery-changed', renderHomeActions);
-    document.addEventListener('locale-changed', renderHomeActions);
+    onLocaleChange(onHomeLocaleChange);
 }
 
 export function initHomePage() {

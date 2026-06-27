@@ -1,29 +1,34 @@
 import { isApiConfigured } from '../lib/api-config';
-import { savePromptText } from '../lib/last-delivery';
-import { readLocale } from '../lib/locale';
+import { readSavedPromptText, savePromptText } from '../lib/last-delivery';
+import { createLocaleScope } from '../lib/locale-scope';
+import { pickLocale, readLocale } from '../lib/locale';
 import { localizeApiError } from '../lib/localized-errors';
 import { resolveInterviewModelId } from '../lib/interview-model';
 import { fetchSpotifyPrompt } from '../lib/prompt-api';
 import { crossFadePanels, revealPanel } from '../lib/motion';
+import { createPageScope } from '../lib/page-scope';
 import { performStartOver } from '../lib/start-over';
+import { normalizeSessionState } from '../lib/session-normalize';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
 
-const COPY_OK: Record<'en' | 'zh', string> = {
-    en: 'Copied!',
-    zh: '已复制！'
-};
-
-const COPY_FAIL: Record<'en' | 'zh', string> = {
-    en: 'Copy failed — select the text manually.',
-    zh: '复制失败 — 请手动选择文本。'
-};
-
-const ERROR_GENERIC: Record<'en' | 'zh', string> = {
+const PROMPT_ERROR_GENERIC = {
     en: 'Could not generate the prompt. Try again or start a new interview.',
     zh: '无法生成提示词。请重试或重新开始访谈。'
-};
+} as const;
 
-const abortByRoot = new WeakMap<HTMLElement, AbortController>();
+const COPY_OK = {
+    en: 'Copied!',
+    zh: '已复制！'
+} as const;
+
+const COPY_FAIL = {
+    en: 'Copy failed — select the text manually.',
+    zh: '复制失败 — 请手动选择文本。'
+} as const;
+
+function isAbortError(error: unknown): boolean {
+    return error instanceof DOMException && error.name === 'AbortError';
+}
 
 export function initPromptPage() {
     const root = document.getElementById('prompt-page');
@@ -56,10 +61,8 @@ export function initPromptPage() {
         return;
     }
 
-    abortByRoot.get(root)?.abort();
-    const controller = new AbortController();
-    abortByRoot.set(root, controller);
-    const { signal } = controller;
+    normalizeSessionState();
+    const { signal } = createPageScope(root);
 
     let copyStatusTimer: ReturnType<typeof setTimeout> | undefined;
     let paragraph = '';
@@ -76,30 +79,26 @@ export function initPromptPage() {
     const answers = readStoredInterviewAnswers();
     const panels = [contentEl, loadingEl, errorEl, unconfiguredEl, promptBodyEl];
 
-    function renderErrorText() {
-        const locale = readLocale();
+    function renderErrorText(locale = readLocale()) {
         errorTextEl.textContent = lastErrorRaw
             ? localizeApiError(lastErrorRaw, locale, 'prompt')
-            : ERROR_GENERIC[locale];
+            : pickLocale(PROMPT_ERROR_GENERIC, locale);
     }
 
-    function renderCopyStatus() {
+    function renderCopyStatus(locale = readLocale()) {
         if (!lastCopyStatus) {
             statusEl.textContent = '';
             return;
         }
-        const locale = readLocale();
-        statusEl.textContent = lastCopyStatus === 'ok' ? COPY_OK[locale] : COPY_FAIL[locale];
+        statusEl.textContent =
+            lastCopyStatus === 'ok' ? pickLocale(COPY_OK, locale) : pickLocale(COPY_FAIL, locale);
     }
 
-    document.addEventListener(
-        'locale-changed',
-        () => {
-            if (!errorEl.hidden) renderErrorText();
-            if (lastCopyStatus) renderCopyStatus();
-        },
-        { signal }
-    );
+    const localeScope = createLocaleScope(signal);
+    localeScope.onRelocalize((locale) => {
+        if (!errorEl.hidden) renderErrorText(locale);
+        if (lastCopyStatus) renderCopyStatus(locale);
+    });
 
     if (!answers) {
         revealPanel(missingEl, panels);
@@ -137,7 +136,16 @@ export function initPromptPage() {
         document.dispatchEvent(new CustomEvent('last-delivery-changed'));
     }
 
-    async function generatePrompt() {
+    async function generatePrompt(forceRefresh = false) {
+        if (!forceRefresh) {
+            const cached = readSavedPromptText();
+            if (cached) {
+                showContent(cached);
+                copyBtn.disabled = false;
+                return;
+            }
+        }
+
         showLoading();
         copyBtn.disabled = true;
 
@@ -147,10 +155,11 @@ export function initPromptPage() {
                 model,
                 signal
             });
+            if (signal.aborted) return;
             showContent(result.paragraph);
             copyBtn.disabled = false;
         } catch (error) {
-            if (signal.aborted) return;
+            if (signal.aborted || isAbortError(error)) return;
             const message = error instanceof Error ? error.message : undefined;
             showError(message);
             copyBtn.disabled = true;
@@ -179,11 +188,12 @@ export function initPromptPage() {
         { signal }
     );
 
-    retryBtn.addEventListener('click', () => void generatePrompt(), { signal });
+    retryBtn.addEventListener('click', () => void generatePrompt(true), { signal });
 
     root.querySelectorAll<HTMLButtonElement>('[data-action="start-over"]').forEach((btn) => {
         btn.addEventListener('click', () => performStartOver(), { signal });
     });
 
+    localeScope.runNow();
     void generatePrompt();
 }

@@ -1,5 +1,5 @@
 import { applyAriaLabels } from '../lib/aria-labels';
-import { readLocale } from '../lib/locale';
+import { onLocaleChange, readLocale } from '../lib/locale';
 import { documentDescription, documentTitle } from '../lib/page-titles';
 
 function syncPageMetadata() {
@@ -11,6 +11,6 @@ function syncPageMetadata() {
 }
 
 document.addEventListener('astro:page-load', syncPageMetadata);
-document.addEventListener('locale-changed', syncPageMetadata);
+onLocaleChange(syncPageMetadata);
 
 export {};

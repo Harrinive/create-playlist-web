@@ -47,25 +47,24 @@ export function fadeOut(el: HTMLElement): Promise<void> {
 export function crossFadePanels(show: HTMLElement, hide: HTMLElement[]): void {
     const visibleHide = hide.filter((panel) => !panel.hidden);
 
-    if (prefersReducedMotion() || visibleHide.length === 0) {
-        visibleHide.forEach((panel) => {
-            panel.hidden = true;
-            panel.classList.remove('is-fading-out');
-        });
-        show.hidden = false;
-        return;
-    }
-
-    visibleHide.forEach((panel) => panel.classList.add('is-fading-out'));
-
-    window.setTimeout(() => {
+    const revealShow = () => {
         visibleHide.forEach((panel) => {
             panel.hidden = true;
             panel.classList.remove('is-fading-out');
         });
         show.hidden = false;
         appearOnMount(show);
-    }, MOTION_MS);
+        document.getElementById('content')?.focus();
+    };
+
+    if (prefersReducedMotion() || visibleHide.length === 0) {
+        revealShow();
+        return;
+    }
+
+    visibleHide.forEach((panel) => panel.classList.add('is-fading-out'));
+
+    window.setTimeout(revealShow, MOTION_MS);
 }
 
 export function revealPanel(show: HTMLElement, hide: HTMLElement[] = []): void {

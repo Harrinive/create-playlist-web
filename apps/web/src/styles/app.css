@@ -16,7 +16,6 @@
     line-height: 1.55;
     background: transparent;
     color: var(--text);
-    transition: background 0.2s ease, border-color 0.2s ease;
     display: grid;
     grid-template-columns: 1fr auto;
     column-gap: 10px;
@@ -558,10 +557,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .chip-option {
-        transition: none;
-    }
-
     .interview-loading__progress-bar {
         transition: none;
     }

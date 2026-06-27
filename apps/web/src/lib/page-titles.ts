@@ -1,14 +1,16 @@
 import siteConfig from '../data/site-config';
+import { FLOW_PAGE_HEADINGS } from './flow-steps';
 import type { Locale } from './locale';
 
 type PageTitle = { en: string; zh: string };
 
 export const PAGE_TITLES: Record<string, PageTitle> = {
     '/': { en: siteConfig.title.en, zh: siteConfig.title.zh },
-    '/interview': { en: 'Interview', zh: '访谈' },
-    '/delivery': { en: 'Choose delivery', zh: '选择交付方式' },
-    '/prompt': { en: 'Your prompt', zh: '你的提示词' },
-    '/build': { en: 'Build on Spotify', zh: '在 Spotify 上创建' }
+    '/interview': FLOW_PAGE_HEADINGS.interview,
+    '/interview/fallback': { en: 'Interview pause', zh: '访谈暂停' },
+    '/delivery': FLOW_PAGE_HEADINGS.delivery,
+    '/prompt': FLOW_PAGE_HEADINGS.prompt,
+    '/build': FLOW_PAGE_HEADINGS.buildFlow
 };
 
 export function documentTitle(pathname: string, locale: Locale): string {

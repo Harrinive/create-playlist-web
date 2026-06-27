@@ -84,31 +84,3 @@ export async function fetchInterviewNext(
 
     return payload;
 }
-
-export async function fetchInterviewComplete(input: {
-    answers: InterviewAnswers;
-    plannerState?: InterviewPlannerState | null;
-    model?: string;
-    signal?: AbortSignal;
-}): Promise<{ answers: InterviewAnswers; inferredM5?: { id: string; label: string; prose: string } }> {
-    const api = getApiBaseUrl();
-    if (!api) throw new Error('API not configured');
-
-    const { signal, ...body } = input;
-    const response = await fetch(`${api}/api/interview/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal
-    });
-
-    const payload = (await response.json()) as {
-        answers: InterviewAnswers;
-        inferredM5?: { id: string; label: string; prose: string };
-        error?: string;
-    };
-    if (!response.ok) {
-        throw new Error(payload.error ?? `Interview complete failed (${response.status})`);
-    }
-    return payload;
-}

@@ -53,8 +53,3 @@ export function flowStepKicker(step: FlowStep, locale: Locale): string {
     const copy = FLOW_STEP_KICKERS[step];
     return locale === 'zh' ? copy.zh : copy.en;
 }
-
-export function flowPageHeading(key: keyof typeof FLOW_PAGE_HEADINGS, locale: Locale): string {
-    const copy = FLOW_PAGE_HEADINGS[key];
-    return locale === 'zh' ? copy.zh : copy.en;
-}

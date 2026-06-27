@@ -40,7 +40,8 @@ import {
     recordRejectedQuestion,
     rejectedStemsForStep
 } from '../lib/interview-refresh';
-import { applyLocaleToDocument, readLocale, type Locale } from '../lib/locale';
+import { readLocale, onLocaleChange, syncLocaleNodes, type Locale } from '../lib/locale';
+import { createPageScope } from '../lib/page-scope';
 import { localizeApiError } from '../lib/localized-errors';
 import { safeSessionGet, safeSessionRemove, safeSessionSet } from '../lib/session-storage';
 import { DRAFT_KEY, SESSION_KEY } from '../lib/session-keys';
@@ -62,8 +63,15 @@ import {
 import { navigateTo } from '../lib/navigate';
 import { staggerAppear } from '../lib/motion';
 
-const abortByRoot = new WeakMap<HTMLElement, AbortController>();
+
 let wizardSession = 0;
+
+function apiUnavailableMarkup(): string {
+    return `<p class="help-line">
+        <span data-locale="en">${WIZARD_LABELS.en.apiUnavailable}</span>
+        <span data-locale="zh" hidden>${WIZARD_LABELS.zh.apiUnavailable}</span>
+    </p>`;
+}
 
 function getDraft(): Draft {
     try {
@@ -122,9 +130,6 @@ function prepareDraftOnInit(): Draft {
 
 function interviewLoadError(error: unknown, locale: Locale): string {
     if (error instanceof Error) {
-        if (error.message === 'Failed to fetch') {
-            return WIZARD_LABELS[locale].apiUnreachable;
-        }
         return localizeApiError(error.message, locale, 'interview');
     }
     return WIZARD_LABELS[locale].apiUnavailable;
@@ -147,24 +152,23 @@ export async function initInterviewWizard() {
 
     const localeForError = readLocale();
     if (!isApiConfigured()) {
-        stackEl.innerHTML = `<p class="help-line">${WIZARD_LABELS[localeForError].apiUnavailable}</p>`;
+        stackEl.innerHTML = apiUnavailableMarkup();
+        syncLocaleNodes(localeForError);
         return;
     }
 
-    abortByRoot.get(root)?.abort();
-    const controller = new AbortController();
-    abortByRoot.set(root, controller);
-    const { signal } = controller;
+    const { signal, isActive: isScopeActive } = createPageScope(root);
     const session = ++wizardSession;
 
     function isActive(): boolean {
-        return wizardSession === session && abortByRoot.get(root) === controller;
+        return wizardSession === session && isScopeActive();
     }
 
     let interviewModelId = await resolveInterviewModelId(signal);
     if (!isActive()) return;
     if (!interviewModelId) {
-        stackEl.innerHTML = `<p class="help-line">${WIZARD_LABELS[localeForError].apiUnavailable}</p>`;
+        stackEl.innerHTML = apiUnavailableMarkup();
+        syncLocaleNodes(localeForError);
         return;
     }
 
@@ -175,6 +179,7 @@ export async function initInterviewWizard() {
     const stepLoadGen: number[] = [];
     const lastFetchedBilingual = new Map<number, BilingualInterviewStep>();
     let storageErrorShown = false;
+    let lastStackLoadError: unknown = null;
 
     async function dismissLoading() {
         const handle = activeLoading;
@@ -187,8 +192,30 @@ export async function initInterviewWizard() {
         return cached.map((step) => bilingualStepToDisplay(step, nextLocale) as InterviewStep);
     }
 
-    function labels() {
-        return WIZARD_LABELS[locale];
+    function invalidateInFlightStepLoads() {
+        const count = Math.max(stepLoadGen.length, interviewStepCount());
+        for (let i = 0; i < count; i += 1) {
+            stepLoadGen[i] = (stepLoadGen[i] ?? 0) + 1;
+        }
+    }
+
+    function appendStackLoadError(error: unknown, stepIndex: number) {
+        const ids = stepIds();
+        if (tryRedirectInterviewFallback(error, stepIndex, ids[stepIndex])) return true;
+        stackEl.querySelectorAll('[data-role="stack-load-error"]').forEach((el) => el.remove());
+        lastStackLoadError = error;
+        const err = document.createElement('p');
+        err.className = 'help-line';
+        err.dataset.role = 'stack-load-error';
+        err.textContent = interviewLoadError(error, locale);
+        stackEl.appendChild(err);
+        return true;
+    }
+
+    function handleWizardError(error: unknown) {
+        if (!isActive()) return;
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (import.meta.env.DEV) console.error('[interview]', error);
     }
 
     function showStorageError() {
@@ -225,6 +252,7 @@ export async function initInterviewWizard() {
         block.dataset.stepIndex = String(stepIndex);
         const notice = document.createElement('p');
         notice.className = 'help-line';
+        notice.dataset.role = 'resume-unavailable';
         notice.textContent = labels().resumeUnavailable;
         block.appendChild(notice);
         stackEl.appendChild(block);
@@ -295,14 +323,18 @@ export async function initInterviewWizard() {
         navigateTo('/delivery');
     }
 
-    function createLoadingBlock(): HTMLElement {
-        dismissLoading();
+    function labels() {
+        return WIZARD_LABELS[locale];
+    }
+
+    async function createLoadingBlock(): Promise<HTMLElement> {
+        await dismissLoading();
         const handle = mountInterviewLoading(locale, readInterviewAlgorithmMode());
         activeLoading = handle;
         return handle.element;
     }
 
-    function prepareLoadingBlock(): HTMLElement {
+    async function prepareLoadingBlock(): Promise<HTMLElement> {
         const boot = stackEl.querySelector<HTMLElement>('[data-interview-boot]');
         if (boot) {
             const mode = readInterviewAlgorithmMode();
@@ -319,7 +351,7 @@ export async function initInterviewWizard() {
         const existing = stackEl.querySelector<HTMLElement>('.interview-loading');
         if (existing) return existing;
 
-        const loadingEl = createLoadingBlock();
+        const loadingEl = await createLoadingBlock();
         stackEl.appendChild(loadingEl);
         return loadingEl;
     }
@@ -549,6 +581,8 @@ export async function initInterviewWizard() {
 
         const draft = getDraft();
         optionsEl.innerHTML = '';
+        optionsEl.setAttribute('role', step.multi ? 'group' : 'radiogroup');
+        optionsEl.setAttribute('aria-label', step.stem);
 
         if (step.multi) {
             const selected = getSelectedMulti(draft);
@@ -560,6 +594,7 @@ export async function initInterviewWizard() {
                 btn.className = 'chip-option';
                 fillInterviewLineWithGloss(btn, option.label, option.gloss, option.labelEn, locale);
                 if (selectedIds.has(option.id)) btn.classList.add('is-selected');
+                btn.setAttribute('aria-pressed', selectedIds.has(option.id) ? 'true' : 'false');
 
                 btn.addEventListener(
                     'click',
@@ -599,6 +634,11 @@ export async function initInterviewWizard() {
             if (selected && optionMatchesAnswer(option, selected, locale)) {
                 btn.classList.add('is-selected');
             }
+            btn.setAttribute('role', 'radio');
+            btn.setAttribute(
+                'aria-checked',
+                selected && optionMatchesAnswer(option, selected, locale) ? 'true' : 'false'
+            );
 
             btn.addEventListener(
                 'click',
@@ -661,8 +701,12 @@ export async function initInterviewWizard() {
             truncateLlmSteps(stepIndex + 1);
             truncateAnsweredSteps(stepIndex + 1);
             if (!saveDraft(draft)) return;
-            await renderStack();
-            await advanceFromStep(stepIndex);
+            try {
+                await renderStack();
+                await advanceFromStep(stepIndex);
+            } catch (error) {
+                handleWizardError(error);
+            }
             return;
         }
 
@@ -711,8 +755,12 @@ export async function initInterviewWizard() {
         pinAnsweredStepToCache(stepIndex);
 
         if (isRetro) {
-            await renderStack();
-            await advanceFromStep(stepIndex);
+            try {
+                await renderStack();
+                await advanceFromStep(stepIndex);
+            } catch (error) {
+                handleWizardError(error);
+            }
             return;
         }
 
@@ -725,15 +773,15 @@ export async function initInterviewWizard() {
     async function advanceFromStep(stepIndex: number) {
         if (loading) return;
         loading = true;
+        const nextIndex = stepIndex + 1;
 
         try {
-            const nextIndex = stepIndex + 1;
             if (nextIndex >= interviewStepCount()) {
                 finishInterview();
                 return;
             }
 
-            const loadingEl = createLoadingBlock();
+            const loadingEl = await createLoadingBlock();
             stackEl.appendChild(loadingEl);
             loadingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -754,17 +802,27 @@ export async function initInterviewWizard() {
             if (!isActive()) return;
             stackEl.querySelector('.interview-loading')?.remove();
             await dismissLoading();
-            const ids = stepIds();
-            if (tryRedirectInterviewFallback(error, nextIndex, ids[nextIndex])) return;
-            const message = interviewLoadError(error, locale);
-            const err = document.createElement('p');
-            err.className = 'help-line';
-            err.textContent = message;
-            stackEl.appendChild(err);
+            appendStackLoadError(error, nextIndex);
         } finally {
             loading = false;
             await dismissLoading();
         }
+    }
+
+    function relocalizeStepActions(block: HTMLElement) {
+        const refreshBtn = block.querySelector<HTMLButtonElement>('[data-role="refresh"]');
+        if (refreshBtn) {
+            const refreshing = block.classList.contains('is-refreshing');
+            refreshBtn.textContent = refreshing
+                ? labels().refreshingQuestion
+                : labels().refreshQuestion;
+        }
+
+        const startOverBtn = block.querySelector<HTMLButtonElement>('[data-role="start-over"]');
+        if (startOverBtn) startOverBtn.textContent = labels().startOver;
+
+        const doneBtn = block.querySelector<HTMLButtonElement>('[data-role="done"]');
+        if (doneBtn) doneBtn.textContent = labels().done;
     }
 
     function relocalizeStackInPlace() {
@@ -778,10 +836,29 @@ export async function initInterviewWizard() {
             const isActive = block.classList.contains('interview-step--active');
             updateStepContent(block, step, stepIndex);
             renderOptions(block, step, stepIndex, false);
+            relocalizeStepActions(block);
             if (isActive) {
                 block.classList.add('interview-step--active');
             }
         });
+
+        stackEl.querySelectorAll<HTMLElement>('[data-role="continue-delivery"] button').forEach((btn) => {
+            btn.textContent = labels().chooseDelivery;
+        });
+
+        stackEl.querySelectorAll<HTMLElement>('[data-role="storage-error"]').forEach((el) => {
+            el.textContent = labels().storageError;
+        });
+
+        stackEl.querySelectorAll<HTMLElement>('[data-role="resume-unavailable"]').forEach((el) => {
+            el.textContent = labels().resumeUnavailable;
+        });
+
+        if (lastStackLoadError) {
+            stackEl.querySelectorAll<HTMLElement>('[data-role="stack-load-error"]').forEach((el) => {
+                el.textContent = interviewLoadError(lastStackLoadError, locale);
+            });
+        }
     }
 
     async function renderStack(fullReset = false) {
@@ -856,7 +933,7 @@ export async function initInterviewWizard() {
         if (hasActive) return;
 
         loading = true;
-        const loadingEl = prepareLoadingBlock();
+        const loadingEl = await prepareLoadingBlock();
         loadingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         try {
@@ -871,45 +948,40 @@ export async function initInterviewWizard() {
             if (!isActive()) return;
             loadingEl.remove();
             await dismissLoading();
-            const ids = stepIds();
-            if (tryRedirectInterviewFallback(error, completed, ids[completed])) return;
-            const message = interviewLoadError(error, locale);
-            const err = document.createElement('p');
-            err.className = 'help-line';
-            err.textContent = message;
-            stackEl.appendChild(err);
+            appendStackLoadError(error, completed);
         } finally {
             loading = false;
             await dismissLoading();
         }
     }
 
-    document.addEventListener(
-        'locale-changed',
-        (event) => {
-            const detail = (event as CustomEvent<{ locale: Locale }>).detail;
-            if (!detail?.locale || detail.locale === locale) return;
-            locale = detail.locale;
+    onLocaleChange(
+        (next) => {
+            if (next === locale) return;
+            locale = next;
             steps = resolveStepsForLocale(locale);
-            applyLocaleToDocument(locale);
+            activeLoading?.relocalize(locale);
             relocalizeStackInPlace();
         },
-        { signal }
+        signal
     );
 
     document.addEventListener(
         'interview-algorithm-mode-changed',
         () => {
+            invalidateInFlightStepLoads();
             clearDraft();
             clearRejectedQuestions();
             clearLlmSteps();
             clearAnsweredSteps();
             clearInterviewSessionMeta();
             steps = resolveStepsForLocale(locale);
-            void renderStack(true).then(() => {
-                if (!isActive()) return;
-                return ensureActiveQuestion();
-            });
+            void renderStack(true)
+                .then(() => {
+                    if (!isActive()) return;
+                    return ensureActiveQuestion();
+                })
+                .catch(handleWizardError);
         },
         { signal }
     );
@@ -917,6 +989,7 @@ export async function initInterviewWizard() {
     document.addEventListener(
         'interview-model-changed',
         async () => {
+            invalidateInFlightStepLoads();
             interviewModelId = (await resolveInterviewModelId(signal)) ?? interviewModelId;
             clearDraft();
             clearRejectedQuestions();
@@ -924,10 +997,12 @@ export async function initInterviewWizard() {
             clearAnsweredSteps();
             clearInterviewSessionMeta();
             steps = resolveStepsForLocale(locale);
-            void renderStack(true).then(() => {
-                if (!isActive()) return;
-                return ensureActiveQuestion();
-            });
+            void renderStack(true)
+                .then(() => {
+                    if (!isActive()) return;
+                    return ensureActiveQuestion();
+                })
+                .catch(handleWizardError);
         },
         { signal }
     );
@@ -936,8 +1011,10 @@ export async function initInterviewWizard() {
 
     prepareDraftOnInit();
 
-    void renderStack().then(() => {
-        if (!isActive()) return;
-        return ensureActiveQuestion();
-    });
+    void renderStack()
+        .then(() => {
+            if (!isActive()) return;
+            return ensureActiveQuestion();
+        })
+        .catch(handleWizardError);
 }

@@ -7,6 +7,10 @@ function pick(locale: Locale, copy: Copy): string {
 }
 
 const API_ERROR_MAP: Record<string, Copy> = {
+    'Failed to fetch': {
+        en: 'Can\u2019t reach the server — check your connection and try again.',
+        zh: '无法连接服务器 — 请检查网络后重试。'
+    },
     'Not authenticated': { en: 'Connect Spotify to continue.', zh: '请先连接 Spotify。' },
     'Invalid interview answers': {
         en: 'Something went wrong with your picks — try the interview again.',
@@ -82,6 +86,7 @@ const GENERIC_FALLBACK: Record<'interview' | 'prompt' | 'build', Copy> = {
 
 export type BuildErrorKey =
     | 'connectionFailed'
+    | 'connectionSuccess'
     | 'devHostMismatch'
     | 'curationModelUnavailable'
     | 'llmNotConfigured'
@@ -99,6 +104,10 @@ const BUILD_ERRORS: Record<BuildErrorKey, Copy | ((vars: Record<string, string>)
         en: `Spotify sign-in failed: ${vars.error ?? 'try again'}`,
         zh: `Spotify 连接失败：${vars.error ?? '请重试'}`
     }),
+    connectionSuccess: {
+        en: 'Spotify connected — you can import your playlist.',
+        zh: 'Spotify 已连接 — 可以导入歌单了。'
+    },
     devHostMismatch: {
         en: 'For Spotify sign-in on your computer, open http://127.0.0.1:4321 instead of localhost.',
         zh: '本地开发时，请用 http://127.0.0.1:4321 打开本站（不要用 localhost），以便 Spotify 登录正常。'

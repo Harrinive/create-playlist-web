@@ -4,13 +4,16 @@ import {
     type CurateModelOption
 } from '../lib/curate-model';
 import { DELIVERY_COPY } from '../lib/delivery-copy';
-import { applyLocaleToDocument, readLocale } from '../lib/locale';
+import { createLocaleScope } from '../lib/locale-scope';
+import { readLocale, syncLocaleNodes } from '../lib/locale';
+import { createPageScope } from '../lib/page-scope';
+import { normalizeSessionState } from '../lib/session-normalize';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
 import { readPlannerState } from '../lib/interview-session';
 import { deliveryText } from '../lib/delivery-copy';
 import { navigateTo } from '../lib/navigate';
+import { sameModelIds } from '../lib/model-utils';
 
-const abortByRoot = new WeakMap<HTMLElement, AbortController>();
 let deliveryOptionsGeneration = 0;
 
 function modelIdsFromOptions(optionsEl: HTMLElement): string[] {
@@ -21,8 +24,10 @@ function modelIdsFromOptions(optionsEl: HTMLElement): string[] {
 
 function modelsMatchDom(optionsEl: HTMLElement, models: CurateModelOption[]): boolean {
     const domIds = modelIdsFromOptions(optionsEl);
-    if (domIds.length !== models.length) return false;
-    return models.every((model, index) => model.id === domIds[index]);
+    return sameModelIds(
+        domIds.map((id) => ({ id })),
+        models.map((m) => ({ id: m.id }))
+    );
 }
 
 function createDeliveryButton(
@@ -99,10 +104,8 @@ export async function initDeliveryPage() {
 
     if (!root || !missingEl || !contentEl || !optionsEl) return;
 
-    abortByRoot.get(root)?.abort();
-    const controller = new AbortController();
-    abortByRoot.set(root, controller);
-    const { signal } = controller;
+    normalizeSessionState();
+    const { signal } = createPageScope(root);
     const gen = ++deliveryOptionsGeneration;
 
     const answers = readStoredInterviewAnswers();
@@ -117,25 +120,23 @@ export async function initDeliveryPage() {
     missingEl.hidden = true;
     contentEl.hidden = false;
 
-    document.addEventListener(
-        'locale-changed',
-        () => applyLocaleToDocument(readLocale()),
-        { signal }
-    );
-
-    applyLocaleToDocument(readLocale());
-
     const planner = readPlannerState();
     const genreNote =
         planner?.deliveryGenreNote?.trim() || planner?.reachableGenresNote?.trim();
-    if (genreNoteEl && genreNote) {
-        const locale = readLocale();
-        const prefix = deliveryText('genreNotePrefix', locale);
-        genreNoteEl.textContent = `${prefix} ${genreNote}`;
+
+    function renderGenreNote(locale = readLocale()) {
+        if (!genreNoteEl) return;
+        if (!genreNote) {
+            genreNoteEl.hidden = true;
+            return;
+        }
+        genreNoteEl.textContent = `${deliveryText('genreNotePrefix', locale)} ${genreNote}`;
         genreNoteEl.hidden = false;
-    } else if (genreNoteEl) {
-        genreNoteEl.hidden = true;
     }
+
+    const localeScope = createLocaleScope(signal);
+    localeScope.onRelocalize(renderGenreNote);
+    localeScope.runNow();
 
     optionsEl.addEventListener(
         'click',
@@ -163,7 +164,7 @@ export async function initDeliveryPage() {
         const models = data.llmConfigured ? data.models : [];
         if (models.length > 0 && !modelsMatchDom(optionsEl, models)) {
             renderDeliveryOptions(optionsEl, models);
-            applyLocaleToDocument(readLocale());
+            syncLocaleNodes(readLocale());
         }
     } catch {
         // Keep SSR catalog on network failure.

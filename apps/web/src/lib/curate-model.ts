@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from './api-config';
 import { CATALOG_CURATE_MODELS } from '../data/model-catalog';
 import { CURATE_MODEL_KEY } from './session-keys';
+import { safeSessionGet, safeSessionSet } from './session-storage';
 
 export { CURATE_MODEL_KEY };
 
@@ -28,10 +29,6 @@ const catalogFallback = (): CurateModelsResponse => ({
     llmConfigured: false
 });
 
-export function invalidateCurateModelsCache() {
-    modelsCache = null;
-}
-
 export async function fetchCurateModels(signal?: AbortSignal): Promise<CurateModelsResponse | null> {
     const api = getApiBaseUrl();
     if (!api) return null;
@@ -49,28 +46,12 @@ export async function fetchCurateModels(signal?: AbortSignal): Promise<CurateMod
     }
 }
 
-export async function loadCurateModels(opts?: { signal?: AbortSignal }): Promise<CurateModelsResponse> {
-    if (modelsCache) return modelsCache;
-
-    const data = await fetchCurateModels(opts?.signal);
-    if (data?.llmConfigured && data.models.length > 0) {
-        modelsCache = data;
-        return data;
-    }
-
-    return catalogFallback();
-}
-
 export function readCurateModel(): string | null {
-    try {
-        return sessionStorage.getItem(CURATE_MODEL_KEY);
-    } catch {
-        return null;
-    }
+    return safeSessionGet(CURATE_MODEL_KEY);
 }
 
 export function saveCurateModel(modelId: string) {
-    sessionStorage.setItem(CURATE_MODEL_KEY, modelId);
+    safeSessionSet(CURATE_MODEL_KEY, modelId);
 }
 
 export function curateModelLabel(option: CurateModelOption, locale: 'en' | 'zh'): string {
@@ -118,10 +99,7 @@ export function pickCurateModelOption(
     return fromStorage ?? fromDefault ?? data.models[0] ?? null;
 }
 
-export function sameModelIds(a: CurateModelOption[], b: CurateModelOption[]): boolean {
-    if (a.length !== b.length) return false;
-    return a.every((model, index) => model.id === b[index]?.id);
-}
+export { sameModelIds } from './model-utils';
 
 export async function resolveCurateModelId(signal?: AbortSignal): Promise<CurateModelOption> {
     const data = await fetchCurateModels(signal);

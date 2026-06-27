@@ -1,8 +1,10 @@
+import { INTERVIEW_ALGORITHM_MODE_KEY } from './session-keys';
 import type { Locale } from './locale';
+import { safeSessionGet, safeSessionSet } from './session-storage';
 
 export type InterviewAlgorithmMode = 'fast' | 'full';
 
-export const INTERVIEW_ALGORITHM_MODE_KEY = 'create-playlist-interview-algorithm-mode';
+export { INTERVIEW_ALGORITHM_MODE_KEY };
 
 export type InterviewAlgorithmModeOption = {
     id: InterviewAlgorithmMode;
@@ -30,24 +32,20 @@ export const INTERVIEW_ALGORITHM_MODES: InterviewAlgorithmModeOption[] = [
 ];
 
 export function readInterviewAlgorithmMode(): InterviewAlgorithmMode {
-    try {
-        const stored = sessionStorage.getItem(INTERVIEW_ALGORITHM_MODE_KEY);
-        if (stored === 'fast' || stored === 'full') return stored;
-    } catch {}
+    const stored = safeSessionGet(INTERVIEW_ALGORITHM_MODE_KEY);
+    if (stored === 'fast' || stored === 'full') return stored;
     return 'full';
 }
 
 export function saveInterviewAlgorithmMode(mode: InterviewAlgorithmMode) {
-    sessionStorage.setItem(INTERVIEW_ALGORITHM_MODE_KEY, mode);
+    safeSessionSet(INTERVIEW_ALGORITHM_MODE_KEY, mode);
 }
 
 /** Apply server default only when the user has not chosen a mode yet. */
 export function ensureInterviewAlgorithmModeDefault(defaultMode: InterviewAlgorithmMode) {
-    try {
-        const stored = sessionStorage.getItem(INTERVIEW_ALGORITHM_MODE_KEY);
-        if (stored === 'fast' || stored === 'full') return;
-        saveInterviewAlgorithmMode(defaultMode);
-    } catch {}
+    const stored = safeSessionGet(INTERVIEW_ALGORITHM_MODE_KEY);
+    if (stored === 'fast' || stored === 'full') return;
+    saveInterviewAlgorithmMode(defaultMode);
 }
 
 export function algorithmModeLabel(option: InterviewAlgorithmModeOption, locale: Locale): string {

@@ -14,6 +14,7 @@ import {
 } from './session-keys';
 import { navigateTo } from './navigate';
 
+/** Clears interview/delivery progress; preserves interview model + algorithm mode (user prefs). */
 export function performStartOver() {
     try {
         sessionStorage.removeItem(SESSION_KEY);
