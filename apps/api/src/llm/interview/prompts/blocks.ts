@@ -9,6 +9,7 @@ import {
 } from './sections/story-native.js';
 import type { M4Mode } from '../m4-eligibility.js';
 import { trapLabelTemplatesBlock } from '../m4-eligibility.js';
+import { q1OpeningDiversityBlock } from './sections/q1-opening.js';
 
 export function sceneFeelingBlock(): string {
     return sceneFeelingText;
@@ -44,6 +45,7 @@ export function q1CoverageBlock(): string {
 Tag 1–2 region ids per option in optionSlots.
 
 **Diversity principle:** span both **social heat** (intimate ↔ kinetic) AND **setting type** (home, transit, venue, outdoors, etc.) — not six variants of the same room energy.
+${q1OpeningDiversityBlock}
 ${rows.join('\n')}`;
 }
 
@@ -57,7 +59,8 @@ export function q1DraftContextBlock(regionsToCover: string[]): string {
 
 export function q1VerifyContextBlock(): string {
     return `## Q1 verify
-4–6 options; distinct scenes; span social heat AND setting type; kinetic + intimate coverage; no overlapping beats.`;
+4–6 options; distinct scenes; span social heat AND setting type; kinetic + intimate coverage; no overlapping beats.
+Stem uses a concrete setting family — not the default cozy-weather opener unless options warrant wistful weather.`;
 }
 
 const m4PlanAvoidBlock = `## M4 plan — avoid mode (ClearDiscriminant)

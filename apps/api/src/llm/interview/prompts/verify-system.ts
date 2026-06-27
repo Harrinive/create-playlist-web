@@ -27,7 +27,8 @@ export function logicVerifySystemPrompt(): string {
 4. **Concrete objects/events** on every M2/M3 chip — not mood poetry
 5. **Scene continuity** — M2/M3 consistent with all prior answers; same world, no reset
 6. **No gloss fields** — omit stemGlossEn/stemGlossZh and option glossEn/glossZh on all steps; full meaning in main labels
-7. **Q1** — 4–6 options; distinct scenes; span social heat AND setting type; no overlapping beats
+6b. **Stem vs hint** — omit hint when stem already asks; hint adds mechanics or missing axis only — never paraphrase the stem ask
+7. **Q1** — 4–6 options; distinct scenes; span social heat AND setting type; stem rotates setting family (cozy-weather default anti-pattern); no overlapping beats
 8. **M2 register spread** — when kinetic genres survive, options partition distinct moments across social heat — not 3+ crowd-mood variants
 9. **M4 avoid only** — includes "none"; non-none labels use plain trap language; distinct trap clusters; drop already-implied avoids
 9b. **M4 discriminant only** — NO "none"; positive felt pace/groove/space labels; NO Skip/Avoid trap wording; stem asks what fits

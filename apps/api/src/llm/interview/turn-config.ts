@@ -35,9 +35,9 @@ export function resolveTurnConfig(
         case 'm1':
             return {
                 questionMode: 'SceneFeeling',
-                draftBlocks: [sceneFeelingBlock(), storyM1Block(), q1CoverageBlock()],
+                draftBlocks: [sceneFeelingBlock(), storyM1Block(), q1OpeningDiversityBlock(), q1CoverageBlock()],
                 logicVerifyIntro:
-                    '## Logic verify focus\nQ1: 4–6 distinct film-stills; span social heat AND setting type; stem-option coherence; no music words in stem.',
+                    '## Logic verify focus\nQ1: 4–6 distinct film-stills; span social heat AND setting type; stem uses varied opening world family (not default cozy-weather still); stem-option coherence; omit hint when stem asks.',
                 copyVerifyIntro: '## Copy verify focus\nEN free verse + ZH 现代诗 for Q1 stem/options.'
             };
 

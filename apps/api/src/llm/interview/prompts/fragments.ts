@@ -16,7 +16,7 @@ export function formatPriorAnswers(prior: Partial<InterviewAnswers>): string {
 
 export function rejectedStemsBlock(rejectedStems: string[]): string {
     if (rejectedStems.length === 0) return '';
-    return `## Rejected stems\nInvent something clearly different:\n${rejectedStems.map((s) => `- ${s}`).join('\n')}`;
+    return `## Rejected stems\nInvent something clearly different — new setting family and sensory anchor, not a paraphrase:\n${rejectedStems.map((s) => `- ${s}`).join('\n')}`;
 }
 
 export function priorContextBlock(prior: Partial<InterviewAnswers>, rejectedStems: string[]): string {
@@ -31,6 +31,7 @@ export function freshInterviewBlock(prior: Partial<InterviewAnswers>): string {
     if (!empty) return '';
     return `## Fresh interview
 No prior answers — invent a novel stem and options from scratch.
+**M1:** rotate opening world family and sensory anchor — do not default to the same weather-at-window motif every interview.
 Do not reuse wording from prompt examples or prior interviews; every scene, prop, and beat must be newly composed.`;
 }
 
@@ -52,7 +53,8 @@ export const planChecklistBlock = `## Your checklist (mandatory — run before p
 5. Should this question split remaining flavors? If one coherent playlist is obvious, still ask but keep options story-distinct.
 6. Choose plannedOptionCount between 2 and 6 (Q1: 4–6). Design that many story options — NOT genre menus.
 7. **M2 register spread:** when kinetic genres remain reachable, plan options that span social heat — not five copies of the same energy level.
-8. Do not split house vs techno (or similar) in user copy if users cannot feel the difference.`;
+8. Do not split house vs techno (or similar) in user copy if users cannot feel the difference.
+9. **M1 only:** pick one opening world family for the stem (transit, venue, outdoors, domestic, workplace, etc.) — weather optional garnish, not the default sensory lead.`;
 
 export function buildReviseUserPrompt(
     priorAnswers: Partial<InterviewAnswers>,

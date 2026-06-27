@@ -16,6 +16,7 @@ import {
 import { turnLabel } from './dimension.js';
 import { m5FeltAxesBlock, q1CoverageBlock, q1DraftContextBlock } from './blocks.js';
 import { noGlossOutputBlock } from './sections/gloss-rules.js';
+import { m4HintOutputBlock, stemHintOutputBlock } from './sections/hint-rules.js';
 import type { M4Mode } from '../m4-eligibility.js';
 
 export type DraftPromptContext = {
@@ -53,6 +54,11 @@ function m4SystemLines(ctx?: DraftPromptContext): string {
     );
 }
 
+function hintBlockForStep(ctx?: DraftPromptContext): string {
+    if (ctx?.stepId === 'm4') return m4HintOutputBlock;
+    return stemHintOutputBlock;
+}
+
 export function draftSystemPrompt(ctx?: DraftPromptContext): string {
     const sceneLines =
         ctx?.stepId && ['m1', 'm2', 'm3', 'm_clarify'].includes(ctx.stepId)
@@ -75,6 +81,7 @@ export function draftSystemPrompt(ctx?: DraftPromptContext): string {
         '## Bilingual bar',
         bilingualBarForStep(ctx),
         noGlossOutputBlock,
+        hintBlockForStep(ctx),
         '## Output',
         draftOutputSchema
     );
@@ -122,6 +129,7 @@ export function reviseCopySystemPrompt(ctx?: DraftPromptContext): string {
     return joinSections(
         'Revise interview COPY only — fix grammar, calque, rhythm.',
         'Preserve the register for this step (scene imagist vs M4 plain trap vs M4 felt discriminant).',
+        hintBlockForStep(ctx),
         bilingualBarForStep(ctx),
         draftOutputSchema
     );

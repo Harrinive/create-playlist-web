@@ -1,18 +1,17 @@
 ---
-name: prompt-optimization-loop-playlist
+name: prompt-editing-playlist
 description: >-
   Repo pointer for interview prompt tuning on create-playlist-web. Loads
-  grader-editor-loop, prompt-editing, and playlist-specific runner scripts
+  grader-editor-loop and prompt-editing plus playlist-specific runner scripts
   and canon. Use when optimizing apps/api interview prompts in this repository.
 ---
 
-# Prompt optimization loop — create-playlist-web
+# Prompt editing — create-playlist-web
 
 **Load order:**
 
 1. `~/.cursor/skills/grader-editor-loop/SKILL.md` — process
 2. `~/.cursor/skills/prompt-editing/SKILL.md` — prompt-editing principles
-3. `~/.cursor/skills/prompt-optimization-loop/SKILL.md` — composer (optional; same as 1+2)
 
 This file adds **repo-specific** paths for the Vibelist interview pipeline.
 

@@ -429,3 +429,64 @@ test('fails M4 discriminant with none option', () => {
     assert.equal(result.passed, false);
     assert.ok(result.failures.some((f) => f.includes('must not include id "none"')));
 });
+
+test('fails M1 when hint paraphrases stem ask', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        plannedOptionCount: 4,
+        questionMode: 'SceneFeeling',
+        optionSlots: {},
+        plannedOptionIds: ['a', 'b', 'c', 'd']
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'Rain beads on the window, a door half open. Step into the still that feels like home.',
+        stemZh: '雨点挂在玻璃上，门半掩着。走进那一幕，选你像在的地方。',
+        hintEn: 'Pick the place you can see yourself in.',
+        hintZh: '选一处你能一下走进去的地方。',
+        options: [
+            { id: 'a', labelEn: 'One chair, rain on glass', labelZh: '一把椅子，雨敲玻璃' },
+            { id: 'b', labelEn: 'Late platform, blue signs', labelZh: '蓝色站牌下的月台' },
+            { id: 'c', labelEn: 'Kitchen counter, one lamp', labelZh: '厨房台面，一盏灯' },
+            { id: 'd', labelEn: 'Bus seat under neon', labelZh: '霓虹下的公交座位' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm1',
+        plan,
+        draft,
+        optionMin: 4,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('hint paraphrases stem ask')));
+});
+
+test('allows scene-only M1 stem with plain task hint', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        plannedOptionCount: 4,
+        questionMode: 'SceneFeeling',
+        optionSlots: {},
+        plannedOptionIds: ['a', 'b', 'c', 'd']
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'Rain beads on the window glass; a door stands half open.',
+        stemZh: '雨点挂在玻璃上，门半掩着。',
+        hintEn: 'Pick one place you can step into.',
+        hintZh: '选一处你能走进去的场景。',
+        options: [
+            { id: 'a', labelEn: 'One chair, rain on glass', labelZh: '一把椅子，雨敲玻璃' },
+            { id: 'b', labelEn: 'Late platform, blue signs', labelZh: '蓝色站牌下的月台' },
+            { id: 'c', labelEn: 'Kitchen counter, one lamp', labelZh: '厨房台面，一盏灯' },
+            { id: 'd', labelEn: 'Bus seat under neon', labelZh: '霓虹下的公交座位' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm1',
+        plan,
+        draft,
+        optionMin: 4,
+        optionMax: 6
+    });
+    assert.ok(!result.failures.some((f) => f.includes('hint paraphrases stem ask')));
+});

@@ -5,8 +5,9 @@ Never genre menus, mood adjective stacks, or meta explanations of the question t
 export const storyM1Block = `## M1 Scene — pick a place
 User answers: "I'm in this place" — NOT "where does the music begin".
 
-**Stem shape:** one film-still beat — concrete objects/light + scene invitation. No music/soundtrack vocabulary in stem or options.
-**Anti-patterns:** quiz framing that asks where music "begins" or "lands"; abstract mood without a place you can picture.`;
+**Stem shape:** one film-still beat — concrete objects/light + scene invitation or ask. No music/soundtrack vocabulary in stem or options.
+**Stem vs hint:** default shape A — scene + ask in stem, no hint. Use shape B (scene-only stem + plain hint) only when the stem has zero ask words.
+**Anti-patterns:** quiz framing that asks where music "begins" or "lands"; abstract mood without a place you can picture; hint that repeats 选/走进/最像 when stem already asks.`;
 
 export const storyM2Block = `## M2 Mood — story in the M1 scene
 Ask: which **moment in this scene** is most you? (BGM test)
@@ -17,7 +18,8 @@ NOT abstract mood poetry, NOT body-part choreography, NOT five variants of the s
 **Distinctness:** each option must differ by props, focal points, or actions — not 3+ interchangeable "room/crowd" mood lines.
 **Register spread:** when kinetic genres remain reachable, span social heat across options (intimate still vs busier corners) — not five copies of the same energy level.
 **Continuity:** options stay in the M1 world — no scene reset.
-**Stem vs options:** stem asks or frames the turn — never copy an option chip verbatim in stemEn/stemZh.`;
+**Stem vs options:** stem asks or frames the turn — never copy an option chip verbatim in stemEn/stemZh.
+**Stem vs hint:** when stemEn/stemZh already asks which moment, omit hintEn/hintZh.`;
 
 export const storyM3Block = `## M3 Night chapter — where is tonight in the story?
 Ask: 这一晚，进行到哪一段了？ / Where is tonight in the story?
@@ -25,7 +27,8 @@ Ask: 这一晚，进行到哪一段了？ / Where is tonight in the story?
 Each option = one story beat (1–2 sentences max). Same M1 world.
 
 **Anti-patterns:** tempo/energy labels; body-part choreography; music-pattern narrative dressed as poetry.
-**Shape:** name what is happening (props, light, action) — a chapter beat the user recognizes, not abstract feeling labels.`;
+**Shape:** name what is happening (props, light, action) — a chapter beat the user recognizes, not abstract feeling labels.
+**Stem vs hint:** when stem asks where tonight is in the story, omit hintEn/hintZh.`;
 
 export const logicalDecisionBlock = `## M3 LogicalDecision — groove grain (only when coverageRisk + needsGrooveGrain)
 Plain body-move main lines + you-decide / 你来定. Put groove read in the main label (even pulse, loose sway) — never name genres.`;

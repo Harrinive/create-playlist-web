@@ -1,8 +1,8 @@
 export const draftOutputSchema = `{
   "stemEn": "...",
   "stemZh": "...",
-  "hintEn": "optional",
-  "hintZh": "optional",
+  "hintEn": "optional — omit when stem already asks; mechanics or missing axis only",
+  "hintZh": "optional — omit when stem already asks; mechanics or missing axis only",
   "options": [{ "id": "slug", "labelEn": "...", "labelZh": "..." }]
 }`;
 

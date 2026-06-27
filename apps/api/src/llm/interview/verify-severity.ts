@@ -41,7 +41,9 @@ function isHardDeterministicFailure(failure: string): boolean {
         /M4 option .* matches dropped trap cluster/i.test(failure) ||
         /M4 avoid needs >=3 non-none options/i.test(failure) ||
         /stemEn duplicates option/i.test(failure) ||
-        /stemZh duplicates option/i.test(failure);
+        /stemZh duplicates option/i.test(failure) ||
+        /hint paraphrases stem ask/i.test(failure) ||
+        /M4 hint restates sonic-reject ask/i.test(failure);
 
     return hard;
 }

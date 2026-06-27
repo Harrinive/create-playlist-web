@@ -11,6 +11,7 @@ import { M4_TRAP_LEXICON, verifyGlossAndConcreteness } from './gloss-verify.js';
 import { verifyOptionOverlap } from './option-overlap.js';
 import { verifySceneContinuity } from './scene-continuity.js';
 import { verifyStemDistinctFromOptions } from './verify-stem-distinct.js';
+import { verifyStemHintOverlap } from './verify-stem-hint.js';
 
 export type DeterministicVerifyInput = {
     stepId: string;
@@ -105,6 +106,7 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
     failures.push(...verifyGlossAndConcreteness(stepId, draft));
     failures.push(...verifyOptionOverlap(stepId, draft));
     failures.push(...verifyStemDistinctFromOptions(draft));
+    failures.push(...verifyStemHintOverlap(stepId, draft));
     failures.push(...verifySceneContinuity(stepId, draft, priorLabels ?? []));
 
     for (const opt of options) {

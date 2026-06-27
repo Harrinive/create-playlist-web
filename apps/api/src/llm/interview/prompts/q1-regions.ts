@@ -6,7 +6,7 @@ export const Q1_COVERAGE_REGIONS = [
     },
     {
         id: 'bittersweet-mid',
-        territory: 'winding down, mixed feeling — kitchen cleanup, last train, porch after rain',
+        territory: 'winding down, mixed feeling — kitchen cleanup, last train platform, porch after guests left',
         genreReach: 'indie, alt, mellow pop, sad-not-heavy R&B'
     },
     {
