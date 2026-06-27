@@ -13,19 +13,20 @@ export const discriminant1aBlock = `## Discriminant 1a — energy / pace
 
 export const discriminant1bBlock = `## Discriminant 1b — sonic groove / timbre
 **Stem:** one M3 prop + positive fit question ("which groove feels closest?" / "哪一下节拍最像你？").
-**FORBIDDEN stem words:** not, avoid, skip, must not, 不该, 不要, 最不该
-**Options:** distinct timbre/groove reads — dusty pocket, almost no beat, warm low end, sharp edge.
-**FORBIDDEN option shape:** Skip/Avoid trap labels; trap cluster ids (gym-hype, elevator-muzak, etc.)
+**FORBIDDEN stem words:** not, avoid, skip, must not, 不该, 不要, 最不该, 哪种感觉最贴近
+**Options:** one chip each on **pace · groove grain · timbre/body · space** — clearly separable felt fits.
+**FORBIDDEN option shape:** Skip/Avoid trap labels; trap cluster ids; four parallel 「…感」 labels that differ only by soft adjective.
 
 **Good example (invent fresh stem):**
 - Stem: "Still drifting in that bed — which groove feels closest?"
-- Options: "Loose sway, barely there" · "Warm low end, dusty pocket" · "Wide air, far hum" · "Close breath, soft pulse"
+- Options EN: "Loose sway, barely there" · "Warm low end, dusty pocket" · "Wide air, far hum" · "Close breath, soft pulse"
+- Options ZH (independent): 「几乎静着，只有呼吸在晃」·「低处闷闷的鼓点」·「远一点的空旷回声」·「贴身的细脉冲」
 
 **Bad example (reject):**
-- Stem: "What must it not sound like?"
+- Stem: "What must it not sound like?" / "哪种感觉最贴近？"
 - Options: "Skip gym hype" · "Avoid elevator muzak"
+- Options ZH: 「轻轻摇晃感」「柔和的脉动感」「暖暖的低频厚感」「空气感更开阔」 — overlapping soft-groove axis
 
-Examples: "Beat, breath, or distortion?" · "Dusty drums or almost none?"
 **Map:** primary M5 sonic seed — user pick becomes felt sonic floor.`;
 
 export const discriminant1cBlock = `## Discriminant 1c — latent axis (space / density / grain)

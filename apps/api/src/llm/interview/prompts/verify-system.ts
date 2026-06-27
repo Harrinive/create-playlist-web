@@ -52,6 +52,11 @@ export function copyVerifySystemPrompt(stepId?: string, m4Mode?: M4Mode): string
     return joinSections(
         'Verify bilingual COPY only. Output JSON only.',
         'Preserve the register for this step — do not rewrite M4 plain Skip/Avoid traps into imagist scene chips.',
+        `## Copy quality bar (all steps)
+- stemZh/labelZh must read as native Chinese — FAIL on 英译腔 / word-order calques / adverb calques (…地 mirroring English -ly)
+- EN and ZH same axis — not line-by-line translation; stemEn ≠ stemZh must not be parallel clauses with identical structure
+- M4 avoid stems: scene half native Chinese film-still; reject ask uses 像什么 — FAIL on 变成什么 / 不该变成
+- M4 avoid options: plain trap names from registry; varied reject openers`,
         copyRules,
         verifyOutputSchema
     );

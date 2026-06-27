@@ -39,7 +39,7 @@ export function resolveTurnConfig(
                 draftBlocks: [sceneFeelingBlock(), storyM1Block(), q1OpeningDiversityBlock(), q1CoverageBlock()],
                 logicVerifyIntro:
                     '## Logic verify focus\nQ1: 4–6 distinct film-stills; span social heat AND setting type; stem uses varied opening world family (not default cozy-weather still); stem-option coherence; omit hint when stem asks.',
-                copyVerifyIntro: '## Copy verify focus\nEN free verse + ZH 现代诗 for Q1 stem/options.'
+                copyVerifyIntro: '## Copy verify focus\nEN free verse + ZH native 现代诗 — FAIL 英译腔 and word-order calques.'
             };
 
         case 'm2':
@@ -52,7 +52,7 @@ export function resolveTurnConfig(
                 ],
                 logicVerifyIntro:
                     '## Logic verify focus\nM2: distinct concrete moments in M1 world; register spread when kinetic survives; BGM test; stem-option coherence.',
-                copyVerifyIntro: '## Copy verify focus\nBilingual copy quality for M2 story moments.'
+                copyVerifyIntro: '## Copy verify focus\nNative Chinese scene beats — not line-by-line EN translation.'
             };
 
         case 'm3':
@@ -77,7 +77,7 @@ export function resolveTurnConfig(
                 ],
                 logicVerifyIntro:
                     '## Logic verify focus\nM3 night-chapter beats; same M1 world; no tempo labels or music-pattern poetry.',
-                copyVerifyIntro: '## Copy verify focus\nBilingual copy for story beats.'
+                copyVerifyIntro: '## Copy verify focus\nNative Chinese story beats — not line-by-line EN translation.'
             };
 
         case 'm_clarify':
@@ -110,7 +110,7 @@ export function resolveTurnConfig(
                 logicVerifyIntro:
                     '## Logic verify focus\nM4: stem advances M3 prop; distinct trap clusters in plain labels; includes "none"; only eligible trap clusters.',
                 copyVerifyIntro:
-                    '## Copy verify focus\nPlain Skip/Avoid trap wording in both languages — preserve trap register; no imagist rewrite.'
+                    '## Copy verify focus\nM4 stem: native ZH scene still + reject ask (no calques). Options: plain trap names from registry; varied reject openers.'
             };
         }
 

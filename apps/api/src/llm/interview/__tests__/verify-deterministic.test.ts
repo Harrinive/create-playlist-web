@@ -406,6 +406,64 @@ test('fails M4 avoid option matching dropped trap on kinetic path', () => {
     );
 });
 
+test('fails M4 avoid stemZh with 变成 framing', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        questionMode: 'ClearDiscriminant',
+        optionSlots: {},
+        plannedOptionIds: ['gym-hype', 'none']
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'Voices bounce off concrete — what should the soundtrack not turn into?',
+        stemZh: '声音在水泥墙间来回弹着——这配乐最不该变成什么？',
+        options: [
+            {
+                id: 'gym-hype',
+                labelEn: 'Skip gym hype and workout playlists',
+                labelZh: '避开健身打鸡血和运动歌单'
+            },
+            { id: 'none', labelEn: 'None', labelZh: '都可以' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm4',
+        plan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('变成')));
+});
+
+test('fails M4 discriminant with parallel 感 labelZh chips', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        questionMode: 'PositiveDiscriminant',
+        optionSlots: {},
+        plannedOptionIds: ['a', 'b', 'c', 'd']
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'Lying awake — which groove feels closest?',
+        stemZh: '还醒着——哪一下节拍最像你？',
+        options: [
+            { id: 'a', labelEn: 'Barely-there sway', labelZh: '轻轻摇晃感' },
+            { id: 'b', labelEn: 'Soft steady pulse', labelZh: '柔和脉动感' },
+            { id: 'c', labelEn: 'Warm low-end weight', labelZh: '暖暖低频厚感' },
+            { id: 'd', labelEn: 'Airy open room', labelZh: '空气感更开阔' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm4',
+        plan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('…感')));
+});
+
 test('fails M4 discriminant with none option', () => {
     const plan: TurnPlan = {
         ...basePlan,

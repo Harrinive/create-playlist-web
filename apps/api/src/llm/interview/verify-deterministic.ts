@@ -44,7 +44,9 @@ const PLAIN_REJECT_KEYWORDS =
 const SKIP_AVOID_PREFIX = /^(Skip|Avoid)\s+/i;
 
 const M4_AVOID_STEM_GUARDIAN_BAN =
-    /\b(feel wrong|feels wrong|soundtrack trap|never become|make this moment|which trap would|would make this)\b/i;
+    /\b(feel wrong|feels wrong|soundtrack trap|never become|not become|not turn into|turn into|make this moment|which trap would|would make this)\b/i;
+
+const M4_AVOID_STEM_ZH_TRANSFORM_BAN = /(不该变成|最不该变成|不该成为|不能变成|变成什么|turn into)/i;
 
 const KINETIC_LABEL =
     /\b(crowd|packed|dance|club|party|bar|floor|bodies|neon spill|moving|speakers|gym|parade|block party)\b/i;
@@ -160,6 +162,12 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
                     );
                 }
             }
+            const zhFeelingSuffixCount = options.filter((o) => /感$/.test(o.labelZh.trim())).length;
+            if (options.length >= 4 && zhFeelingSuffixCount >= 3) {
+                failures.push(
+                    'M4 discriminant labelZh: too many parallel 「…感」 chips — partition pace, groove grain, timbre/body, space'
+                );
+            }
         } else {
             const hasNone = options.some((o) => o.id === 'none');
             if (!hasNone) {
@@ -167,7 +175,12 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
             }
             if (M4_AVOID_STEM_GUARDIAN_BAN.test(draft.stemEn)) {
                 failures.push(
-                    `M4 avoid stem uses forbidden guardian framing: ${draft.stemEn.slice(0, 60)}`
+                    `M4 avoid stem uses forbidden guardian/transformation framing: ${draft.stemEn.slice(0, 60)}`
+                );
+            }
+            if (M4_AVOID_STEM_ZH_TRANSFORM_BAN.test(draft.stemZh)) {
+                failures.push(
+                    `M4 avoid stemZh uses forbidden 变成 framing — ask sonic skip with 像什么: ${draft.stemZh.slice(0, 60)}`
                 );
             }
             const { dropped } = computeEligibleTraps(priorAnswers ?? {}, planner);

@@ -39,13 +39,15 @@ M1–M3 = story film-stills. **M4 avoid = plain skip/avoid trap sentences — NO
 Multi-select negatives; include id "none".
 
 **Stem shape:** advance one concrete prop/beat from M3 in the SAME scene world. Ask what the **soundtrack must NOT sound like** — sonic reject only.
-- REQUIRED: scene prop from M3 + plain reject question ("what should this NOT sound like?" / "这配乐最不该像什么？")
-- FORBIDDEN in stem: scene-transformation ("turn into", "become", "shift into"); guardian/meta ("feel wrong", "soundtrack trap", "never become", "make this moment"); vague "feels off in the room"; quiz framing ("which trap would…")
+- REQUIRED: scene prop from M3 + plain reject question ("what should this NOT sound like?" / "这(段)配乐最不该像什么？")
+- stemEn/stemZh: compose each language independently — same prop + ask, not line-by-line translation
+- stemZh scene half: native Chinese film-still (物件/光/动作) — FORBIDDEN calques (发黑地, English adverb order, mirroring stemEn syntax)
+- FORBIDDEN in stem: scene-transformation ("turn into", "become", "shift into", "not become", 变成什么, 不该变成); guardian/meta ("feel wrong", "soundtrack trap", "never become", "make this moment"); vague "feels off in the room"; quiz framing ("which trap would…")
 - Shape vs anti-pattern: ask **what to skip sonically** — not **what would ruin the mood** (guardian drift)
 
 **Options — trap names only (no scene nouns):**
 - labelEn MUST start with **Skip** or **Avoid** + a trap-lexicon word (muzak, hype, cliché, swell, rabbit hole, etc.)
-- labelZh = parallel plain reject (别要… / 避开… / 不要…) — same trap, not scene poetry
+- labelZh = parallel plain trap name — vary openers across options (避开/不要/别选/别听/别掉进), not scene poetry
 - **Id shape:** trap cluster id from eligible roster — not mood-adjective template ids (too-* pattern)
 - **No scene nouns in options:** no bed, kitchen, rain, neon, crowd, etc. — traps only
 - **Filter coherence:** plannedOptionIds must come ONLY from eligible trap clusters in filter hints; honor mandatory keepers (e.g. "Do NOT drop aggressive"). Each trap guards a different remaining hypothesis.`;

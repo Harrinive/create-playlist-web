@@ -128,6 +128,7 @@ export function buildDraftUserPrompt(
 export function reviseCopySystemPrompt(ctx?: DraftPromptContext): string {
     return joinSections(
         'Revise interview COPY only — fix grammar, calque, rhythm.',
+        'stemZh/labelZh: rewrite 英译腔 into native Chinese — same scene/trap axis, not a mirror of EN wording.',
         'Preserve the register for this step (scene imagist vs M4 plain trap vs M4 felt discriminant).',
         hintBlockForStep(ctx),
         bilingualBarForStep(ctx),

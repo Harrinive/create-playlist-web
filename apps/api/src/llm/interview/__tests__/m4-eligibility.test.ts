@@ -69,7 +69,7 @@ test('dropped trap detection matches option labels', () => {
     const match = optionMatchesAnyDroppedTrap(
         'coffee-shop',
         'Skip coffee-shop acoustic',
-        '别要咖啡馆木吉他',
+        '避开咖啡馆木吉他模板',
         dropped
     );
     assert.ok(match);

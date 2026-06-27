@@ -99,7 +99,7 @@ export function m4ExampleBlock(): string {
 
 **Label template (mandatory for every non-none option):**
 - labelEn: starts with **Skip** or **Avoid** + trap lexicon (e.g. "Skip elevator muzak and hold music", "Avoid gym hype and workout playlists", "Skip the algorithm rabbit hole / Discover Weekly rut")
-- labelZh: parallel plain reject (e.g. "别要电梯音乐和背景 Muzak", "避开健身 hype 歌单", "别掉进算法推荐的老路")
+- labelZh: parallel plain trap name — vary openers (避开/不要/别选/别听/别掉进); use canonical registry wording when id matches
 
 **algorithm-rabbit-hole trap:** when eligible, label must use plain **algorithm rabbit hole** or **Discover Weekly rut** wording — not vague "usual mix" alone.
 
@@ -113,7 +113,7 @@ export function m4PlainRejectBlock(): string {
     return `## M4 plain reject labels
 Each non-"none" option = one plain sentence naming what to skip (playlist trap, production cliché).
 **EN template:** "Skip …" or "Avoid …" + trap lexicon word (muzak, hype, cliché, swell, rabbit hole, Discover Weekly rut, etc.)
-**ZH template:** 别要… / 避开… / 不要… — parallel trap name, not scene poetry
+**ZH template:** vary openers (避开/不要/别选/别听/别掉进) — parallel trap name, not scene poetry
 When option id matches a trap cluster, use these canonical labels exactly — copy verify must accept them unchanged:
 
 ${trapLabelTemplatesBlock()}
