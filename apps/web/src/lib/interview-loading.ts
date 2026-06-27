@@ -23,7 +23,7 @@ type LoadingCopy = {
 
 const LOADING_COPY: Record<Locale, LoadingCopy> = {
     en: {
-        badge: 'Full mode',
+        badge: 'Polished',
         title: 'Crafting your question',
         fastTitle: 'Please wait…',
         fastSubtitle: 'Preparing your next question',
@@ -42,7 +42,7 @@ const LOADING_COPY: Record<Locale, LoadingCopy> = {
         }
     },
     zh: {
-        badge: '完整模式',
+        badge: '打磨',
         title: '正在打磨题目',
         fastTitle: '请稍候…',
         fastSubtitle: '正在准备下一题',

@@ -21,6 +21,7 @@ export {
 
 export {
     q1CoverageBlock,
+    q1OpeningDiversityBlock,
     q1PlanContextBlock,
     q1DraftContextBlock,
     q1VerifyContextBlock,

@@ -9,7 +9,7 @@ import {
 } from './sections/story-native.js';
 import type { M4Mode } from '../m4-eligibility.js';
 import { trapLabelTemplatesBlock } from '../m4-eligibility.js';
-import { q1OpeningDiversityBlock } from './sections/q1-opening.js';
+import { q1OpeningDiversityBlock as q1OpeningDiversityText } from './sections/q1-opening.js';
 
 export function sceneFeelingBlock(): string {
     return sceneFeelingText;
@@ -17,6 +17,10 @@ export function sceneFeelingBlock(): string {
 
 export function storyM1Block(): string {
     return storyM1Text;
+}
+
+export function q1OpeningDiversityBlock(): string {
+    return q1OpeningDiversityText;
 }
 
 export function concreteM2Block(): string {
@@ -45,7 +49,7 @@ export function q1CoverageBlock(): string {
 Tag 1–2 region ids per option in optionSlots.
 
 **Diversity principle:** span both **social heat** (intimate ↔ kinetic) AND **setting type** (home, transit, venue, outdoors, etc.) — not six variants of the same room energy.
-${q1OpeningDiversityBlock}
+${q1OpeningDiversityText}
 ${rows.join('\n')}`;
 }
 

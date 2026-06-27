@@ -8,6 +8,7 @@ import {
     m4PlainRejectBlock,
     m5FeltAxesBlock,
     q1CoverageBlock,
+    q1OpeningDiversityBlock,
     sceneFeelingBlock,
     storyM1Block
 } from './prompts.js';

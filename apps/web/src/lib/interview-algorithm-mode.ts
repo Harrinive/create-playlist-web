@@ -15,17 +15,17 @@ export type InterviewAlgorithmModeOption = {
 export const INTERVIEW_ALGORITHM_MODES: InterviewAlgorithmModeOption[] = [
     {
         id: 'full',
-        labelEn: 'Full',
-        labelZh: '完整',
-        descriptionEn: 'Plan → draft → verify',
-        descriptionZh: '规划 → 出题 → 校验'
+        labelEn: 'Polished',
+        labelZh: '打磨',
+        descriptionEn: 'Questions refined before you see them',
+        descriptionZh: '题目会先打磨再给你'
     },
     {
         id: 'fast',
-        labelEn: 'Fast',
+        labelEn: 'Quick',
         labelZh: '快速',
-        descriptionEn: 'Single LLM call',
-        descriptionZh: '单次 LLM 调用'
+        descriptionEn: 'Skip the wait',
+        descriptionZh: '不用等打磨'
     }
 ];
 
