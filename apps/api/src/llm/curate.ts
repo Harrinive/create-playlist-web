@@ -1,4 +1,5 @@
 import type { CompactBrief, ProposedLine } from '../types/interview.js';
+import type { BilingualText } from '../types/interview-step.js';
 import type { Env } from '../config.js';
 import { completeChat } from '../llm-router/index.js';
 import { formatBriefBlock } from '../brief.js';
@@ -20,7 +21,13 @@ const TASK_RULES = `Rules:
 - Output ONLY these three blocks (in this order):
 
 ## Sequence intent
+Two subsections — same listen arc in both languages, composed independently (not translation):
+
+### English
 3–5 sentences: listen arc for all 26. Declare 0–2 EXTRA ordering dimensions beyond energy when they matter for this brief (e.g. density, brightness, warmth, vocal presence)—tag those only on lines where transitions need them.
+
+### 中文
+3–5 句：26 首的聆听走向。能量之外如有重要的排序维度（如密度、亮度、温度、人声存在感），在此说明 0–2 个——只在需要标注的过渡处打 tag。用自然简体中文独立撰写，不要英译中腔调。
 
 ## Ordering axes
 One line: which tags appear on each line (e.g. "energy · cue · role (sparse) · density (dip & lift only)").
@@ -34,7 +41,7 @@ Energy + cue REQUIRED every line. Cues = felt qualities from the brief (live poc
 When HYPOTHESES lists multiple clusters: allocate ≥2–4 tracks per cluster across ~26 lines; Sequence intent must name all clusters; no silent collapse to one subgenre.`;
 
 export type CurateResult = {
-    sequenceIntent: string;
+    sequenceIntent: BilingualText;
     orderingAxes: string;
     lines: ProposedLine[];
     raw: string;
@@ -84,8 +91,27 @@ function extractSection(raw: string, heading: string, nextHeading?: string): str
     return raw.slice(from, end === -1 ? raw.length : end).trim();
 }
 
+const SEQUENCE_EN_HEADING = '### English';
+const SEQUENCE_ZH_HEADING = '### 中文';
+
+export function parseSequenceIntent(section: string): BilingualText {
+    const enStart = section.indexOf(SEQUENCE_EN_HEADING);
+    const zhStart = section.indexOf(SEQUENCE_ZH_HEADING);
+
+    if (enStart !== -1 && zhStart !== -1 && zhStart > enStart) {
+        return {
+            en: section.slice(enStart + SEQUENCE_EN_HEADING.length, zhStart).trim(),
+            zh: section.slice(zhStart + SEQUENCE_ZH_HEADING.length).trim()
+        };
+    }
+
+    const trimmed = section.trim();
+    return { en: trimmed, zh: '' };
+}
+
 export function parseCurateResponse(raw: string): CurateResult {
-    const sequenceIntent = extractSection(raw, '## Sequence intent', '## Ordering axes');
+    const sequenceSection = extractSection(raw, '## Sequence intent', '## Ordering axes');
+    const sequenceIntent = parseSequenceIntent(sequenceSection);
     const orderingAxes = extractSection(raw, '## Ordering axes', '## Proposed tracklist');
     const tracklistSection = extractSection(raw, '## Proposed tracklist');
     const lines = parseProposedLines(tracklistSection);
@@ -121,7 +147,7 @@ ${TASK_RULES}`;
             {
                 role: 'system',
                 content:
-                    'You are an expert music supervisor. Follow the output format exactly. English only.'
+                    'You are an expert music supervisor. Follow the output format exactly. English for tracklist and tags; bilingual EN/ZH for Sequence intent only.'
             },
             { role: 'user', content: userPrompt }
         ],

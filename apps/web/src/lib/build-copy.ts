@@ -2,8 +2,23 @@ import type { Locale } from './locale';
 
 type Copy = { en: string; zh: string };
 
+export type BilingualProse = { en: string; zh: string };
+
 function pick(locale: Locale, copy: Copy): string {
     return locale === 'zh' ? copy.zh : copy.en;
+}
+
+/** Normalize legacy string-only sequence intent from session storage. */
+export function normalizeSequenceIntent(value: string | BilingualProse): BilingualProse {
+    if (typeof value === 'string') return { en: value.trim(), zh: '' };
+    return { en: value.en.trim(), zh: value.zh.trim() };
+}
+
+/** Pick listen-arc prose for the active locale. Falls back to English when zh is missing. */
+export function pickSequenceIntent(locale: Locale, intent: string | BilingualProse): string {
+    const { en, zh } = normalizeSequenceIntent(intent);
+    const text = locale === 'zh' && zh ? zh : en;
+    return formatSequenceIntent(text);
 }
 
 export function buildProgressCurating(locale: Locale, modelLabel: string): string {

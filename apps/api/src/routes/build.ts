@@ -50,6 +50,19 @@ const proposedLineSchema = z.object({
     raw: z.string().min(1)
 });
 
+const sequenceIntentSchema = z.union([
+    z.string(),
+    z.object({ en: z.string(), zh: z.string() })
+]);
+
+function normalizeSequenceIntent(
+    value: string | { en: string; zh: string } | undefined
+): { en: string; zh: string } {
+    if (!value) return { en: '', zh: '' };
+    if (typeof value === 'string') return { en: value.trim(), zh: '' };
+    return { en: value.en.trim(), zh: value.zh.trim() };
+}
+
 const compactBriefSchema = z.object({
     anchor: z.string(),
     emotion: z.string(),
@@ -226,7 +239,7 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
                 brief: compactBriefSchema,
                 answers: interviewAnswersSchema,
                 locale: z.enum(['en', 'zh']).optional().default('en'),
-                sequenceIntent: z.string().optional(),
+                sequenceIntent: sequenceIntentSchema.optional(),
                 proposedCount: z.number().int().positive().optional(),
                 tracks: z
                     .array(
@@ -287,14 +300,7 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
             }
         }
 
-        let sequenceIntent = body.data.sequenceIntent?.trim() ?? '';
-        if (body.data.locale === 'zh' && sequenceIntent) {
-            try {
-                sequenceIntent = await translateProseToChinese(ctx.env, sequenceIntent);
-            } catch {
-                // Keep English sequence text if translation fails.
-            }
-        }
+        const sequenceIntent = normalizeSequenceIntent(body.data.sequenceIntent);
 
         try {
             const playlist = await createPlaylist(accessToken, { name, description, public: false });

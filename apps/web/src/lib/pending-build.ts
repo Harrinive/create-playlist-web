@@ -1,3 +1,4 @@
+import type { BilingualProse } from './build-copy';
 import { PENDING_BUILD_KEY } from './session-keys';
 
 export type CompactBriefSnapshot = {
@@ -38,7 +39,7 @@ export type VerifySnapshot = {
 
 export type PendingBuildSnapshot = {
     brief: CompactBriefSnapshot;
-    sequenceIntent: string;
+    sequenceIntent: BilingualProse;
     lines: ProposedLineSnapshot[];
     verified: VerifySnapshot;
     model: string | null;
@@ -56,8 +57,16 @@ export function readPendingBuild(): PendingBuildSnapshot | null {
     try {
         const raw = sessionStorage.getItem(PENDING_BUILD_KEY);
         if (!raw) return null;
-        const parsed = JSON.parse(raw) as PendingBuildSnapshot;
+        const parsed = JSON.parse(raw) as PendingBuildSnapshot & { sequenceIntent?: string | BilingualProse };
         if (!parsed?.lines?.length || !parsed.verified?.tracks) return null;
+        if (parsed.sequenceIntent) {
+            parsed.sequenceIntent =
+                typeof parsed.sequenceIntent === 'string'
+                    ? { en: parsed.sequenceIntent, zh: '' }
+                    : parsed.sequenceIntent;
+        } else {
+            parsed.sequenceIntent = { en: '', zh: '' };
+        }
         return parsed;
     } catch {}
     return null;

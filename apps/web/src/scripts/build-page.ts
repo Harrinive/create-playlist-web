@@ -7,17 +7,20 @@ import {
     buildProgressPublishing,
     buildProgressVerifying,
     buildVerifyFallbackCopy,
-    formatSequenceIntent,
+    pickSequenceIntent,
     resultLabel,
-    resultTracksLine
+    resultTracksLine,
+    type BilingualProse
 } from '../lib/build-copy';
 import {
     curateModelLabel,
     curateModelShortLabel,
     resolveCurateModelId
 } from '../lib/curate-model';
+import { createLocaleScope } from '../lib/locale-scope';
 import { readLocale } from '../lib/locale';
-import { localizeApiError, localizeBuildError, localizeOAuthError } from '../lib/localized-errors';
+import { createPageScope } from '../lib/page-scope';
+import { normalizeSessionState } from '../lib/session-normalize';
 import {
     clearPendingBuild,
     readPendingBuild,
@@ -26,6 +29,7 @@ import {
 } from '../lib/pending-build';
 import { readBuildResult, saveBuildResult, type BuildResultSnapshot } from '../lib/last-delivery';
 import { readStoredInterviewAnswers } from '../lib/session-answers';
+import { localizeApiError, localizeBuildError, localizeOAuthError } from '../lib/localized-errors';
 import { crossFadePanels, revealPanel } from '../lib/motion';
 
 type MeResponse =
@@ -37,7 +41,7 @@ type ProposedLine = PendingBuildSnapshot['lines'][number];
 
 type CurateResponse = {
     brief: CompactBrief;
-    sequenceIntent: string;
+    sequenceIntent: BilingualProse;
     lines: ProposedLine[];
     proposedCount: number;
     model?: string | null;
@@ -50,15 +54,19 @@ type PublishResponse = {
     playlist: { id: string; url: string; name: string };
     trackCount: number;
     proposedCount: number;
-    sequenceIntent: string;
+    sequenceIntent: BilingualProse;
     tracks: VerifyResponse['tracks'];
     skipped: Array<{ proposed: string; reason: string }>;
 };
 
-const abortByRoot = new WeakMap<HTMLElement, AbortController>();
+
+function isAbortError(error: unknown): boolean {
+    return error instanceof DOMException && error.name === 'AbortError';
+}
 
 type BuildStatusState =
     | { kind: 'oauth'; code: string }
+    | { kind: 'oauthConnected' }
     | { kind: 'api'; raw: string }
     | { kind: 'devHost' }
     | { kind: 'apiUnreachable' };
@@ -91,10 +99,8 @@ export function initBuildPage() {
     const root = document.getElementById('build-page');
     if (!root) return;
 
-    abortByRoot.get(root)?.abort();
-    const ac = new AbortController();
-    abortByRoot.set(root, ac);
-    const { signal } = ac;
+    normalizeSessionState();
+    const { signal } = createPageScope(root);
 
     const missingEl = document.getElementById('build-missing');
     const contentEl = document.getElementById('build-content');
@@ -140,8 +146,16 @@ export function initBuildPage() {
 
     let lastStatus: BuildStatusState | null = null;
     let lastProgress: BuildProgressState | null = null;
+    let lastFallbackState: {
+        okCount: number;
+        proposedCount: number;
+        successRate: number;
+        repeatFallback: boolean;
+    } | null = null;
+    let lastPublishResult: PublishResponse | null = null;
     let pendingSnapshot: PendingBuildSnapshot | null = readPendingBuild();
     let isAuthenticated = false;
+    let pipelineInFlight = false;
 
     function renderStatus() {
         if (!statusEl || !lastStatus) return;
@@ -151,6 +165,9 @@ export function initBuildPage() {
                 statusEl.textContent = localizeBuildError('connectionFailed', locale, {
                     error: localizeOAuthError(lastStatus.code, locale)
                 });
+                break;
+            case 'oauthConnected':
+                statusEl.textContent = localizeBuildError('connectionSuccess', locale);
                 break;
             case 'api':
                 statusEl.textContent = localizeApiError(lastStatus.raw, locale, 'build');
@@ -171,6 +188,7 @@ export function initBuildPage() {
         successRate: number,
         repeatFallback = false
     ) {
+        lastFallbackState = { okCount, proposedCount, successRate, repeatFallback };
         if (!fallbackBodyEl) return;
         const copy = repeatFallback
             ? buildImportRepeatFallbackCopy(readLocale())
@@ -203,20 +221,37 @@ export function initBuildPage() {
         target.hidden = false;
     }
 
-        document.addEventListener(
-        'locale-changed',
-        () => {
-            if (lastStatus) renderStatus();
-            if (lastProgress) {
-                renderProgress(progressEl);
-                renderProgress(importProgressEl);
+    function relocalizeDynamicUi() {
+        if (lastStatus) renderStatus();
+        if (lastProgress) {
+            renderProgress(progressEl);
+            renderProgress(importProgressEl);
+        }
+        if (pendingSnapshot && previewEl && !previewEl.hidden) {
+            renderPreview(pendingSnapshot);
+        }
+        if (lastFallbackState && fallbackEl && !fallbackEl.hidden) {
+            renderVerifyFallback(
+                lastFallbackState.okCount,
+                lastFallbackState.proposedCount,
+                lastFallbackState.successRate,
+                lastFallbackState.repeatFallback
+            );
+        }
+        if (resultsEl && !resultsEl.hidden) {
+            if (lastPublishResult) {
+                renderResults(lastPublishResult);
+            } else {
+                const published = readBuildResult();
+                if (published) renderSavedBuildResult(published);
             }
-            if (pendingSnapshot && previewEl && !previewEl.hidden) {
-                renderPreview(pendingSnapshot);
-            }
-        },
-        { signal }
-    );
+        }
+        void syncCurateModelLabel();
+        updateImportButtonLabels();
+    }
+
+    const localeScope = createLocaleScope(signal);
+    localeScope.onRelocalize(relocalizeDynamicUi);
 
     const error = readUrlFlag('error');
     const connected = readUrlFlag('connected');
@@ -224,6 +259,9 @@ export function initBuildPage() {
 
     if (statusEl && error) {
         lastStatus = { kind: 'oauth', code: error };
+        renderStatus();
+    } else if (statusEl && connected) {
+        lastStatus = { kind: 'oauthConnected' };
         renderStatus();
     }
 
@@ -349,7 +387,7 @@ export function initBuildPage() {
         if (!previewEl || !previewOrder) return;
         pendingSnapshot = snapshot;
         const locale = readLocale();
-        const sequence = snapshot.sequenceIntent ? formatSequenceIntent(snapshot.sequenceIntent) : '';
+        const sequence = pickSequenceIntent(locale, snapshot.sequenceIntent);
 
         setPageHeader('preview');
         if (pageMetaEl) {
@@ -421,9 +459,10 @@ export function initBuildPage() {
         if (signal.aborted) return;
         if (!resultsEl || !resultsSummary || !resultsOrder) return;
 
+        lastPublishResult = data;
         setPageHeader('results');
         const locale = readLocale();
-        const sequence = data.sequenceIntent ? formatSequenceIntent(data.sequenceIntent) : '';
+        const sequence = pickSequenceIntent(locale, data.sequenceIntent);
 
         resultsSummary.innerHTML = `
             <dl class="build-results__meta">
@@ -519,7 +558,8 @@ export function initBuildPage() {
     }
 
     async function runGenerate() {
-        if (!startBtn || signal.aborted) return;
+        if (!startBtn || signal.aborted || pipelineInFlight) return;
+        pipelineInFlight = true;
         startBtn.disabled = true;
         if (regenerateBtn) regenerateBtn.disabled = true;
         if (resultsEl) resultsEl.hidden = true;
@@ -562,9 +602,9 @@ export function initBuildPage() {
             hideProgress();
             const snapshot = snapshotFromCurated(curated, verified, model.id, curateLabel);
             savePendingBuild(snapshot);
-            renderPreview(snapshot, false);
+            renderPreview(snapshot);
         } catch (buildError) {
-            if (signal.aborted) return;
+            if (signal.aborted || isAbortError(buildError)) return;
             hideProgress();
             if (statusEl) {
                 const raw =
@@ -573,6 +613,7 @@ export function initBuildPage() {
                 renderStatus();
             }
         } finally {
+            pipelineInFlight = false;
             if (!signal.aborted) {
                 if (startBtn) startBtn.disabled = false;
                 if (regenerateBtn) regenerateBtn.disabled = false;
@@ -581,9 +622,11 @@ export function initBuildPage() {
     }
 
     async function runImport() {
-        if (!importBtn || !pendingSnapshot || signal.aborted) return;
+        if (!importBtn || !pendingSnapshot || signal.aborted || pipelineInFlight) return;
+        pipelineInFlight = true;
 
         if (!isAuthenticated) {
+            pipelineInFlight = false;
             savePendingBuild(pendingSnapshot);
             window.location.href = `${api}/auth/spotify`;
             return;
@@ -651,16 +694,16 @@ export function initBuildPage() {
             if (signal.aborted) return;
             hideProgress();
             renderResults(published);
-        } catch (buildError) {
-            if (signal.aborted) return;
+        } catch (error) {
+            if (signal.aborted || isAbortError(error)) return;
             hideProgress();
             if (statusEl) {
-                const raw =
-                    buildError instanceof Error ? buildError.message : 'Publish failed';
+                const raw = error instanceof Error ? error.message : 'Publish failed';
                 lastStatus = { kind: 'api', raw };
                 renderStatus();
             }
         } finally {
+            pipelineInFlight = false;
             if (!signal.aborted) {
                 importBtn.disabled = false;
                 if (regenerateBtn) regenerateBtn.disabled = false;
@@ -682,7 +725,8 @@ export function initBuildPage() {
             } else {
                 updateAuthUi();
             }
-        } catch {
+        } catch (error) {
+            if (signal.aborted || isAbortError(error)) return;
             if (statusEl) {
                 lastStatus = { kind: 'apiUnreachable' };
                 renderStatus();
@@ -692,6 +736,7 @@ export function initBuildPage() {
     }
 
     function initPanels() {
+        if (signal.aborted) return;
         const published = readBuildResult();
         if (pendingSnapshot) {
             renderPreview(pendingSnapshot);
@@ -706,8 +751,25 @@ export function initBuildPage() {
     logoutBtn?.addEventListener(
         'click',
         async () => {
-            await fetch(`${api}/auth/logout`, { method: 'POST', credentials: 'include' });
-            updateAuthUi();
+            try {
+                const response = await fetch(`${api}/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    signal
+                });
+                if (signal.aborted) return;
+                if (!response.ok) throw new Error('Logout failed');
+                updateAuthUi();
+            } catch (error) {
+                if (signal.aborted || isAbortError(error)) return;
+                if (statusEl) {
+                    lastStatus = {
+                        kind: 'api',
+                        raw: error instanceof Error ? error.message : 'Logout failed'
+                    };
+                    renderStatus();
+                }
+            }
         },
         { signal }
     );
@@ -734,6 +796,9 @@ export function initBuildPage() {
     importBtn?.addEventListener('click', () => void runImport(), { signal });
 
     void loadSession().then(() => {
+        if (signal.aborted) return;
         initPanels();
     });
+
+    localeScope.runNow();
 }
