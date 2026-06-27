@@ -18,6 +18,9 @@ export const planOutputSchema = `{
   "q1RegionsToCover": ["intimate-still", "kinetic-high"],
   "stemGuidance": "...",
   "optionGuidance": "...",
+  "m1StemMode": "threshold-invite",
+  "optionRole": "place-partition",
+  "note": "m1StemMode + optionRole: M1 only — use exact enum strings; omit on M2+"
   "questionMode": "SceneFeeling",
   "plannedOptionIds": ["slug-a", "slug-b"],
   "optionSlots": { "slug-a": { "regionId": "bittersweet-mid" } },

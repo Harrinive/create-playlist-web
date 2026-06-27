@@ -42,6 +42,9 @@ function isHardDeterministicFailure(failure: string): boolean {
         /M4 avoid needs >=3 non-none options/i.test(failure) ||
         /stemEn duplicates option/i.test(failure) ||
         /stemZh duplicates option/i.test(failure) ||
+        /stem missing explicit ask/i.test(failure) ||
+        /M4 avoid stemZh uses forbidden 变成/i.test(failure) ||
+        /M4 discriminant labelZh: too many parallel/i.test(failure) ||
         /hint paraphrases stem ask/i.test(failure) ||
         /M4 hint restates sonic-reject ask/i.test(failure);
 

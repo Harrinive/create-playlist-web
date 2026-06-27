@@ -60,21 +60,32 @@ function hintBlockForStep(ctx?: DraftPromptContext): string {
 }
 
 export function draftSystemPrompt(ctx?: DraftPromptContext): string {
-    const sceneLines =
-        ctx?.stepId && ['m1', 'm2', 'm3', 'm_clarify'].includes(ctx.stepId)
-            ? '- Options: concrete objects + events in main labels'
-            : '- Options: follow turn plan shape for this step';
+    const optionLines =
+        ctx?.stepId === 'm1'
+            ? '- M1 options: each chip = one distinct **place/world** (coverage partition) — not moments inside the stem'
+            : ctx?.stepId && ['m2', 'm3', 'm_clarify'].includes(ctx.stepId)
+              ? '- Options: concrete objects + events in main labels'
+              : '- Options: follow turn plan shape for this step';
+
+    const m1StemLines =
+        ctx?.stepId === 'm1'
+            ? joinSections(
+                  '- M1 user job: pick which world — stem = threshold invite + explicit ask',
+                  '- M1 stem must NOT lock one option world (no single-place caption without ask)'
+              )
+            : '';
 
     return joinSections(
         'You draft music mood interview questions (v4 story-native).',
         twoLayerRule,
         creativityRules,
         musicPatternBan,
-        '- Follow the turn plan exactly',
-        '- Stems: one scene beat in stemEn/stemZh — stem must ask/frame, never copy an option chip verbatim',
-        '- M1 stems: scene-only — no music/soundtrack vocabulary in stemEn or stemZh',
+        '- Follow the turn plan exactly — stemGuidance, optionGuidance, plannedOptionIds are authoritative',
+        '- Stems: stemEn/stemZh must include an explicit ask — never scene-only caption',
+        m1StemLines,
+        '- M1 stems: no music/soundtrack vocabulary in stemEn or stemZh',
         m4SystemLines(ctx),
-        sceneLines,
+        optionLines,
         '- Bilingual EN + ZH; compose each language independently',
         '- Option ids: lowercase kebab-case',
         '- No manual "something else" option',

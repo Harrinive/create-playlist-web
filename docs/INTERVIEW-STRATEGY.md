@@ -2,7 +2,8 @@
 
 **Status:** Implemented in `apps/api/src/llm/interview/`  
 **Product canon:** `~/.cursor/skills/create-playlist/step-1-interview.md`  
-**M4 detail:** [INTERVIEW-M4-AVOID.md](./INTERVIEW-M4-AVOID.md)
+**M4 detail:** [INTERVIEW-M4-AVOID.md](./INTERVIEW-M4-AVOID.md)  
+**Prompt tuning (shape-first):** [INTERVIEW-PROMPT-STRATEGY.md](./INTERVIEW-PROMPT-STRATEGY.md)
 
 ---
 

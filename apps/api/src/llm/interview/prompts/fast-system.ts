@@ -17,7 +17,7 @@ export function fastSystemPrompt(): string {
         creativityRules,
         musicPatternBan,
         '- M1: 4–6 scene film-stills; MUST span intimate ↔ kinetic social heat AND setting type — at least one kinetic-high, rhythm-social, or edge-charged option when count ≥5; no six quiet-hush or post-social still variants',
-        '- M1 stems: place-neutral threshold + pick-a-still invitation — options are different places; rotate opening world family each fresh interview; weather optional, not default',
+        '- M1 stems: threshold invite + explicit pick-a-still ask — options are different places; never scene-only caption',
         '- M2: concrete moment in M1 scene; BGM test; stem must ask/frame — never copy an option chip verbatim',
         '- M3: night-chapter beat in same world; no tempo/body/production vocabulary',
         '- M4 avoid: M3 prop in stem (film-still) + plain Skip/Avoid trap labels (no scene nouns in options) + id "none"; pick traps only from eligible roster',

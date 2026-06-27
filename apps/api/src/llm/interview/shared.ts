@@ -73,6 +73,23 @@ export const optionSlotSchema = z.object({
 
 export type OptionSlot = z.infer<typeof optionSlotSchema>;
 
+function normalizeM1StemMode(val: unknown): 'threshold-invite' | undefined {
+    if (val === 'threshold-invite') return 'threshold-invite';
+    if (typeof val === 'string' && /threshold|invite|pick-a-still|pick a still/i.test(val)) {
+        return 'threshold-invite';
+    }
+    return undefined;
+}
+
+function normalizeOptionRole(val: unknown): 'place-partition' | 'moment-in-scene' | undefined {
+    if (val === 'place-partition' || val === 'moment-in-scene') return val;
+    if (typeof val === 'string') {
+        if (/place|world|coverage|setting|partition|location/i.test(val)) return 'place-partition';
+        if (/moment|beat|chapter|within-the-scene|in-scene/i.test(val)) return 'moment-in-scene';
+    }
+    return undefined;
+}
+
 function preprocessTurnPlan(val: unknown): unknown {
     if (typeof val !== 'object' || val === null) return val;
     const o = val as Record<string, unknown>;
@@ -100,7 +117,20 @@ function preprocessTurnPlan(val: unknown): unknown {
                   ? Math.min(6, idCount)
                   : 4,
         filterDrops: Array.isArray(o.filterDrops) ? o.filterDrops : [],
-        optionSlots: o.optionSlots && typeof o.optionSlots === 'object' ? o.optionSlots : {}
+        optionSlots: o.optionSlots && typeof o.optionSlots === 'object' ? o.optionSlots : {},
+        axis: typeof o.axis === 'string' && o.axis.trim() ? o.axis : 'scene partition',
+        sceneBeat: typeof o.sceneBeat === 'string' && o.sceneBeat.trim() ? o.sceneBeat : 'film still',
+        lateralHook: typeof o.lateralHook === 'boolean' ? o.lateralHook : false,
+        stemGuidance:
+            typeof o.stemGuidance === 'string' && o.stemGuidance.trim()
+                ? o.stemGuidance
+                : 'threshold invite + explicit ask',
+        optionGuidance:
+            typeof o.optionGuidance === 'string' && o.optionGuidance.trim()
+                ? o.optionGuidance
+                : 'distinct story options per plan',
+        m1StemMode: normalizeM1StemMode(o.m1StemMode),
+        optionRole: normalizeOptionRole(o.optionRole)
     };
 }
 
@@ -118,6 +148,8 @@ export const turnPlanSchema = z.preprocess(
     q1RegionsToCover: z.array(z.string()).optional(),
     stemGuidance: z.string().min(1),
     optionGuidance: z.string().min(1),
+    m1StemMode: z.enum(['threshold-invite']).optional(),
+    optionRole: z.enum(['place-partition', 'moment-in-scene']).optional(),
     questionMode: questionModeSchema.default('SceneFeeling'),
     optionSlots: z.record(z.string(), optionSlotSchema).default({}),
     plannedOptionIds: z.array(z.string()).min(2).max(6).optional(),

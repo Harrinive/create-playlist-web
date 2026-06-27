@@ -5,7 +5,7 @@
 import type { Env } from '../src/config.js';
 import { loadEnv } from '../src/config.js';
 import { generateInterviewStep } from '../src/llm/interview.js';
-import { resolveInterviewDefaultModel } from '../src/llm/interview-models.js';
+import { resolveInterviewDefaultModel, normalizeInterviewModelId } from '../src/llm/interview-models.js';
 import type { InterviewAnswers } from '../src/types/interview.js';
 import { emptyPlannerState } from '../src/types/interview-planner.js';
 import type { InterviewPlannerState } from '../src/types/interview-planner.js';
@@ -116,39 +116,51 @@ async function runPath(
 
 async function main() {
     const env = loadEnv();
-    const model = resolveInterviewDefaultModel(env);
-    if (!model) {
-        console.error('No interview model configured');
-        process.exit(1);
-    }
+    const modelArg = process.argv[2];
+    const models = modelArg
+        ? [modelArg]
+        : ['openai:gpt-5.4-mini', 'anthropic:claude-haiku-4-5'];
 
-    console.error(`Interview path matrix — model: ${model}\n`);
+    let totalFail = 0;
 
-    const results: PathResult[] = [];
-    for (const path of INTERVIEW_PATHS) {
-        console.error(`Running path: ${path.id}…`);
-        const plannerState = { ...emptyPlannerState(), ...path.planner };
-        results.push(await runPath(env, model, path.id, path.priorAnswers, plannerState));
-    }
-
-    let failCount = 0;
-    for (const r of results) {
-        const status = r.ok ? 'PASS' : 'FAIL';
-        if (!r.ok) failCount += 1;
-        console.log(`\n[${status}] ${r.pathId}`);
-        if (r.error) console.log(`  ERROR: ${r.error}`);
-        for (const s of r.steps) {
-            const mark = s.ok ? 'ok' : 'HARD';
-            console.log(`  ${s.stepId} (${mark}, ${s.optionCount} opts): ${s.stemPreview}`);
-            for (const f of s.hardFailures) console.log(`    HARD: ${f}`);
-            for (const f of s.softFailures.slice(0, 2)) console.log(`    soft: ${f}`);
+    for (const candidate of models) {
+        const useModel = normalizeInterviewModelId(env, candidate) ?? candidate;
+        if (!useModel.includes(':')) {
+            console.error(`Unknown model: ${candidate}`);
+            totalFail += 1;
+            continue;
         }
+
+        console.error(`\n======== Interview path matrix — model: ${useModel} ========\n`);
+
+        const results: PathResult[] = [];
+        for (const path of INTERVIEW_PATHS) {
+            console.error(`Running path: ${path.id}…`);
+            const plannerState = { ...emptyPlannerState(), ...path.planner };
+            results.push(await runPath(env, useModel, path.id, path.priorAnswers, plannerState));
+        }
+
+        let failCount = 0;
+        for (const r of results) {
+            const status = r.ok ? 'PASS' : 'FAIL';
+            if (!r.ok) failCount += 1;
+            console.log(`\n[${status}] ${r.pathId}`);
+            if (r.error) console.log(`  ERROR: ${r.error}`);
+            for (const s of r.steps) {
+                const mark = s.ok ? 'ok' : 'HARD';
+                console.log(`  ${s.stepId} (${mark}, ${s.optionCount} opts): ${s.stemPreview}`);
+                for (const f of s.hardFailures) console.log(`    HARD: ${f}`);
+                for (const f of s.softFailures.slice(0, 2)) console.log(`    soft: ${f}`);
+            }
+        }
+
+        console.log(
+            `\n=== ${useModel}: ${results.length - failCount}/${results.length} paths pass (no hard det failures) ===`
+        );
+        totalFail += failCount;
     }
 
-    console.log(
-        `\n=== SUMMARY: ${results.length - failCount}/${results.length} paths pass (no hard det failures) ===`
-    );
-    process.exit(failCount > 0 ? 1 : 0);
+    process.exit(totalFail > 0 ? 1 : 0);
 }
 
 main().catch((err) => {

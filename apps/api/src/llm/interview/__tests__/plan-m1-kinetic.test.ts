@@ -52,8 +52,8 @@ test('Q1 verify accepts kinetic crowd labels when optionSlots lack kinetic tags'
         }
     };
     const draft: LlmStepDraft = {
-        stemEn: 'The hallway is still warm from everyone leaving.',
-        stemZh: '走廊还留着人群散去后的热气。',
+        stemEn: 'Pick a still — where are you right now? The hallway is still warm from everyone leaving.',
+        stemZh: '选一处画面——你此刻在哪里？走廊还留着人群散去后的热气。',
         options: [
             { id: 'quiet', labelEn: 'Empty cups, lamp still on', labelZh: '空杯子，灯还亮着' },
             { id: 'club', labelEn: 'Packed dance floor, bodies moving', labelZh: '挤满的舞池，人群在动' }

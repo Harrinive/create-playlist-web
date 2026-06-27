@@ -54,7 +54,11 @@ ${rows.join('\n')}`;
 }
 
 export function q1PlanContextBlock(): string {
-    return `${q1CoverageBlock()}\n\nUser-facing: **4–6** options. Regions: ${Q1_REGION_IDS.join(', ')}`;
+    return `${q1CoverageBlock()}
+
+**M1 plan shape (mandatory):** m1StemMode=threshold-invite · optionRole=place-partition · stemGuidance must require explicit pick-a-still ask · optionGuidance = distinct places/worlds per region.
+
+User-facing: **4–6** options. Regions: ${Q1_REGION_IDS.join(', ')}`;
 }
 
 export function q1DraftContextBlock(regionsToCover: string[]): string {

@@ -41,13 +41,15 @@ Mechanical validators (code, not prompt prose):
 | `apps/api/scripts/orchestrate-flow.ts` | Full chain with auto-pick |
 | `apps/api/scripts/orchestrate-to-step.ts` | Run to target step with explicit picks |
 | `apps/api/scripts/orchestrate-path.ts` | Full chain for a fixed story path |
-| `apps/api/scripts/run-interview-path-matrix.ts` | All paths M1→M4 regression matrix |
+| `apps/api/scripts/run-interview-path-matrix.ts` | All paths M1→M4 regression matrix (both models if no arg) |
 | `apps/api/scripts/interview-paths.ts` | Fixed path presets (incl. deep-prog-house) |
 | `apps/api/scripts/test-m4-scenarios.ts` | Batch M4 scenarios (avoid + discriminant paths) |
 | `apps/api/scripts/test-interview-step.ts` | Single step smoke test |
 
 ```bash
 cd apps/api && npx tsx scripts/run-interview-path-matrix.ts
+cd apps/api && npx tsx scripts/run-interview-path-matrix.ts openai:gpt-5.4-mini
+cd apps/api && npx tsx scripts/run-interview-path-matrix.ts anthropic:claude-haiku-4-5
 cd apps/api && npx tsx scripts/orchestrate-path.ts deep-prog-house
 cd apps/api && npx tsx scripts/test-m4-scenarios.ts
 cd apps/api && npm run test:verify

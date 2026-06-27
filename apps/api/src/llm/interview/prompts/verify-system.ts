@@ -21,6 +21,7 @@ export function logicVerifySystemPrompt(): string {
         musicPatternBan,
         '## Checks (same principles as draft)',
         `1. **Stem-option coherence** — stem sets the scene/question; every option belongs in that frame (no orphan beats or mismatched register)
+1a. **Explicit ask (M1–M3)** — stemEn/stemZh must include a pick/choose ask; M1 stem must be threshold-invite (not one-place caption); M1 options = distinct places/worlds
 1b. **Stem ≠ chip** — stemEn/stemZh must not duplicate any option label verbatim (stem frames/asks; options are the picks)
 2. **Advance scene** — stem does not caption user's last pick
 3. **Story/BGM test** — each option feels like different background music (M2/M3)

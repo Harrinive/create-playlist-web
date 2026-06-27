@@ -406,6 +406,34 @@ test('fails M4 avoid option matching dropped trap on kinetic path', () => {
     );
 });
 
+test('fails M1 stem without explicit ask', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        questionMode: 'SceneFeeling',
+        optionSlots: {},
+        plannedOptionIds: ['a', 'b', 'c', 'd']
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'Sunlight cuts across a workbench — wood shavings in the beam.',
+        stemZh: '阳光切过工作台——木屑在光线里闪烁。',
+        options: [
+            { id: 'a', labelEn: 'Late platform under blue signs', labelZh: '蓝色站牌下的月台' },
+            { id: 'b', labelEn: 'Kitchen counter, one lamp', labelZh: '厨房台面，一盏灯' },
+            { id: 'c', labelEn: 'Highway dashboard glow', labelZh: '高速上的仪表盘光' },
+            { id: 'd', labelEn: 'Crowded doorway', labelZh: '挤满人的门口' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm1',
+        plan,
+        draft,
+        optionMin: 4,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('stem missing explicit ask')));
+});
+
 test('fails M4 avoid stemZh with 变成 framing', () => {
     const plan: TurnPlan = {
         ...basePlan,
