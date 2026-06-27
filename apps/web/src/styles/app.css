@@ -84,7 +84,6 @@
     font-size: 0.82em;
     line-height: 1.45;
     color: var(--faint);
-    font-family: var(--font-copy);
 }
 
 .interview-option-gloss {
@@ -95,15 +94,17 @@
 
 .interview-step__stem .interview-option-gloss {
     font-size: 0.78em;
-}
-
-.chip-option .interview-bilingual__secondary {
-    font-size: 12px;
+    font-family: var(--font-body);
 }
 
 .interview-step__stem .interview-bilingual__secondary {
     font-size: 0.72em;
     margin-top: 8px;
+    font-family: var(--font-body);
+}
+
+.chip-option .interview-bilingual__secondary {
+    font-size: 12px;
 }
 
 .interview-step__hint .interview-bilingual__secondary {
@@ -120,7 +121,6 @@
     font-size: 13px;
     line-height: 1.5;
     color: var(--faint);
-    font-family: var(--font-copy);
 }
 
 .prompt-block {
@@ -151,7 +151,6 @@
     font-size: 13px;
     color: var(--faint);
     margin: 0 0 4px;
-    font-family: var(--font-copy);
     letter-spacing: 0.12em;
     text-transform: uppercase;
 }
@@ -165,7 +164,6 @@
 .copy-status {
     font-size: 13px;
     color: var(--faint);
-    font-family: var(--font-copy);
     min-height: 1.2em;
 }
 
@@ -185,7 +183,6 @@
 
 .prompt-footer__help {
     margin: 0;
-    font-family: var(--font-copy);
     font-size: 14px;
     line-height: 1.65;
     color: var(--muted);
@@ -240,7 +237,6 @@
 
 .page-subtitle {
     margin: 0;
-    font-family: var(--font-copy);
     font-size: 15px;
     line-height: 1.5;
     color: var(--muted);
@@ -253,7 +249,6 @@
 
 .build-flow__model {
     margin: 0 0 14px;
-    font-family: var(--font-copy);
     font-size: 13px;
     line-height: 1.5;
     color: var(--faint);
@@ -262,7 +257,6 @@
 
 .build-flow__lead {
     margin: 0 0 20px;
-    font-family: var(--font-copy);
     font-size: 15px;
     line-height: 1.75;
     color: var(--muted);
@@ -275,7 +269,6 @@
 
 .build-flow__progress {
     margin: 14px 0 0;
-    font-family: var(--font-copy);
     font-size: 14px;
     line-height: 1.65;
     color: var(--muted);
@@ -296,7 +289,6 @@
 
 .build-preview__sequence-text {
     margin: 0;
-    font-family: var(--font-copy);
     font-size: 14px;
     line-height: 1.65;
     color: var(--muted);
@@ -309,7 +301,6 @@
 .build-tracklist__list {
     margin: 0;
     padding-left: 1.25rem;
-    font-family: var(--font-copy);
     font-size: 14px;
     line-height: 1.55;
     color: var(--muted);
@@ -328,7 +319,6 @@
 
 .build-preview__heading {
     margin: 0 0 10px;
-    font-family: var(--font-copy);
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.08em;
@@ -344,7 +334,6 @@
 
 .build-preview__import-note {
     margin: 0 0 14px;
-    font-family: var(--font-copy);
     font-size: 13px;
     line-height: 1.55;
     color: var(--faint);
@@ -364,11 +353,6 @@
     max-width: 42rem;
 }
 
-.build-results__title {
-    margin: 0 0 12px;
-    font-size: 1.35rem;
-}
-
 .build-results__meta {
     margin: 0 0 20px;
 }
@@ -384,7 +368,6 @@
     margin: 0;
     color: var(--faint);
     font-size: 13px;
-    font-family: var(--font-copy);
     font-weight: 500;
 }
 
@@ -420,7 +403,6 @@
 
 .build-results__heading {
     margin: 0 0 8px;
-    font-family: var(--font-copy);
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.08em;
@@ -454,7 +436,6 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
     margin: 0 0 8px;
-    font-family: var(--font-copy);
 }
 
 /* U+2192 is outside self-hosted LXGW/Noto subsets — use a system face for arrows. */
@@ -528,7 +509,6 @@
 .interview-loading {
     padding: 20px 0 12px;
     color: var(--muted);
-    font-family: var(--font-copy);
     max-width: 28rem;
 }
 

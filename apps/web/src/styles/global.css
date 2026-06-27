@@ -74,8 +74,8 @@
     --tap-min-h: 44px;
     --pad-x: 48px;
     --header-gap: 12px;
-    --font-readable: 'Noto Serif SC', ui-serif, Georgia, 'Times New Roman', 'Songti SC', serif;
-    --font-copy: 'LXGW WenKai Lite', 'Kaiti SC', 'STKaiti', serif;
+    --font-heading: 'Noto Serif SC', ui-serif, Georgia, 'Times New Roman', 'Songti SC', serif;
+    --font-body: 'LXGW WenKai Lite', 'Kaiti SC', 'STKaiti', serif;
 }
 
 :root[data-theme='dark'] {
@@ -98,11 +98,18 @@ body {
     padding: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: var(--font-readable);
+    font-family: var(--font-body);
     line-height: 1.75;
     font-size: 16px;
     max-width: 100%;
     overflow-x: clip;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
 }
 
 html {
@@ -165,12 +172,11 @@ button:focus-visible {
     left: 8px;
 }
 
-.intro,
-.page-subtitle,
-.section-lead,
-.chip-option,
-.prompt-block {
-    font-family: var(--font-copy);
+.page-title,
+.section-title,
+.sidebar__title,
+.interview-step__stem {
+    font-family: var(--font-heading);
 }
 
 .page-title {
@@ -204,7 +210,6 @@ button:focus-visible {
     border-radius: 999px;
     background: transparent;
     color: var(--text);
-    font-family: var(--font-copy);
     font-size: 15px;
     cursor: pointer;
     transition: background 0.2s ease, border-color 0.2s ease;
@@ -241,7 +246,6 @@ button:focus-visible {
 }
 
 .step-label {
-    font-family: var(--font-copy);
     font-size: 13px;
     color: var(--faint);
 }
