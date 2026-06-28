@@ -583,8 +583,8 @@ export async function initAppToolbar() {
     bindLocaleDropdown();
     updateLocaleLabel();
     bindMobileToolbarMenu();
-    await bindInterviewModelDropdown();
     bindInterviewAlgorithmDropdown();
+    await bindInterviewModelDropdown();
     syncToolbarPanelVisibility();
     if (!resizeListenerBound) {
         resizeListenerBound = true;
