@@ -3,45 +3,24 @@ import type { BilingualText } from '../types/interview-step.js';
 import type { Env } from '../config.js';
 import { completeChat } from '../llm-router/index.js';
 import { formatBriefBlock } from '../brief.js';
+import {
+    type BilingualPlaylistMetadata,
+    parsePlaylistMetadata,
+    resolvePlaylistMetadata
+} from './curate-metadata.js';
+import { CURATE_SYSTEM_PROMPT, TASK_PROMPT_STARTER, TASK_RULES } from './curate-prompt.js';
 
-const TASK_PROMPT_STARTER = `You are a music supervisor scoring a short scene. The brief below is the director's note—treat it as law.
-
-Translate scene, feeling, and sonic texture into 26 real songs listeners can find on Spotify—album cuts, not karaoke, cover spam, or upload junk.
-
-Honor REJECT literally. Honor COOLDOWN when present (do not propose listed tracks or lean on listed artists). Honor SEEDS when not "none". Vary artists (≤3 per artist unless SEEDS focus one artist).
-
-You have no tools and will not search—use catalog knowledge only. Propose tracks in INTENDED LISTEN ORDER—not a random bag to sort later. No intro essay, no Spotify IDs—output only the three blocks specified below.`;
-
-const TASK_RULES = `Rules:
-- Exactly 26 numbered lines in LISTEN ORDER: "Artist — Title" + tags (below)
-- Real tracks likely on Spotify; no fabricated deep cuts
-- Honor REJECT, COOLDOWN (if in brief), and SEEDS; max 3 tracks per artist unless seed-focused
-- Match EMOTION, PACE, SONIC, FLOW using musical knowledge (not title SEO)
-- Prefer album cuts over karaoke/cover spam
-- Output ONLY these three blocks (in this order):
-
-## Sequence intent
-Two subsections — same listen arc in both languages, composed independently (not translation):
-
-### English
-3–5 sentences: listen arc for all 26. Declare 0–2 EXTRA ordering dimensions beyond energy when they matter for this brief (e.g. density, brightness, warmth, vocal presence)—tag those only on lines where transitions need them.
-
-### 中文
-3–5 句：26 首的聆听走向。能量之外如有重要的排序维度（如密度、亮度、温度、人声存在感），在此说明 0–2 个——只在需要标注的过渡处打 tag。用自然简体中文独立撰写，不要英译中腔调。
-
-## Ordering axes
-One line: which tags appear on each line (e.g. "energy · cue · role (sparse) · density (dip & lift only)").
-
-## Proposed tracklist
-Each line:
-N. Artist — Title · [energy: low|low-med|med|med-high|high] · [cue: 2–4 brief-aligned felt words] · [optional role: opener|turn|peak|breather|closer—sparse; only when FLOW has shape] · [optional extra axis value—only if declared]
-
-Energy + cue REQUIRED every line. Cues = felt qualities from the brief (live pocket, warm low, close breath)—not genre labels. Roles on opener, turn, peak, closer—not every line.
-
-When HYPOTHESES lists multiple clusters: allocate ≥2–4 tracks per cluster across ~26 lines; Sequence intent must name all clusters; no silent collapse to one subgenre.`;
+export type { BilingualPlaylistMetadata, PlaylistMetadataFields } from './curate-metadata.js';
+export {
+    parsePlaylistMetadata,
+    pickPlaylistMetadata,
+    validatePlaylistMetadata,
+    fallbackPlaylistMetadata
+} from './curate-metadata.js';
 
 export type CurateResult = {
     sequenceIntent: BilingualText;
+    playlistMetadata: BilingualPlaylistMetadata;
     orderingAxes: string;
     lines: ProposedLine[];
     raw: string;
@@ -109,9 +88,19 @@ export function parseSequenceIntent(section: string): BilingualText {
     return { en: trimmed, zh: '' };
 }
 
-export function parseCurateResponse(raw: string): CurateResult {
-    const sequenceSection = extractSection(raw, '## Sequence intent', '## Ordering axes');
+export function parseCurateResponse(raw: string, brief?: CompactBrief): CurateResult {
+    const hasMetadataBlock = raw.includes('## Playlist metadata');
+    const sequenceSection = extractSection(
+        raw,
+        '## Sequence intent',
+        hasMetadataBlock ? '## Playlist metadata' : '## Ordering axes'
+    );
     const sequenceIntent = parseSequenceIntent(sequenceSection);
+    const metadataSection = hasMetadataBlock
+        ? extractSection(raw, '## Playlist metadata', '## Ordering axes')
+        : '';
+    const parsedMetadata = parsePlaylistMetadata(metadataSection);
+    const playlistMetadata = resolvePlaylistMetadata(parsedMetadata, sequenceIntent, brief);
     const orderingAxes = extractSection(raw, '## Ordering axes', '## Proposed tracklist');
     const tracklistSection = extractSection(raw, '## Proposed tracklist');
     const lines = parseProposedLines(tracklistSection);
@@ -120,7 +109,7 @@ export function parseCurateResponse(raw: string): CurateResult {
         throw new Error(`Curate response had only ${lines.length} proposed lines (expected ~26)`);
     }
 
-    return { sequenceIntent, orderingAxes, lines, raw };
+    return { sequenceIntent, playlistMetadata, orderingAxes, lines, raw };
 }
 
 export async function curateTracklist(
@@ -144,15 +133,11 @@ ${TASK_RULES}`;
     const raw = await completeChat(
         env,
         [
-            {
-                role: 'system',
-                content:
-                    'You are an expert music supervisor. Follow the output format exactly. English for tracklist and tags; bilingual EN/ZH for Sequence intent only.'
-            },
+            { role: 'system', content: CURATE_SYSTEM_PROMPT },
             { role: 'user', content: userPrompt }
         ],
         { model }
     );
 
-    return parseCurateResponse(raw);
+    return parseCurateResponse(raw, brief);
 }

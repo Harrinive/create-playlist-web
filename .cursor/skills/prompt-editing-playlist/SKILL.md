@@ -44,6 +44,7 @@ Mechanical validators (code, not prompt prose):
 | `apps/api/scripts/run-interview-path-matrix.ts` | All paths M1→M4 regression matrix (both models if no arg) |
 | `apps/api/scripts/interview-paths.ts` | Fixed path presets (incl. deep-prog-house) |
 | `apps/api/scripts/test-m4-scenarios.ts` | Batch M4 scenarios (avoid + discriminant paths) |
+| `apps/api/scripts/test-curate-prose.ts` | Curate listen arc + playlist metadata — deterministic grade + report for Grader subagent |
 | `apps/api/scripts/test-interview-step.ts` | Single step smoke test |
 
 ```bash
@@ -60,6 +61,8 @@ cd apps/api && npm run test:verify
 **Sequential (Q1→M4):** orchestrate-step with answer history; grader against `INTERVIEW-STRATEGY.md`; editor touches plan + draft + verify prompts.
 
 **Batch (M4):** test-m4-scenarios (5 presets); grader reviews cross-cutting register/trap failures; editor applies general M4 principles (not per-scenario wording).
+
+**Curate prose (listen arc + metadata):** `test-curate-prose.ts` calls `curateTracklist()` on ≥2 divergent briefs, runs deterministic `gradeCurateProse()`, writes report to `.curate-prose/`. Grader subagent grades **generated output** in that report against `docs/PLAYLIST-METADATA.md` — not the prompt text. Editor adjusts `curate-prompt.ts` on FAIL themes only.
 
 ## Context-dependent validation (interview)
 

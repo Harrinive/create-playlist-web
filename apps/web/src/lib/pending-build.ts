@@ -37,9 +37,15 @@ export type VerifySnapshot = {
     skipped: Array<{ proposed: string; reason: string }>;
 };
 
+export type PlaylistMetadataSnapshot = {
+    en: { name: string; description: string };
+    zh: { name: string; description: string };
+};
+
 export type PendingBuildSnapshot = {
     brief: CompactBriefSnapshot;
     sequenceIntent: BilingualProse;
+    playlistMetadata: PlaylistMetadataSnapshot;
     lines: ProposedLineSnapshot[];
     verified: VerifySnapshot;
     model: string | null;
@@ -66,6 +72,9 @@ export function readPendingBuild(): PendingBuildSnapshot | null {
                     : parsed.sequenceIntent;
         } else {
             parsed.sequenceIntent = { en: '', zh: '' };
+        }
+        if (!parsed.playlistMetadata?.en?.name) {
+            return null;
         }
         return parsed;
     } catch {}

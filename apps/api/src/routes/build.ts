@@ -2,15 +2,13 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import {
     buildCompactBrief,
-    buildPlaylistMetadata,
-    metadataContainsLatinWords,
     formatBriefBlock
 } from '../brief.js';
 import type { Env } from '../config.js';
 import { curateTracklist } from '../llm/curate.js';
+import { pickPlaylistMetadata } from '../llm/curate-metadata.js';
 import { inferSonic, answersWithInferredM5 } from '../llm/infer-sonic.js';
 import { interviewPlannerStateSchema, parsePlannerState } from '../types/interview-planner.js';
-import { translateProseToChinese } from '../llm/translate-prose.js';
 import {
     findCurateModel,
     isAllowedCurateModel,
@@ -48,6 +46,11 @@ const proposedLineSchema = z.object({
     title: z.string().min(1),
     tags: z.string(),
     raw: z.string().min(1)
+});
+
+const playlistMetadataSchema = z.object({
+    en: z.object({ name: z.string(), description: z.string() }),
+    zh: z.object({ name: z.string(), description: z.string() })
 });
 
 const sequenceIntentSchema = z.union([
@@ -184,6 +187,7 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
                 brief,
                 briefText: formatBriefBlock(brief),
                 sequenceIntent: curated.sequenceIntent,
+                playlistMetadata: curated.playlistMetadata,
                 orderingAxes: curated.orderingAxes,
                 lines: curated.lines,
                 proposedCount: curated.lines.length,
@@ -240,6 +244,7 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
                 answers: interviewAnswersSchema,
                 locale: z.enum(['en', 'zh']).optional().default('en'),
                 sequenceIntent: sequenceIntentSchema.optional(),
+                playlistMetadata: playlistMetadataSchema.optional(),
                 proposedCount: z.number().int().positive().optional(),
                 tracks: z
                     .array(
@@ -278,27 +283,23 @@ export async function registerBuildRoutes(app: FastifyInstance, ctx: AppContext)
         }
 
         const accessToken = await getValidAccessToken(ctx.env, ctx.store, user);
-        let { name, description } = buildPlaylistMetadata(
-            body.data.answers as InterviewAnswers,
-            body.data.locale
-        );
+        const locale = body.data.locale;
+        let name = '';
+        let description = '';
 
-        if (body.data.locale === 'zh') {
-            if (metadataContainsLatinWords(name)) {
-                try {
-                    name = await translateProseToChinese(ctx.env, name);
-                } catch {
-                    // Keep template name if translation fails.
-                }
-            }
-            if (metadataContainsLatinWords(description)) {
-                try {
-                    description = await translateProseToChinese(ctx.env, description);
-                } catch {
-                    // Keep template description if translation fails.
-                }
-            }
+        if (body.data.playlistMetadata) {
+            ({ name, description } = pickPlaylistMetadata(locale, body.data.playlistMetadata));
         }
+
+        if (!name.trim() || !description.trim()) {
+            return reply.code(400).send({
+                error: 'missing_playlist_metadata',
+                message: 'Publish requires curate-generated playlist metadata'
+            });
+        }
+
+        name = name.slice(0, 100);
+        description = description.slice(0, 300);
 
         const sequenceIntent = normalizeSequenceIntent(body.data.sequenceIntent);
 

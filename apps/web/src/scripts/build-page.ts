@@ -42,6 +42,7 @@ type ProposedLine = PendingBuildSnapshot['lines'][number];
 type CurateResponse = {
     brief: CompactBrief;
     sequenceIntent: BilingualProse;
+    playlistMetadata: PendingBuildSnapshot['playlistMetadata'];
     lines: ProposedLine[];
     proposedCount: number;
     model?: string | null;
@@ -549,6 +550,7 @@ export function initBuildPage() {
         return {
             brief: curated.brief,
             sequenceIntent: curated.sequenceIntent,
+            playlistMetadata: curated.playlistMetadata,
             lines: curated.lines,
             verified,
             model: modelId,
@@ -673,6 +675,7 @@ export function initBuildPage() {
                     answers,
                     locale: readLocale(),
                     sequenceIntent: pendingSnapshot.sequenceIntent,
+                    playlistMetadata: pendingSnapshot.playlistMetadata,
                     proposedCount: pendingSnapshot.verified.proposedCount,
                     tracks: verified.tracks,
                     skipped: verified.skipped
