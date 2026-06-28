@@ -1,4 +1,5 @@
 import { Q1_COVERAGE_REGIONS, Q1_REGION_IDS } from './q1-regions.js';
+import { joinSections } from './join.js';
 import {
     clearDiscriminantBlock as clearDiscriminantText,
     logicalDecisionBlock as logicalDecisionText,
@@ -10,6 +11,12 @@ import {
 import type { M4Mode } from '../m4-eligibility.js';
 import { M4_NONE_LABELS, trapLabelTemplatesBlock } from '../m4-eligibility.js';
 import { q1OpeningDiversityBlock as q1OpeningDiversityText } from './sections/q1-opening.js';
+import {
+    q1CoveragePlannerBlock,
+    q1CoverageShapeBlock
+} from './sections/q1-coverage-shape.js';
+
+export { q1CoverageShapeBlock } from './sections/q1-coverage-shape.js';
 
 export function sceneFeelingBlock(): string {
     return sceneFeelingText;
@@ -41,34 +48,40 @@ export function clearDiscriminantBlock(): string {
 
 export { storyM2Block, storyM3Block };
 
-export function q1CoverageBlock(): string {
-    const rows = Q1_COVERAGE_REGIONS.map(
+function q1RegionCatalogRows(): string[] {
+    return Q1_COVERAGE_REGIONS.map(
         (r) => `- ${r.id}: ${r.territory} → keeps ${r.genreReach} reachable`
     );
-    return `## Q1 coverage (planner backend — user sees 4–6 options only)
-Tag 1–2 region ids per option in optionSlots.
+}
 
-**Diversity principle:** span both **social heat** (intimate ↔ kinetic) AND **setting type** (home, transit, venue, outdoors, etc.) — not six variants of the same room energy.
-${q1OpeningDiversityText}
-${rows.join('\n')}`;
+/** @deprecated Prefer q1CoverageShapeBlock (draft/verify) or q1PlanContextBlock (plan). */
+export function q1CoverageBlock(): string {
+    return q1CoveragePlannerBlock(q1RegionCatalogRows());
 }
 
 export function q1PlanContextBlock(): string {
-    return `${q1CoverageBlock()}
+    return `${q1CoveragePlannerBlock(q1RegionCatalogRows())}
+${q1OpeningDiversityText}
 
-**M1 plan shape (mandatory):** m1StemMode=threshold-invite · optionRole=place-partition · stemGuidance must require explicit pick-a-still ask · optionGuidance = distinct places/worlds per region.
+**M1 plan shape (mandatory):** m1StemMode=threshold-invite · optionRole=place-partition · stemGuidance = threshold pick-a-still ask · optionGuidance = distinct places **and** matching social-heat registers per slot.
 
-User-facing: **4–6** options. Regions: ${Q1_REGION_IDS.join(', ')}`;
+User-facing: **4–6** options. Region ids: ${Q1_REGION_IDS.join(', ')}`;
 }
 
 export function q1DraftContextBlock(regionsToCover: string[]): string {
-    return `## Q1 regions in plan\n${regionsToCover.join(', ')}\n\n${q1CoverageBlock()}`;
+    return joinSections(
+        `## Q1 regions in plan\n${regionsToCover.join(', ')}`,
+        q1CoverageShapeBlock,
+        'Fill labels for plannedOptionIds — chip register must match each optionSlots.regionId.'
+    );
 }
 
 export function q1VerifyContextBlock(): string {
-    return `## Q1 verify
-4–6 options; distinct scenes; span social heat AND setting type; kinetic + intimate coverage; no overlapping beats.
-Stem uses a concrete setting family — not the default cozy-weather opener unless options warrant wistful weather.`;
+    return joinSections(
+        '## Q1 verify — fail closed on any broken item',
+        q1CoverageShapeBlock,
+        'Also check: distinct film-stills; no overlapping beats; threshold stem + explicit ask; stem rotates setting family (cozy-weather default only when options warrant).'
+    );
 }
 
 const m4PlanAvoidBlock = `## M4 plan — avoid mode (ClearDiscriminant)

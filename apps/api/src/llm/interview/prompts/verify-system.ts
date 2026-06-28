@@ -30,7 +30,7 @@ export function logicVerifySystemPrompt(): string {
 5. **Scene continuity** — M2/M3 consistent with all prior answers; same world, no reset
 6. **No gloss fields** — omit stemGlossEn/stemGlossZh and option glossEn/glossZh on all steps; full meaning in main labels
 6b. **Stem vs hint** — omit hint when stem already asks; hint adds mechanics or missing axis only — never paraphrase the stem ask
-7. **Q1** — 4–6 options; distinct scenes; span social heat AND setting type; stem rotates setting family (cozy-weather default anti-pattern); no overlapping beats
+7. **Q1** — apply focus-block coverage shape; fail any broken item (social heat in labels, setting spread, tag↔register match, threshold stem)
 8. **M2 register spread** — when kinetic genres survive, options partition distinct moments across social heat — not 3+ crowd-mood variants
 9. **M4 avoid only** — includes id "none" with canonical no-extra-avoids label; non-none labels use plain trap language; distinct trap clusters; **obvious-answer test:** re-read all prior picks + reachableGenresNote — fail any trap a reasonable listener would already assume out of scope (skill § obvious-answer failure), **even if not in deterministic DROP list**; each remaining trap must guard a plausible false positive for a **remaining** hypothesis
 9a. **M4 avoid none semantics** — "none" = user has no **additional** avoids beyond implied drops; NOT "reject all listed traps"; label must match canonical EN/ZH template

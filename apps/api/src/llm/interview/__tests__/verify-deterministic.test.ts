@@ -608,10 +608,14 @@ test('fails M1 when hint paraphrases stem ask', () => {
         hintEn: 'Pick the place you can see yourself in.',
         hintZh: '选一处你能一下走进去的地方。',
         options: [
-            { id: 'a', labelEn: 'One chair, rain on glass', labelZh: '一把椅子，雨敲玻璃' },
+            { id: 'a', labelEn: 'One chair, cooling tea', labelZh: '一把椅子，茶正凉着' },
             { id: 'b', labelEn: 'Late platform, blue signs', labelZh: '蓝色站牌下的月台' },
             { id: 'c', labelEn: 'Kitchen counter, one lamp', labelZh: '厨房台面，一盏灯' },
-            { id: 'd', labelEn: 'Bus seat under neon', labelZh: '霓虹下的公交座位' }
+            {
+                id: 'd',
+                labelEn: 'Packed dance floor, neon spill',
+                labelZh: '挤满的舞池，霓虹泼下来'
+            }
         ]
     };
     const result = verifyDeterministic({
@@ -639,10 +643,14 @@ test('allows scene-only M1 stem with plain task hint', () => {
         hintEn: 'Pick one place you can step into.',
         hintZh: '选一处你能走进去的场景。',
         options: [
-            { id: 'a', labelEn: 'One chair, rain on glass', labelZh: '一把椅子，雨敲玻璃' },
+            { id: 'a', labelEn: 'One chair, cooling tea', labelZh: '一把椅子，茶正凉着' },
             { id: 'b', labelEn: 'Late platform, blue signs', labelZh: '蓝色站牌下的月台' },
             { id: 'c', labelEn: 'Kitchen counter, one lamp', labelZh: '厨房台面，一盏灯' },
-            { id: 'd', labelEn: 'Bus seat under neon', labelZh: '霓虹下的公交座位' }
+            {
+                id: 'd',
+                labelEn: 'Packed dance floor, neon spill',
+                labelZh: '挤满的舞池，霓虹泼下来'
+            }
         ]
     };
     const result = verifyDeterministic({

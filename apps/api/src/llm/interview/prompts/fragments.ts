@@ -54,7 +54,7 @@ export const planChecklistBlock = `## Your checklist (mandatory — run before p
 6. Choose plannedOptionCount between 2 and 6 (Q1: 4–6). Design that many story options — NOT genre menus.
 7. **M2 register spread:** when kinetic genres remain reachable, plan options that span social heat — not five copies of the same energy level.
 8. Do not split house vs techno (or similar) in user copy if users cannot feel the difference.
-9. **M1 only:** m1StemMode=threshold-invite; optionRole=place-partition. Stem = pick-a-still ask (not one-place caption). Each option = distinct place/world for coverage — not a moment inside the stem scene. Rotate opening world family; weather optional garnish.`;
+9. **M1 only:** m1StemMode=threshold-invite; optionRole=place-partition. Stem = pick-a-still ask (not one-place caption). Each option = distinct place/world **with visible social-heat register in chip copy** — tag regionId must match label register; not tag-only coverage. Rotate opening world family; weather optional garnish.`;
 
 export function buildReviseUserPrompt(
     priorAnswers: Partial<InterviewAnswers>,

@@ -40,7 +40,6 @@ import {
     sanitizeDeliveryGenreNote,
     synthesizeInterviewStory
 } from './story-synthesize.js';
-import { partitionDeterministicFailures } from './verify-severity.js';
 import { draftUsesCanonicalTrapLabels } from './m4-eligibility.js';
 
 export type GenerateInterviewStepInput = InterviewTurnContext & {
@@ -221,15 +220,7 @@ async function generateInterviewStepFast(
         verifyFailures = det.failures;
         if (det.passed) break;
 
-        const { hard } = partitionDeterministicFailures(verifyFailures);
         if (attempt === maxAttempts - 1) {
-            if (hard.length === 0) {
-                console.warn(
-                    `[interview] fast verify exhausted (${maxAttempts} attempts) — shipping:`,
-                    verifyFailures.join('; ')
-                );
-                break;
-            }
             throw new Error(
                 `Fast interview verify failed after ${maxAttempts} attempts: ${verifyFailures.join('; ')}`
             );
@@ -468,16 +459,8 @@ async function generateInterviewStepFull(
 
         const isLastAttempt = attempt === verifyAttempts - 1;
         if (isLastAttempt) {
-            const { hard, soft } = partitionDeterministicFailures(deterministicFailures);
-            if (hard.length === 0) {
-                console.warn(
-                    `[interview] verify exhausted (${verifyAttempts} attempts) — shipping best-effort draft:`,
-                    [...soft, ...logicFailures, ...copyFailures].join('; ')
-                );
-                break;
-            }
             throw new Error(
-                `Interview verify failed after ${verifyAttempts} attempts: ${[...hard, ...soft, ...logicFailures, ...copyFailures].join('; ')}`
+                `Interview verify failed after ${verifyAttempts} attempts: ${allFailures.join('; ')}`
             );
         }
 

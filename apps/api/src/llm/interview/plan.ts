@@ -10,30 +10,6 @@ function defaultQ1Regions(): string[] {
     return [...Q1_REGION_IDS];
 }
 
-const KINETIC_REGION_IDS = ['kinetic-high', 'rhythm-social', 'edge-charged'] as const;
-
-/** Planner often omits kinetic tags — verify hard-fails Q1 without one. */
-export function ensureM1KineticCoverage(plan: TurnPlan): TurnPlan {
-    const slots = { ...(plan.optionSlots ?? {}) };
-    const hasKinetic = Object.values(slots).some((slot) =>
-        KINETIC_REGION_IDS.includes(slot.regionId as (typeof KINETIC_REGION_IDS)[number])
-    );
-    if (hasKinetic) return plan;
-
-    const entries = Object.entries(slots);
-    if (entries.length === 0) return plan;
-
-    const preferRegion = ['social-mid', 'restless-charged', 'focus-flow', 'bittersweet-mid'];
-    const pick =
-        entries.find(([, slot]) => slot.regionId && preferRegion.includes(slot.regionId)) ??
-        entries[entries.length - 1];
-    const [slotId, slot] = pick;
-
-    slots[slotId] = { ...slot, regionId: 'kinetic-high' };
-
-    return { ...plan, optionSlots: slots };
-}
-
 export async function planInterviewTurn(
     env: Env,
     ctx: InterviewTurnContext,
@@ -114,10 +90,6 @@ export async function planInterviewTurn(
             delete slots.none;
             plan.optionSlots = slots;
         }
-    }
-
-    if (stepId === 'm1') {
-        return ensureM1KineticCoverage(plan);
     }
 
     return plan;

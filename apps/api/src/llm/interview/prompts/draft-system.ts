@@ -14,7 +14,7 @@ import {
     refreshLine
 } from './fragments.js';
 import { turnLabel } from './dimension.js';
-import { m5FeltAxesBlock, q1CoverageBlock, q1DraftContextBlock } from './blocks.js';
+import { m5FeltAxesBlock, q1CoverageShapeBlock, q1DraftContextBlock } from './blocks.js';
 import { noGlossOutputBlock } from './sections/gloss-rules.js';
 import { m4HintOutputBlock, stemHintOutputBlock } from './sections/hint-rules.js';
 import type { M4Mode } from '../m4-eligibility.js';
@@ -64,7 +64,7 @@ function hintBlockForStep(ctx?: DraftPromptContext): string {
 export function draftSystemPrompt(ctx?: DraftPromptContext): string {
     const optionLines =
         ctx?.stepId === 'm1'
-            ? '- M1 options: each chip = one distinct **place/world** (coverage partition) — not moments inside the stem'
+            ? '- M1 options: each chip = distinct place/world **and** readable social-heat register — match optionSlots.regionId in label copy'
             : ctx?.stepId && ['m2', 'm3', 'm_clarify'].includes(ctx.stepId)
               ? '- Options: concrete objects + events in main labels'
               : '- Options: follow turn plan shape for this step';
@@ -127,7 +127,7 @@ export function buildDraftUserPrompt(
         stepId === 'm1' && q1RegionsToCover?.length
             ? q1DraftContextBlock(q1RegionsToCover)
             : stepId === 'm1'
-              ? q1CoverageBlock()
+              ? q1CoverageShapeBlock
               : '';
     const m5Block = stepId === 'm5' ? m5FeltAxesBlock() : '';
     const plannedIds = planJson.includes('plannedOptionIds')

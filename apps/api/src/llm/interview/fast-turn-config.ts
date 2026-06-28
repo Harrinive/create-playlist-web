@@ -4,21 +4,14 @@ import {
     concreteM3Block,
     m4ExampleBlock,
     m4PlainRejectBlock,
-    q1CoverageBlock,
+    q1CoverageShapeBlock,
+    q1OpeningDiversityBlock,
     sceneFeelingBlock,
     storyM1Block
 } from './prompts/blocks.js';
 import { discriminantBlockForMode } from './prompts/sections/positive-discriminant.js';
 import type { InterviewAnswers } from '../../types/interview.js';
 import type { InterviewPlannerState } from '../../types/interview-planner.js';
-
-export function fastM1DiversityBlock(): string {
-    return `## Fast M1 diversity (mandatory)
-- **Social heat:** partition across intimate ↔ kinetic — include ≥1 intimate-still AND ≥1 kinetic/crowd register (kinetic-high, rhythm-social, or edge-charged).
-- **Setting type:** spread home, transit, venue, outdoors/urban — not six copies of winding-down domestic or solo-night quiet.
-- **Distinct beats:** each option = one film-still (props + light + action); no overlapping post-social domestic pairs or duplicate transit-quiet pairs.
-- **Stem (Q1):** use a **place-neutral threshold** (light, weather, hour, doorway) + invitation to pick a still — options are *different* places; do NOT lock one interior/table/bus beat that most options contradict.`;
-}
 
 export function fastM2ContextBlock(priorM1?: string): string {
     const anchor = priorM1?.trim()
@@ -67,7 +60,12 @@ export function buildFastTurnBlocks(
 ): string[] {
     switch (stepId) {
         case 'm1':
-            return [sceneFeelingBlock(), storyM1Block(), q1CoverageBlock(), fastM1DiversityBlock()];
+            return [
+                sceneFeelingBlock(),
+                storyM1Block(),
+                q1OpeningDiversityBlock(),
+                q1CoverageShapeBlock
+            ];
         case 'm2':
             return [
                 sceneFeelingBlock(),

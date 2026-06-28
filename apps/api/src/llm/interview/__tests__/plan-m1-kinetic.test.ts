@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ensureM1KineticCoverage } from '../plan.js';
 import { verifyDeterministic } from '../verify-deterministic.js';
 import type { LlmStepDraft, TurnPlan } from '../shared.js';
 
@@ -25,37 +24,57 @@ const basePlan: TurnPlan = {
     plannedOptionIds: ['quiet', 'table', 'train']
 };
 
-test('ensureM1KineticCoverage adds kinetic-high when planner omitted it', () => {
-    const next = ensureM1KineticCoverage(basePlan);
-    const regions = Object.values(next.optionSlots).map((slot) => slot.regionId);
-    assert.ok(regions.includes('kinetic-high'));
-});
-
-test('ensureM1KineticCoverage is a no-op when kinetic already present', () => {
-    const withKinetic: TurnPlan = {
-        ...basePlan,
-        optionSlots: {
-            ...basePlan.optionSlots,
-            party: { regionId: 'kinetic-high' }
-        }
-    };
-    assert.deepEqual(ensureM1KineticCoverage(withKinetic), withKinetic);
-});
-
 test('Q1 verify accepts kinetic crowd labels when optionSlots lack kinetic tags', () => {
     const plan: TurnPlan = {
         ...basePlan,
-        plannedOptionIds: ['quiet', 'club'],
+        plannedOptionCount: 4,
+        plannedOptionIds: ['quiet', 'platform', 'club', 'fair'],
         optionSlots: {
             quiet: { regionId: 'intimate-still' },
-            club: { regionId: 'social-mid' }
+            platform: { regionId: 'bittersweet-mid' },
+            club: { regionId: 'kinetic-high' },
+            fair: { regionId: 'elsewhere-transit' }
         }
     };
     const draft: LlmStepDraft = {
         stemEn: 'Pick a still — where are you right now? The hallway is still warm from everyone leaving.',
         stemZh: '选一处画面——你此刻在哪里？走廊还留着人群散去后的热气。',
         options: [
-            { id: 'quiet', labelEn: 'Empty cups, lamp still on', labelZh: '空杯子，灯还亮着' },
+            { id: 'quiet', labelEn: 'One chair, cooling tea', labelZh: '一把椅子，茶正凉着' },
+            { id: 'platform', labelEn: 'Last train platform, empty rails', labelZh: '末班月台，铁轨空着' },
+            { id: 'club', labelEn: 'Packed dance floor, bodies moving', labelZh: '挤满的舞池，人群在动' },
+            { id: 'fair', labelEn: 'Night market alley, paper lanterns', labelZh: '夜市巷口，纸灯笼晃着' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm1',
+        plan,
+        draft,
+        optionMin: 4,
+        optionMax: 6
+    });
+    assert.equal(result.passed, true);
+});
+
+test('Q1 verify rejects fake kinetic region tag on quiet label', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        plannedOptionCount: 4,
+        plannedOptionIds: ['quiet', 'booth', 'platform', 'club'],
+        optionSlots: {
+            quiet: { regionId: 'intimate-still' },
+            booth: { regionId: 'kinetic-high' },
+            platform: { regionId: 'bittersweet-mid' },
+            club: { regionId: 'rhythm-social' }
+        }
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'Pick a still — where are you right now?',
+        stemZh: '选一处画面——你此刻在哪里？',
+        options: [
+            { id: 'quiet', labelEn: 'One chair, cooling tea', labelZh: '一把椅子，茶正凉着' },
+            { id: 'booth', labelEn: 'Corner booth, glasses clinking', labelZh: '角落卡座，杯子轻碰' },
+            { id: 'platform', labelEn: 'Last train platform, empty rails', labelZh: '末班月台，铁轨空着' },
             { id: 'club', labelEn: 'Packed dance floor, bodies moving', labelZh: '挤满的舞池，人群在动' }
         ]
     };
@@ -63,8 +82,9 @@ test('Q1 verify accepts kinetic crowd labels when optionSlots lack kinetic tags'
         stepId: 'm1',
         plan,
         draft,
-        optionMin: 2,
+        optionMin: 4,
         optionMax: 6
     });
-    assert.equal(result.passed, true);
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('"booth"') && f.includes('kinetic')));
 });

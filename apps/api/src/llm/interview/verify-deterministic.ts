@@ -7,7 +7,7 @@ import {
     trapClusterById
 } from './m4-eligibility.js';
 import type { LlmStepDraft, TurnPlan } from './shared.js';
-import { Q1_REGION_IDS } from './prompts.js';
+import { verifyQ1Coverage } from './verify-q1-coverage.js';
 import { M4_TRAP_LEXICON, verifyGlossAndConcreteness } from './gloss-verify.js';
 import { verifyOptionOverlap } from './option-overlap.js';
 import { verifySceneContinuity } from './scene-continuity.js';
@@ -64,15 +64,6 @@ const M4_AVOID_STEM_GUARDIAN_BAN =
     /\b(feel wrong|feels wrong|soundtrack trap|never become|not become|not turn into|turn into|make this moment|which trap would|would make this)\b/i;
 
 const M4_AVOID_STEM_ZH_TRANSFORM_BAN = /(不该变成|最不该变成|不该成为|不能变成|变成什么|turn into)/i;
-
-const KINETIC_LABEL =
-    /\b(crowd|packed|dance|club|party|bar|floor|bodies|neon spill|moving|speakers|gym|parade|block party)\b/i;
-
-const KINETIC_REGION_IDS = ['kinetic-high', 'rhythm-social', 'edge-charged'] as const;
-
-function hasKineticCrowdLabel(options: LlmStepDraft['options']): boolean {
-    return options.some((opt) => KINETIC_LABEL.test(opt.labelEn));
-}
 
 function wordCountEn(text: string): number {
     return text.trim().split(/\s+/).filter(Boolean).length;
@@ -276,45 +267,8 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
         }
     }
 
-    if (stepId === 'm1' && plan.q1RegionsToCover?.length) {
-        const covered = new Set<string>();
-        for (const opt of options) {
-            const regionId = plan.optionSlots[opt.id]?.regionId;
-            if (regionId) covered.add(regionId);
-        }
-        const hasKineticRegion = KINETIC_REGION_IDS.some((region) => covered.has(region));
-        if (!hasKineticRegion && !hasKineticCrowdLabel(options)) {
-            failures.push(
-                'Q1 missing kinetic/crowd region (kinetic-high, rhythm-social, or edge-charged)'
-            );
-        }
-    }
-
-    if (
-        stepId === 'm1' &&
-        !plan.q1RegionsToCover?.length &&
-        Object.keys(plan.optionSlots ?? {}).length === 0
-    ) {
-        if (!hasKineticCrowdLabel(options) && options.length >= 4) {
-            failures.push(
-                'Q1 missing kinetic/crowd option — span intimate and kinetic social heat'
-            );
-        }
-    }
-
-    if (
-        stepId === 'm1' &&
-        !plan.q1RegionsToCover?.length &&
-        Object.keys(plan.optionSlots ?? {}).length > 0
-    ) {
-        const covered = new Set(
-            options
-                .map((o) => plan.optionSlots[o.id]?.regionId)
-                .filter(Boolean) as string[]
-        );
-        if (covered.size < Math.min(3, Q1_REGION_IDS.length)) {
-            failures.push(`Q1 only ${covered.size} distinct regions in optionSlots`);
-        }
+    if (stepId === 'm1') {
+        failures.push(...verifyQ1Coverage(draft, plan));
     }
 
     if (stepId === 'm4' && plan.questionMode !== 'PositiveDiscriminant') {

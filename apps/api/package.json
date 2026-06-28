@@ -11,7 +11,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test:verify": "node --import tsx --test src/llm/interview/__tests__/verify-deterministic.test.ts src/llm/interview/__tests__/verify-severity.test.ts src/llm/interview/__tests__/plan-m1-kinetic.test.ts src/llm/interview/__tests__/turn-plan-normalize.test.ts src/llm/interview/__tests__/verify-m1-frame.test.ts src/llm/interview/__tests__/normalize-m4-repair.test.ts src/llm/interview/__tests__/normalize-m1-repair.test.ts",
+    "test:verify": "node --import tsx --test src/llm/interview/__tests__/verify-deterministic.test.ts src/llm/interview/__tests__/verify-q1-coverage.test.ts src/llm/interview/__tests__/verify-severity.test.ts src/llm/interview/__tests__/plan-m1-kinetic.test.ts src/llm/interview/__tests__/turn-plan-normalize.test.ts src/llm/interview/__tests__/verify-m1-frame.test.ts src/llm/interview/__tests__/normalize-m4-repair.test.ts src/llm/interview/__tests__/normalize-m1-repair.test.ts",
     "test:build": "node --import tsx --test src/spotify/__tests__/client.test.ts src/routes/__tests__/build-auth.test.ts"
   },
   "dependencies": {

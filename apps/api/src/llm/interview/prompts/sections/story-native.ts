@@ -9,12 +9,12 @@ export const storyM1Block = `## M1 Scene — pick a place
 
 **Output shape**
 - **Stem:** threshold invite + explicit ask — light sensory anchor, then pick-a-still question. Stem must NOT describe one specific option world (no workbench-only caption, no locked kitchen/car/platform scene).
-- **Options:** each chip = one **place/world** (transit, venue, home, outdoors, workplace, …) — not a moment inside the stem scene.
+- **Options:** each chip = one **place/world** whose **label shows social-heat register** (solo still vs crowd/body energy) — not a moment inside the stem scene.
 - **EN + ZH:** compose independently; imagist free verse / 现代诗 for labels only.
 
-**Good (structural):** Stem asks "Pick a still — where are you?" / "选一处画面——你此刻在哪里？" · Options: platform / kitchen / highway / studio (distinct worlds).
+**Good (structural):** Stem asks "Pick a still — where are you?" / "选一处画面——你此刻在哪里？" · Options: platform / kitchen / packed dance floor / night market (distinct worlds **and** heat registers).
 
-**Anti-pattern:** Scene caption stem (workbench detail, no ask) + options that mix unrelated worlds — user cannot tell what to decide.`;
+**Anti-pattern:** Scene caption stem (workbench detail, no ask) + options that mix unrelated worlds — user cannot tell what to decide. Coverage collapsed to one quiet band with no kinetic pole.`;
 
 export const storyM2Block = `## M2 Mood — moment in the M1 scene
 **User job:** pick **which moment** in the M1 world is most you (BGM test).

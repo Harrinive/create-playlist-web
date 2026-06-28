@@ -7,7 +7,7 @@ import {
     m4ExampleBlock,
     m4PlainRejectBlock,
     m5FeltAxesBlock,
-    q1CoverageBlock,
+    q1CoverageShapeBlock,
     q1OpeningDiversityBlock,
     sceneFeelingBlock,
     storyM1Block
@@ -36,9 +36,14 @@ export function resolveTurnConfig(
         case 'm1':
             return {
                 questionMode: 'SceneFeeling',
-                draftBlocks: [sceneFeelingBlock(), storyM1Block(), q1OpeningDiversityBlock(), q1CoverageBlock()],
+                draftBlocks: [
+                    sceneFeelingBlock(),
+                    storyM1Block(),
+                    q1OpeningDiversityBlock(),
+                    q1CoverageShapeBlock
+                ],
                 logicVerifyIntro:
-                    '## Logic verify focus\nQ1: 4–6 distinct film-stills; span social heat AND setting type; stem uses varied opening world family (not default cozy-weather still); stem-option coherence; omit hint when stem asks.',
+                    '## Logic verify focus\nApply Q1 coverage shape from focus block — fail closed on any broken item.',
                 copyVerifyIntro: '## Copy verify focus\nM1: threshold stem + place-partition options; explicit ask; native ZH.'
             };
 
