@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
     labelReadsIntimate,
     labelReadsKinetic,
+    repairQ1CoverageDraft,
     verifyQ1Coverage
 } from '../verify-q1-coverage.js';
 import type { LlmStepDraft, TurnPlan } from '../shared.js';
@@ -100,4 +101,21 @@ test('fails when kinetic region tag does not match quiet label', () => {
         failures.some((f) => f.includes('"booth"') && f.includes('tagged kinetic-high')),
         failures.join('; ')
     );
+});
+
+test('repairQ1CoverageDraft adds kinetic and intimate registers', () => {
+    const draft: LlmStepDraft = {
+        stemEn: 'Pick a still — where are you right now?',
+        stemZh: '选一处画面——你此刻在哪里？',
+        options: [
+            { id: 'a', labelEn: 'Late platform, blue signs', labelZh: '蓝色站牌下的月台' },
+            { id: 'b', labelEn: 'Kitchen counter, one lamp', labelZh: '厨房台面，一盏灯' },
+            { id: 'c', labelEn: 'Hotel lobby after midnight', labelZh: '午夜后的酒店大堂' },
+            { id: 'd', labelEn: 'Corner booth, glasses clinking', labelZh: '角落卡座，杯子轻碰' }
+        ]
+    };
+    const repaired = repairQ1CoverageDraft(draft, basePlan);
+    assert.ok(repaired.options.some((o) => labelReadsKinetic(o.labelEn, o.labelZh)));
+    assert.ok(repaired.options.some((o) => labelReadsIntimate(o.labelEn, o.labelZh)));
+    assert.deepEqual(verifyQ1Coverage(repaired, basePlan), []);
 });

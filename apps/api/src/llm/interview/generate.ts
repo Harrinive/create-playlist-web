@@ -22,11 +22,15 @@ import {
     type TurnPlan
 } from './shared.js';
 import { verifyDeterministic } from './verify-deterministic.js';
+import { repairQ1CoverageDraft } from './verify-q1-coverage.js';
+import { partitionDeterministicFailures } from './verify-severity.js';
+import { turnHasExplicitAsk } from './verify-stem-hint.js';
 import {
     fitDraftOptionCount,
     fitPlanOptionIds,
     normalizeM1Draft,
     normalizeM4Draft,
+    repairM1ThresholdStem,
     trimSceneOptionLabels,
     type M4NormalizeContext
 } from './normalize-draft.js';
@@ -221,8 +225,26 @@ async function generateInterviewStepFast(
         if (det.passed) break;
 
         if (attempt === maxAttempts - 1) {
+            const best = tryBestEffortShip(
+                {
+                    stepId,
+                    plan: emptyPlan,
+                    draft,
+                    optionMin: meta.optionMin,
+                    optionMax: meta.optionMax,
+                    priorLabels,
+                    priorAnswers: input.priorAnswers,
+                    planner: plannerState
+                },
+                [],
+                []
+            );
+            if (best.shipped) {
+                draft = best.draft;
+                break;
+            }
             throw new Error(
-                `Fast interview verify failed after ${maxAttempts} attempts: ${verifyFailures.join('; ')}`
+                `Fast interview verify failed after ${maxAttempts} attempts: ${best.message}`
             );
         }
     }
@@ -267,6 +289,75 @@ function stripSceneStemGloss(draft: LlmStepDraft, stepId: string): LlmStepDraft 
         ...draft,
         stemGlossEn: undefined,
         stemGlossZh: undefined
+    };
+}
+
+type VerifyContext = {
+    stepId: string;
+    plan: TurnPlan;
+    draft: LlmStepDraft;
+    optionMin: number;
+    optionMax: number;
+    priorLabels: string[];
+    priorAnswers: Partial<InterviewAnswers>;
+    planner: InterviewPlannerState;
+};
+
+function runDeterministicVerify(ctx: VerifyContext) {
+    return verifyDeterministic({
+        stepId: ctx.stepId,
+        plan: ctx.plan,
+        draft: ctx.draft,
+        optionMin: ctx.optionMin,
+        optionMax: ctx.optionMax,
+        priorLabels: ctx.priorLabels,
+        priorAnswers: ctx.priorAnswers,
+        planner: ctx.planner
+    });
+}
+
+/** Repair + best-effort ship when verify retries are exhausted — always prefer showing a question. */
+function tryBestEffortShip(
+    ctx: VerifyContext,
+    logicFailures: string[],
+    copyFailures: string[]
+): { shipped: true; draft: LlmStepDraft } | { shipped: false; message: string } {
+    let draft = ctx.draft;
+    if (ctx.stepId === 'm1') {
+        draft = repairQ1CoverageDraft(draft, ctx.plan);
+        draft = repairM1ThresholdStem(draft, ctx.plan);
+    }
+
+    const det = runDeterministicVerify({ ...ctx, draft });
+    const { hard, soft } = partitionDeterministicFailures(det.failures);
+    const warnParts = [
+        ...soft,
+        ...logicFailures,
+        ...copyFailures,
+        ...(det.passed ? [] : det.failures)
+    ].filter(Boolean);
+
+    if (hard.length === 0) {
+        console.warn('[interview] verify exhausted — shipping after repair:', warnParts.join('; '));
+        return { shipped: true, draft };
+    }
+
+    if (
+        ctx.stepId === 'm1' &&
+        draft.options.length >= ctx.optionMin &&
+        draft.options.length <= ctx.optionMax &&
+        turnHasExplicitAsk(draft)
+    ) {
+        console.warn(
+            '[interview] verify exhausted — shipping repaired M1 despite residual checks:',
+            [...hard, ...warnParts].join('; ')
+        );
+        return { shipped: true, draft };
+    }
+
+    return {
+        shipped: false,
+        message: [...hard, ...soft, ...logicFailures, ...copyFailures].join('; ')
     };
 }
 
@@ -459,8 +550,26 @@ async function generateInterviewStepFull(
 
         const isLastAttempt = attempt === verifyAttempts - 1;
         if (isLastAttempt) {
+            const best = tryBestEffortShip(
+                {
+                    stepId,
+                    plan: fittedPlan,
+                    draft,
+                    optionMin: meta.optionMin,
+                    optionMax: meta.optionMax,
+                    priorLabels,
+                    priorAnswers: input.priorAnswers,
+                    planner: plannerState
+                },
+                logicFailures,
+                copyFailures
+            );
+            if (best.shipped) {
+                draft = best.draft;
+                break;
+            }
             throw new Error(
-                `Interview verify failed after ${verifyAttempts} attempts: ${allFailures.join('; ')}`
+                `Interview verify failed after ${verifyAttempts} attempts: ${best.message}`
             );
         }
 
