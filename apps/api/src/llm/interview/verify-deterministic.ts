@@ -12,7 +12,7 @@ import { verifyOptionOverlap } from './option-overlap.js';
 import { verifySceneContinuity } from './scene-continuity.js';
 import { verifyStemDistinctFromOptions } from './verify-stem-distinct.js';
 import { verifyM1PlacePartition } from './verify-m1-frame.js';
-import { stemHasExplicitAsk, turnHasExplicitAsk, verifyStemHintOverlap } from './verify-stem-hint.js';
+import { turnHasExplicitAsk, verifyStemHintOverlap } from './verify-stem-hint.js';
 
 export type DeterministicVerifyInput = {
     stepId: string;
