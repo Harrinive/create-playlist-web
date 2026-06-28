@@ -2,6 +2,7 @@ import type { InterviewAnswers } from '../../types/interview.js';
 import type { InterviewPlannerState } from '../../types/interview-planner.js';
 import {
     computeEligibleTraps,
+    isCanonicalM4NoneLabel,
     optionMatchesAnyDroppedTrap,
     trapClusterById
 } from './m4-eligibility.js';
@@ -210,6 +211,12 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
             const hasNone = options.some((o) => o.id === 'none');
             if (!hasNone) {
                 failures.push('M4 missing id "none" option');
+            }
+            const noneOpt = options.find((o) => o.id === 'none');
+            if (noneOpt && !isCanonicalM4NoneLabel(noneOpt.labelEn, noneOpt.labelZh)) {
+                failures.push(
+                    'M4 "none" option must use canonical no-extra-avoids label (not ambiguous "None of these")'
+                );
             }
             if (M4_AVOID_STEM_GUARDIAN_BAN.test(draft.stemEn)) {
                 failures.push(

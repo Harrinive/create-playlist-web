@@ -20,7 +20,7 @@ export function fastSystemPrompt(): string {
         '- M1 stems: threshold invite + explicit pick-a-still ask — options are different places; never scene-only caption',
         '- M2: concrete moment in M1 scene; BGM test; stem must ask/frame — never copy an option chip verbatim',
         '- M3: night-chapter beat in same world; no tempo/body/production vocabulary',
-        '- M4 avoid: M3 prop in stem (film-still) + plain Skip/Avoid trap labels (no scene nouns in options) + id "none"; pick traps only from eligible roster',
+        '- M4 avoid: M3 prop in stem (film-still) + plain Skip/Avoid trap labels (no scene nouns in options) + id "none" (no extra avoids — not "None of these"); pick traps only from eligible roster; each trap = plausible false positive only',
         '- M4 discriminant: single-select felt motion/groove/space; NO "none"; stem stays scene, options stay plain felt',
         '- Bilingual EN + ZH; option ids lowercase kebab-case',
         noGlossOutputBlock,
@@ -50,7 +50,7 @@ export function buildFastUserPrompt(
             : stepId === 'm4'
               ? isDiscriminant
                   ? 'Provide 2–6 single-select felt options. NO id "none". Stem = scene prop; options = plain felt motion/groove/space — no trap-cluster ids.'
-                  : 'Provide 3–5 reject traps plus id "none" (4–6 total). Only eligible trap clusters from filter hints. labelEn starts Skip/Avoid; options name traps only — no scene nouns.'
+                  : 'Provide 3–5 reject traps plus id "none" (4–6 total). Only eligible trap clusters from filter hints. labelEn starts Skip/Avoid; options name traps only — no scene nouns. none = "Nothing extra to avoid — I\'m open" / 没有额外要避开的.'
               : 'Provide 2–6 options.';
 
     const failureBlock =

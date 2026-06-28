@@ -27,12 +27,42 @@ Discriminant priority (skill § Question 4):
 | Trap cluster | Drop when |
 |--------------|-----------|
 | coffee-shop-template, lo-fi-study, elevator-muzak, grief-dirge | Kinetic/social Q1 region or kinetic story (neon, crowd, club, street) |
-| gym-hype, peak-club-banger | Intimate/calm M3, post-party aftermath, winding-down |
+| gym-hype, peak-club-banger, glossy-motivational, hyperpop-sheen | **Low social heat** — non-kinetic picked arc and non-kinetic Q1 region; OR intimate/calm/still M2–M3; OR post-party aftermath |
 | sad-acoustic-cliche | Kinetic social — **keep** for melancholy/wistful calm scenes |
-| aggressive-distortion | Calm M2/M3 unless edge-charged region |
+| aggressive-distortion | Calm/low-heat arc unless edge-charged region or kinetic story |
 | trailer-swell | Optional drop when M3 still + M2 calm |
 
+**Low social heat (structural):** picked labels contain no kinetic signals **and** Q1 `m1RegionId` is not kinetic-high / rhythm-social / edge-charged / restless-charged. Catches social-mid paths (e.g. window booth, shared fries) even when M2–M3 copy is poetic and lacks “quiet/intimate” keywords.
+
 Full registry: `TRAP_CLUSTERS` in `m4-eligibility.ts`.
+
+---
+
+## `none` option semantics
+
+M4 avoid is **multi-select**. User picks any traps that would wrongly pull the playlist.
+
+| id | Meaning |
+|----|---------|
+| trap cluster ids | Skip this accidental playlist pattern |
+| `"none"` | **No extra avoids** — user is open; implied avoids from dropped traps still apply downstream |
+
+**Canonical labels:** EN `"Nothing extra to avoid — I'm open"` · ZH `没有额外要避开的`
+
+**Not:** “None of these” (reads like rejecting all listed traps) · bare `都可以` (ambiguous in a reject question)
+
+---
+
+## Enforcement layers
+
+| Layer | Role |
+|-------|------|
+| **`m4-eligibility.ts`** | High-confidence floor — registry, region + non-kinetic arc drops, gate count |
+| **Deterministic verify** | Roster match, dropped-trap hard-fail, canonical `none` label, counts |
+| **Plan + draft prompts** | Plausible false positives only; pick from eligible roster |
+| **LLM logic verify** | **Obvious-answer test** on full M1–M3 context — fail traps a reasonable listener would already assume out of scope, even if eligibility missed them |
+
+Do not expect keyword heuristics to cover every poetic path; LLM verify owns context-dependent coherence.
 
 ---
 

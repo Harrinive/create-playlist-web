@@ -43,7 +43,9 @@ M1–M3 = story film-stills. **M4 avoid = plain skip/avoid trap sentences — NO
 
 Multi-select negatives; include id "none".
 
-**User job:** pick **what to skip** sonically (playlist traps).
+**User job:** pick **what to skip** sonically (playlist traps). Multi-select any that would wrongly pull the playlist — or pick **none** when you have **no extra avoids** beyond what the story already implies.
+
+**none semantics:** id "none" = **nothing extra to avoid** / user is open — NOT "reject all listed traps" and NOT bare 都可以.
 
 **Stem shape:** advance one concrete prop/beat from M3 in the SAME scene world. Ask what the **soundtrack must NOT sound like** — sonic reject only.
 - REQUIRED: scene prop from M3 + plain reject question ("what should this NOT sound like?" / "这(段)配乐最不该像什么？")
@@ -54,4 +56,4 @@ Multi-select negatives; include id "none".
 - labelEn MUST start with **Skip** or **Avoid** + trap lexicon
 - labelZh = parallel plain trap name — vary openers (避开/不要/别选/别听/别掉进)
 - **Id shape:** trap cluster id from eligible roster — not too-* mood-template ids
-- **Filter coherence:** plannedOptionIds from eligible trap clusters only`;
+- **Filter coherence:** plannedOptionIds from eligible trap clusters only; each trap = plausible false positive for a **remaining** hypothesis — omit obvious rejects already ruled out by M1–M3`;

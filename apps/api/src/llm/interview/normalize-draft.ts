@@ -3,6 +3,7 @@ import type { InterviewPlannerState } from '../../types/interview-planner.js';
 import type { LlmStepDraft, TurnPlan } from './shared.js';
 import {
     computeEligibleTraps,
+    M4_NONE_LABELS,
     optionMatchesAnyDroppedTrap,
     trapClusterById,
     type TrapCluster
@@ -151,6 +152,13 @@ export function repairM4AvoidEligibleTraps(
     const droppedIds = new Set(dropped.map((c) => c.id));
 
     const noneOpt = draft.options.find((o) => o.id === 'none');
+    const normalizedNone = noneOpt
+        ? {
+              ...noneOpt,
+              labelEn: M4_NONE_LABELS.labelEn,
+              labelZh: M4_NONE_LABELS.labelZh
+          }
+        : undefined;
     const keptNonNone = draft.options.filter((opt) => {
         if (opt.id === 'none') return false;
         return !optionMatchesAnyDroppedTrap(opt.id, opt.labelEn, opt.labelZh, dropped);
@@ -188,7 +196,7 @@ export function repairM4AvoidEligibleTraps(
     }
 
     const merged = [...keptNonNone, ...additions];
-    if (noneOpt) merged.push(noneOpt);
+    if (normalizedNone) merged.push(normalizedNone);
     return { ...draft, options: merged.slice(0, ctx.optionMax ?? 6) };
 }
 
@@ -198,7 +206,13 @@ export function normalizeM4AvoidLabels(draft: LlmStepDraft, plan: TurnPlan): Llm
     return {
         ...draft,
         options: draft.options.map((opt) => {
-            if (opt.id === 'none') return opt;
+            if (opt.id === 'none') {
+                return {
+                    ...opt,
+                    labelEn: M4_NONE_LABELS.labelEn,
+                    labelZh: M4_NONE_LABELS.labelZh
+                };
+            }
             const cluster = trapClusterById(opt.id);
             if (!cluster) return opt;
             return {

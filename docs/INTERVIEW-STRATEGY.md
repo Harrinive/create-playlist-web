@@ -71,7 +71,7 @@ Planner uses nine Q1 region IDs (`prompts/q1-regions.ts`) for offline audits —
 
 ### M4 dual mode
 
-See [INTERVIEW-M4-AVOID.md](./INTERVIEW-M4-AVOID.md). Deterministic trap eligibility before M4 generation; verify hard-fails options matching dropped clusters.
+See [INTERVIEW-M4-AVOID.md](./INTERVIEW-M4-AVOID.md). Deterministic trap eligibility before M4 generation (high-confidence floor); verify hard-fails options matching dropped clusters. **Trap–story coherence:** M4 avoid offers only traps still plausible as accidental misfits given M1–M3 picks — not obvious rejects (e.g. gym/club on a non-kinetic social-mid arc). LLM logic verify applies the obvious-answer test on full context when eligibility misses a path.
 
 ### Option counts
 
@@ -87,6 +87,7 @@ See [INTERVIEW-M4-AVOID.md](./INTERVIEW-M4-AVOID.md). Deterministic trap eligibi
 - **M1:** optional stem gloss when chip is poetic (off in code).
 - **M2 / M3:** no gloss — chip is self-contained story beat.
 - **M4 avoid:** plain trap language in main labels only.
+- **M4 avoid `none`:** multi-select escape — user has **no extra avoids** beyond implied drops. Canonical: EN *Nothing extra to avoid — I'm open* · ZH *没有额外要避开的*. Not “None of these” (ambiguous). See [INTERVIEW-M4-AVOID.md](./INTERVIEW-M4-AVOID.md).
 
 ---
 

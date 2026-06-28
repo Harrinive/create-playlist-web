@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { M4_NONE_LABELS } from '../m4-eligibility.js';
 import { INTERVIEW_PATHS } from '../../../../scripts/interview-paths.js';
 import { repairM4AvoidEligibleTraps, normalizeM4DiscriminantDraft } from '../normalize-draft.js';
 import type { LlmStepDraft, TurnPlan } from '../shared.js';
@@ -39,7 +40,7 @@ test('repairM4AvoidEligibleTraps swaps dropped calm traps for kinetic-eligible o
             },
             { id: 'lo-fi-study', labelEn: 'Avoid generic lo-fi study loops', labelZh: '不要复习循环' },
             { id: 'grief-dirge', labelEn: 'Skip grief dirges', labelZh: '避开挽歌' },
-            { id: 'none', labelEn: 'None of these', labelZh: '以上都不是' }
+            { id: 'none', labelEn: M4_NONE_LABELS.labelEn, labelZh: M4_NONE_LABELS.labelZh }
         ]
     };
 

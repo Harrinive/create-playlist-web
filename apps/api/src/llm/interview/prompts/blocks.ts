@@ -8,7 +8,7 @@ import {
     storyM3Block
 } from './sections/story-native.js';
 import type { M4Mode } from '../m4-eligibility.js';
-import { trapLabelTemplatesBlock } from '../m4-eligibility.js';
+import { M4_NONE_LABELS, trapLabelTemplatesBlock } from '../m4-eligibility.js';
 import { q1OpeningDiversityBlock as q1OpeningDiversityText } from './sections/q1-opening.js';
 
 export function sceneFeelingBlock(): string {
@@ -77,7 +77,8 @@ const m4PlanAvoidBlock = `## M4 plan — avoid mode (ClearDiscriminant)
 **Mandatory keepers:** when filter hints say "Do NOT drop …" — include those trap ids even if tempting to omit.
 **Anti-pattern ids:** mood-template too-* prefix (too-shiny, too-sad, too-mellow, etc.) — verify rejects these.
 **reachableGenresNote:** re-read Q1 social heat and region; crowded/kinetic scenes keep social house/dance warmth reachable unless answers explicitly wind down.
-**optionGuidance:** each non-none trap = distinct accidental playlist cluster; plain Skip/Avoid label shape in plan notes; omit traps already ruled out by M1–M3 and filter DROP lines.`;
+**optionGuidance:** each non-none trap = distinct **plausible false positive** for a remaining hypothesis; plain Skip/Avoid label shape in plan notes; omit traps already ruled out by M1–M3 and filter DROP lines — never offer gym/club/workout on non-kinetic social-mid arcs.
+**none option:** id "none" — EN "${M4_NONE_LABELS.labelEn}" / ZH "${M4_NONE_LABELS.labelZh}" (no extra avoids; not "None of these")`;
 
 const m4PlanDiscriminantBlock = `## M4 plan — discriminant fallback (PositiveDiscriminant)
 **questionMode:** PositiveDiscriminant
@@ -100,6 +101,7 @@ export function m4ExampleBlock(): string {
     return `## M4 avoid — structural shape (invent fresh STEM wording only)
 **Stem (film-still register):** one M3 prop/beat still visible + plain sonic-reject question in the same scene world. Invent new wording each time — do not copy prompt canon.
 **Options (plain reject register):** multi-select trap labels + id "none". Labels follow fixed template — do NOT invent poetic scene lines for options.
+**none option (mandatory when avoid mode):** id "none" — EN "${M4_NONE_LABELS.labelEn}" / ZH "${M4_NONE_LABELS.labelZh}" — user has no **extra** avoids; not ambiguous "None of these".
 
 **Label template (mandatory for every non-none option):**
 - labelEn: starts with **Skip** or **Avoid** + trap lexicon (e.g. "Skip elevator muzak and hold music", "Avoid gym hype and workout playlists", "Skip the algorithm rabbit hole / Discover Weekly rut")

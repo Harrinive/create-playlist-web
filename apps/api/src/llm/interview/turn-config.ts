@@ -108,7 +108,7 @@ export function resolveTurnConfig(
                 questionMode: 'ClearDiscriminant',
                 draftBlocks: [clearDiscriminantBlock(), m4ExampleBlock(), m4PlainRejectBlock()],
                 logicVerifyIntro:
-                    '## Logic verify focus\nM4: stem advances M3 prop; distinct trap clusters in plain labels; includes "none"; only eligible trap clusters.',
+                    '## Logic verify focus\nM4 avoid ONLY — apply checks 9 and 9a, NOT 9b. Re-read all prior answers + reachableGenresNote + filter DROP/Eligible lines. Obvious-answer test: fail gym/club/workout traps on non-kinetic social-mid arcs even if eligibility missed them. Each trap must be a plausible false positive for a remaining hypothesis. Includes canonical "none" (no extra avoids). Stem advances M3 prop.',
                 copyVerifyIntro:
                     '## Copy verify focus\nM4 stem: native ZH scene still + reject ask (no calques). Options: plain trap names from registry; varied reject openers.'
             };

@@ -42,6 +42,19 @@ const postPartyPrior: Partial<InterviewAnswers> = {
     m3: { id: 'stacking-plates', label: 'Stacking plates, chairs pushed back' }
 };
 
+const windowBoothPrior: Partial<InterviewAnswers> = {
+    m1: { id: 'window-booth', label: 'Booth by the window, shared fries' },
+    m2: { id: 'empty-plate', label: 'Empty plate, brighter window, quick glances' },
+    m3: { id: 'stay-window', label: 'Stay by the bright window, trading one more look' }
+};
+
+const windowBoothPlanner: InterviewPlannerState = {
+    version: 1,
+    hypotheses: ['indie pop mood', 'mellow soul/R&B', 'lounge warmth'],
+    coverageRisk: false,
+    m1RegionId: 'social-mid'
+};
+
 test('neon kinetic path drops calm/acoustic/study/elevator traps', () => {
     const result = computeEligibleTraps(neonKineticPrior, neonPlanner);
     const droppedIds = result.droppedIds;
@@ -88,6 +101,19 @@ test('car-rain nostalgic drift drops gym/party keeps sad-acoustic', () => {
 test('post-party drops party/club avoids', () => {
     const result = computeEligibleTraps(postPartyPrior, { version: 1, hypotheses: [], coverageRisk: false });
     assert.ok(result.droppedIds.includes('peak-club-banger'));
+});
+
+test('window booth social-mid drops gym/club hype traps', () => {
+    const result = computeEligibleTraps(windowBoothPrior, windowBoothPlanner);
+    assert.ok(result.droppedIds.includes('gym-hype'));
+    assert.ok(result.droppedIds.includes('peak-club-banger'));
+    assert.ok(result.impliedAvoids.some((a) => a.includes('club')));
+});
+
+test('kinetic neon path keeps gym/club traps eligible', () => {
+    const result = computeEligibleTraps(neonKineticPrior, neonPlanner);
+    assert.ok(result.eligibleIds.includes('gym-hype'));
+    assert.ok(result.eligibleIds.includes('peak-club-banger'));
 });
 
 test('discriminant fallback when fewer than 4 eligible traps', () => {

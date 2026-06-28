@@ -10,6 +10,7 @@ import {
     resolveInterviewStep,
     stepMetaForId
 } from './resolve-step.js';
+import { M4_NONE_LABELS } from './m4-eligibility.js';
 import type { InterviewAnswers } from '../../types/interview.js';
 import type { InterviewPlannerState } from '../../types/interview-planner.js';
 import { emptyPlannerState } from '../../types/interview-planner.js';
@@ -87,7 +88,7 @@ function toBilingualStep(
                 ...options,
                 {
                     id: 'none',
-                    label: { en: "None of these — I'm open", zh: '都可以' }
+                    label: { en: M4_NONE_LABELS.labelEn, zh: M4_NONE_LABELS.labelZh }
                 }
             ];
         }

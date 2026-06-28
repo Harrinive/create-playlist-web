@@ -44,9 +44,11 @@ export function buildM4AvoidCopyRules(): string {
         `## English — plain trap reject (M4 avoid only)
 Each non-"none" labelEn starts with **Skip** or **Avoid** + trap lexicon (muzak, hype, cliché, swell, rabbit hole, etc.).
 Self-contained playlist-trap name — not imagist scene poetry, not survey UX.
-~6–12 words OK for trap clarity.`,
+~6–12 words OK for trap clarity.
+**none option:** "Nothing extra to avoid — I'm open" — user declines extra avoids; NOT "None of these".`,
         chineseM4Stem,
-        chineseM4Trap
+        `${chineseM4Trap}
+**none option:** 没有额外要避开的 — explicit no-extra-avoids; FORBIDDEN bare 都可以 or 以上都不是 (ambiguous with multi-select rejects).`
     );
 }
 

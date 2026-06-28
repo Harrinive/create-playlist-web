@@ -23,6 +23,7 @@ function isHardDeterministicFailure(failure: string): boolean {
         /missing planned option id/i.test(failure) ||
         /optionSlots key .* missing/i.test(failure) ||
         /M4 missing id "none"/i.test(failure) ||
+        /M4 "none" option must use canonical/i.test(failure) ||
         /M4 option .* must not use gloss/i.test(failure) ||
         /M4 option .* needs plain trap language/i.test(failure) ||
         /LogicalDecision missing option id "you-decide"/i.test(failure) ||

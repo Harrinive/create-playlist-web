@@ -89,6 +89,22 @@ export const INTERVIEW_PATHS: InterviewPathPreset[] = [
         }
     },
     {
+        id: 'window-booth-glances',
+        description: 'Window booth shared fries → glances → stay by window (social-mid low heat)',
+        priorAnswers: {
+            m1: { id: 'window-booth', label: 'Booth by the window, shared fries' },
+            m2: { id: 'empty-plate', label: 'Empty plate, brighter window, quick glances' },
+            m3: { id: 'stay-window', label: 'Stay by the bright window, trading one more look' }
+        },
+        planner: {
+            version: 1,
+            hypotheses: ['indie pop mood', 'mellow soul/R&B', 'lounge warmth'],
+            coverageRisk: false,
+            m1RegionId: 'social-mid',
+            reachableGenresNote: 'mellow indie and soul; peak club and gym hype ruled out'
+        }
+    },
+    {
         id: 'tight-discriminant',
         description: 'Kinetic Q1 but M2–M3 wind-down → discriminant-1b fallback',
         priorAnswers: {

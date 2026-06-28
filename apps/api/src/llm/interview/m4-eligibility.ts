@@ -3,6 +3,19 @@ import type { InterviewPlannerState } from '../../types/interview-planner.js';
 
 export type M4Mode = 'avoid' | 'discriminant-1a' | 'discriminant-1b' | 'discriminant-1c';
 
+/** Canonical M4 avoid escape option — no extra user avoids beyond implied drops. */
+export const M4_NONE_LABELS = {
+    labelEn: "Nothing extra to avoid — I'm open",
+    labelZh: '没有额外要避开的'
+} as const;
+
+export const KINETIC_M1_REGION_IDS = [
+    'kinetic-high',
+    'rhythm-social',
+    'edge-charged',
+    'restless-charged'
+] as const;
+
 export type M4Context = {
     prior: Partial<InterviewAnswers>;
     planner?: InterviewPlannerState | null;
@@ -14,6 +27,9 @@ export type M4Context = {
     melancholy: boolean;
     edgeCharged: boolean;
     kineticSocialRegion: boolean;
+    kineticRegion: boolean;
+    nonKineticArc: boolean;
+    lowSocialHeat: boolean;
     postParty: boolean;
     m3StillOrDrift: boolean;
 };
@@ -84,6 +100,7 @@ export function buildM4Context(
         'wistful',
         'slow',
         'drift',
+        'nostalgic',
         '平静',
         '温柔',
         '怅然',
@@ -127,10 +144,14 @@ export function buildM4Context(
         m1RegionId === 'kinetic-high' ||
         m1RegionId === 'rhythm-social' ||
         (KINETIC_REGION_IDS as readonly string[]).includes(m1RegionId);
+    const kineticRegion = (KINETIC_M1_REGION_IDS as readonly string[]).includes(m1RegionId);
     const postParty = hasAny(blob, ['cake', 'candle', 'party', '蛋糕', '蜡烛']);
     const m3StillOrDrift =
         hasAny(blob, ['still', 'drift', 'slow', '静', '慢', '漂浮']) ||
         m1RegionId === 'intimate-still';
+    const nonKineticArc = !kinetic && !kineticRegion;
+    const lowSocialHeat =
+        nonKineticArc || intimate || calm || m3StillOrDrift || melancholy;
 
     return {
         prior,
@@ -143,9 +164,16 @@ export function buildM4Context(
         melancholy,
         edgeCharged,
         kineticSocialRegion,
+        kineticRegion,
+        nonKineticArc,
+        lowSocialHeat,
         postParty,
         m3StillOrDrift
     };
+}
+
+function dropHighEnergyTraps(ctx: M4Context): boolean {
+    return ctx.lowSocialHeat && !ctx.kinetic;
 }
 
 /** Trap cluster registry — skill § M4 avoid list */
@@ -154,10 +182,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
         id: 'gym-hype',
         matchPattern:
             /\b(gym|workout|hype|motivational|self-help|健身|运动)\b|gym-hype|workout-playlist/i,
-        dropWhen: (ctx) =>
-            (ctx.intimate || ctx.calm || ctx.m3StillOrDrift) &&
-            !ctx.kineticSocialRegion &&
-            !ctx.kinetic,
+        dropWhen: dropHighEnergyTraps,
         impliedAvoidEn: 'workout hype and gym motivation playlists',
         labelEnTemplate: 'Skip gym hype and workout playlists',
         labelZhTemplate: '避开健身打鸡血和运动歌单'
@@ -166,9 +191,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
         id: 'peak-club-banger',
         matchPattern:
             /\b(club|edm|party|banger|drop|house party|crowded|夜店|派对|蹦迪)\b|peak-club|club-banger/i,
-        dropWhen: (ctx) =>
-            ((ctx.intimate || ctx.calm || ctx.m3StillOrDrift) && !ctx.kinetic) ||
-            ctx.postParty,
+        dropWhen: (ctx) => dropHighEnergyTraps(ctx) || ctx.postParty,
         impliedAvoidEn: 'peak club bangers and EDM drop energy',
         labelEnTemplate: 'Avoid peak-club bangers and EDM drops',
         labelZhTemplate: '别选夜店顶嗨和轰炸式下坠'
@@ -177,7 +200,8 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
         id: 'aggressive-distortion',
         matchPattern:
             /\b(aggressive|angry|distortion|loud|metal|scream|激进|愤怒|失真)\b|aggressive/i,
-        dropWhen: (ctx) => (ctx.calm || ctx.m3StillOrDrift) && !ctx.edgeCharged,
+        dropWhen: (ctx) =>
+            (ctx.calm || ctx.m3StillOrDrift || ctx.lowSocialHeat) && !ctx.edgeCharged && !ctx.kinetic,
         impliedAvoidEn: 'aggressive distortion and angry loud energy',
         labelEnTemplate: 'Skip aggressive distortion and loud metal crunch',
         labelZhTemplate: '不要激进失真和金属硬响'
@@ -250,7 +274,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
     {
         id: 'hyperpop-sheen',
         matchPattern: /\b(hyperpop|hyper-pop|glossy pop|sheen| glossy|超流行| glossy)\b|hyperpop/i,
-        dropWhen: (ctx) => ctx.intimate && ctx.calm && !ctx.kinetic,
+        dropWhen: (ctx) => ctx.lowSocialHeat && !ctx.kinetic,
         impliedAvoidEn: 'glossy hyperpop sheen',
         labelEnTemplate: 'Avoid glossy hyperpop sheen',
         labelZhTemplate: '别听 hyperpop 那种闪亮光泽'
@@ -258,7 +282,7 @@ export const TRAP_CLUSTERS: TrapCluster[] = [
     {
         id: 'glossy-motivational',
         matchPattern: /\b(motivational|self-help|inspirational|励志|鸡汤)\b|glossy-motivational/i,
-        dropWhen: (ctx) => (ctx.calm || ctx.melancholy) && !ctx.kinetic,
+        dropWhen: dropHighEnergyTraps,
         impliedAvoidEn: 'motivational self-help energy',
         labelEnTemplate: 'Skip motivational self-help and glossy pep talk',
         labelZhTemplate: '不要励志鸡汤和打鸡血喊话'
@@ -382,9 +406,10 @@ export function trapClusterById(id: string): TrapCluster | undefined {
 }
 
 export function trapLabelTemplatesBlock(): string {
-    return TRAP_CLUSTERS.map(
+    const trapLines = TRAP_CLUSTERS.map(
         (c) => `- ${c.id}: "${c.labelEnTemplate}" / "${c.labelZhTemplate}"`
     ).join('\n');
+    return `${trapLines}\n- none: "${M4_NONE_LABELS.labelEn}" / "${M4_NONE_LABELS.labelZh}"`;
 }
 
 type TrapLabelDraft = {
@@ -402,6 +427,12 @@ export function draftUsesCanonicalTrapLabels(draft: TrapLabelDraft): boolean {
         if (opt.labelZh.trim() !== cluster.labelZhTemplate) return false;
     }
     return true;
+}
+
+export function isCanonicalM4NoneLabel(labelEn: string, labelZh: string): boolean {
+    return (
+        labelEn.trim() === M4_NONE_LABELS.labelEn && labelZh.trim() === M4_NONE_LABELS.labelZh
+    );
 }
 
 export function resolveM4Gate(

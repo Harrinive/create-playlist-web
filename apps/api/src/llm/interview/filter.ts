@@ -1,6 +1,6 @@
 import type { InterviewAnswers } from '../../types/interview.js';
 import type { InterviewPlannerState } from '../../types/interview-planner.js';
-import { computeEligibleTraps } from './m4-eligibility.js';
+import { buildM4Context, computeEligibleTraps } from './m4-eligibility.js';
 
 function labelBlob(prior: Partial<InterviewAnswers>): string {
     const parts: string[] = [];
@@ -137,12 +137,14 @@ export function buildFilterHints(
             );
         } else if (
             !kineticSocialRegion &&
-            (intimate || calm || m1Region === 'intimate-still')
+            (buildM4Context(prior, planner).lowSocialHeat || m1Region === 'intimate-still')
         ) {
             hints.push('Drop gym / club / aggressive workout avoids — already implied by calm intimate scene.');
         }
         if (!kinetic && !edgeCharged) {
-            hints.push('Keep M4 avoids discriminating — drop options that are already ruled out by prior picks.');
+            hints.push(
+                'Keep M4 avoids discriminating — each trap must be a plausible false positive for a remaining hypothesis, not an obvious reject already ruled out by prior picks.'
+            );
         }
         hints.push(
             'Each trap must guard a different remaining hypothesis — name the accidental playlist it would wrongly pull toward.'

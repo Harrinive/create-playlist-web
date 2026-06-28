@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { M4_NONE_LABELS } from '../m4-eligibility.js';
 import { verifyDeterministic } from '../verify-deterministic.js';
 import type { LlmStepDraft, TurnPlan } from '../shared.js';
 
@@ -89,7 +90,7 @@ test('fails M4 too-* mood-template option id', () => {
                 labelEn: 'Skip sad acoustic cliché',
                 labelZh: '避开伤感木吉他套路'
             },
-            { id: 'none', labelEn: "None — I'm open", labelZh: '都可以' }
+            { id: 'none', labelEn: M4_NONE_LABELS.labelEn, labelZh: M4_NONE_LABELS.labelZh }
         ]
     };
     const result = verifyDeterministic({
@@ -122,7 +123,7 @@ test('fails M4 option without plain trap language', () => {
                 labelEn: 'Iron doors echoing',
                 labelZh: '铁门回响'
             },
-            { id: 'none', labelEn: "None — I'm open", labelZh: '都可以' }
+            { id: 'none', labelEn: M4_NONE_LABELS.labelEn, labelZh: M4_NONE_LABELS.labelZh }
         ]
     };
     const result = verifyDeterministic({
@@ -383,7 +384,7 @@ test('fails M4 avoid option matching dropped trap on kinetic path', () => {
                 labelEn: 'Skip hyperpop sheen',
                 labelZh: '别要 glossy hyperpop'
             },
-            { id: 'none', labelEn: "None — I'm open", labelZh: '都可以' }
+            { id: 'none', labelEn: M4_NONE_LABELS.labelEn, labelZh: M4_NONE_LABELS.labelZh }
         ]
     };
     const priorAnswers = {
@@ -450,7 +451,7 @@ test('fails M4 avoid stemZh with 变成 framing', () => {
                 labelEn: 'Skip gym hype and workout playlists',
                 labelZh: '避开健身打鸡血和运动歌单'
             },
-            { id: 'none', labelEn: 'None', labelZh: '都可以' }
+            { id: 'none', labelEn: M4_NONE_LABELS.labelEn, labelZh: M4_NONE_LABELS.labelZh }
         ]
     };
     const result = verifyDeterministic({
@@ -462,6 +463,83 @@ test('fails M4 avoid stemZh with 变成 framing', () => {
     });
     assert.equal(result.passed, false);
     assert.ok(result.failures.some((f) => f.includes('变成')));
+});
+
+test('fails M4 avoid with ambiguous none label', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        questionMode: 'ClearDiscriminant',
+        optionSlots: {},
+        plannedOptionIds: ['algorithm-rabbit-hole', 'none']
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'The window is brighter — what should this NOT sound like?',
+        stemZh: '窗更亮了——这配乐最不该像什么？',
+        options: [
+            {
+                id: 'algorithm-rabbit-hole',
+                labelEn: 'Skip the algorithm rabbit hole and Discover Weekly rut',
+                labelZh: '别掉进算法推荐老路'
+            },
+            { id: 'none', labelEn: "None of these — I'm open", labelZh: '都可以' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm4',
+        plan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('canonical no-extra-avoids')));
+});
+
+test('fails M4 avoid gym-hype on window booth social-mid path', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        questionMode: 'ClearDiscriminant',
+        optionSlots: {},
+        plannedOptionIds: ['gym-hype', 'algorithm-rabbit-hole', 'none']
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'Still by the bright window — what should this NOT sound like?',
+        stemZh: '还坐在亮窗边——这配乐最不该像什么？',
+        options: [
+            {
+                id: 'gym-hype',
+                labelEn: 'Skip gym hype and workout playlists',
+                labelZh: '避开健身打鸡血和运动歌单'
+            },
+            {
+                id: 'algorithm-rabbit-hole',
+                labelEn: 'Skip the algorithm rabbit hole and Discover Weekly rut',
+                labelZh: '别掉进算法推荐老路'
+            },
+            { id: 'none', labelEn: M4_NONE_LABELS.labelEn, labelZh: M4_NONE_LABELS.labelZh }
+        ]
+    };
+    const priorAnswers = {
+        m1: { id: 'window-booth', label: 'Booth by the window, shared fries' },
+        m2: { id: 'empty-plate', label: 'Empty plate, brighter window, quick glances' },
+        m3: { id: 'stay-window', label: 'Stay by the bright window, trading one more look' }
+    };
+    const result = verifyDeterministic({
+        stepId: 'm4',
+        plan,
+        draft,
+        optionMin: 2,
+        optionMax: 6,
+        priorAnswers,
+        planner: {
+            version: 1,
+            hypotheses: ['indie pop mood'],
+            coverageRisk: false,
+            m1RegionId: 'social-mid'
+        }
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('gym-hype')));
 });
 
 test('fails M4 discriminant with parallel 感 labelZh chips', () => {
@@ -502,7 +580,7 @@ test('fails M4 discriminant with none option', () => {
         stemZh: '门一开——哪一下最像你？',
         options: [
             { id: 'steady', labelEn: 'Steady pulse under the sign', labelZh: '招牌下稳定的脉动' },
-            { id: 'none', labelEn: "None — I'm open", labelZh: '都可以' }
+            { id: 'none', labelEn: M4_NONE_LABELS.labelEn, labelZh: M4_NONE_LABELS.labelZh }
         ]
     };
     const result = verifyDeterministic({
