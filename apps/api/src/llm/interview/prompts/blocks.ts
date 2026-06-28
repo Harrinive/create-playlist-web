@@ -81,9 +81,9 @@ const m4PlanAvoidBlock = `## M4 plan — avoid mode (ClearDiscriminant)
 
 const m4PlanDiscriminantBlock = `## M4 plan — discriminant fallback (PositiveDiscriminant)
 **questionMode:** PositiveDiscriminant
-**plannedOptionIds:** 2–6 felt motion/groove/space options — NO id "none"; NO trap-cluster ids.
+**plannedOptionIds:** 2–6 felt motion/groove/space options — NO id "none"; NO trap-cluster ids; optional escape id \`open-any\` or \`no-constraints\`.
 **reachableGenresNote:** name which hypotheses the discriminant axis still splits.
-**optionGuidance:** single-select felt registers (pace, groove grain, or latent space) — plain labels, no genre names.`;
+**optionGuidance:** single-select felt registers (pace, groove grain, or latent space) — plain positive labels, no genre names, no Skip/Avoid/no/not wording.`;
 
 /** Mode-conditional M4 planner context — avoid vs discriminant variants. */
 export function m4PlanContextBlockForMode(m4Mode: M4Mode = 'avoid'): string {

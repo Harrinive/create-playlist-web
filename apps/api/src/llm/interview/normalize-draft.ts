@@ -1,5 +1,25 @@
+import type { InterviewAnswers } from '../../types/interview.js';
+import type { InterviewPlannerState } from '../../types/interview-planner.js';
 import type { LlmStepDraft, TurnPlan } from './shared.js';
-import { trapClusterById } from './m4-eligibility.js';
+import {
+    computeEligibleTraps,
+    optionMatchesAnyDroppedTrap,
+    trapClusterById,
+    type TrapCluster
+} from './m4-eligibility.js';
+
+/** Cap EN chip length — verify hard-fails >12 words; trim before verify as structural repair. */
+export function trimSceneOptionLabels(draft: LlmStepDraft, stepId: string, maxWords = 12): LlmStepDraft {
+    if (!['m2', 'm3', 'm4'].includes(stepId)) return draft;
+    return {
+        ...draft,
+        options: draft.options.map((opt) => {
+            const words = opt.labelEn.trim().split(/\s+/).filter(Boolean);
+            if (words.length <= maxWords) return opt;
+            return { ...opt, labelEn: words.slice(0, maxWords).join(' ') };
+        })
+    };
+}
 
 /** Trim excess LLM options — keeps planned ids and Q1 region coverage first. */
 export function fitDraftOptionCount(
@@ -69,6 +89,83 @@ export function normalizeDraftM4Ids(draft: LlmStepDraft, stepId: string): LlmSte
     };
 }
 
+/** Positive escape hatch when discriminant plan calls for open/no-constraints slot. */
+const DISCRIMINANT_ESCAPE_IDS = new Set(['open-any', 'no-constraints', 'no-constraint']);
+const DISCRIMINANT_ESCAPE_OPTION = {
+    id: 'open-any',
+    labelEn: 'Let it breathe — follow the moment',
+    labelZh: '随它去——跟着当下走'
+};
+
+export type M4NormalizeContext = {
+    priorAnswers?: Partial<InterviewAnswers>;
+    planner?: InterviewPlannerState | null;
+    optionMin?: number;
+    optionMax?: number;
+};
+
+function trapOptionFromCluster(cluster: TrapCluster): LlmStepDraft['options'][number] {
+    return {
+        id: cluster.id,
+        labelEn: cluster.labelEnTemplate,
+        labelZh: cluster.labelZhTemplate
+    };
+}
+
+/** Replace dropped M4 avoid traps with eligible registry clusters (deterministic repair). */
+export function repairM4AvoidEligibleTraps(
+    draft: LlmStepDraft,
+    plan: TurnPlan,
+    ctx: M4NormalizeContext
+): LlmStepDraft {
+    if (plan.questionMode !== 'ClearDiscriminant') return draft;
+    const prior = ctx.priorAnswers ?? {};
+    const { eligible, dropped } = computeEligibleTraps(prior, ctx.planner);
+    const eligibleById = new Map(eligible.map((c) => [c.id, c]));
+    const droppedIds = new Set(dropped.map((c) => c.id));
+
+    const noneOpt = draft.options.find((o) => o.id === 'none');
+    const keptNonNone = draft.options.filter((opt) => {
+        if (opt.id === 'none') return false;
+        return !optionMatchesAnyDroppedTrap(opt.id, opt.labelEn, opt.labelZh, dropped);
+    });
+
+    const usedIds = new Set(keptNonNone.map((o) => o.id));
+    const plannedNonNone = (plan.plannedOptionIds ?? []).filter((id) => id !== 'none').length;
+    const maxTotal = ctx.optionMax ?? 6;
+    const targetNonNone = Math.max(
+        3,
+        Math.min(maxTotal - (noneOpt ? 1 : 0), plannedNonNone || plan.plannedOptionCount || 4)
+    );
+
+    const additions: LlmStepDraft['options'] = [];
+    const tryAdd = (cluster: TrapCluster | undefined) => {
+        if (
+            !cluster ||
+            droppedIds.has(cluster.id) ||
+            usedIds.has(cluster.id) ||
+            additions.length + keptNonNone.length >= targetNonNone
+        ) {
+            return;
+        }
+        additions.push(trapOptionFromCluster(cluster));
+        usedIds.add(cluster.id);
+    };
+
+    for (const id of plan.plannedOptionIds ?? []) {
+        if (id === 'none') continue;
+        tryAdd(eligibleById.get(id));
+    }
+    for (const cluster of eligible) {
+        if (additions.length + keptNonNone.length >= targetNonNone) break;
+        tryAdd(cluster);
+    }
+
+    const merged = [...keptNonNone, ...additions];
+    if (noneOpt) merged.push(noneOpt);
+    return { ...draft, options: merged.slice(0, ctx.optionMax ?? 6) };
+}
+
 /** Apply canonical trap label templates when option id matches registry (avoid mode). */
 export function normalizeM4AvoidLabels(draft: LlmStepDraft, plan: TurnPlan): LlmStepDraft {
     if (plan.questionMode !== 'ClearDiscriminant') return draft;
@@ -90,20 +187,36 @@ export function normalizeM4AvoidLabels(draft: LlmStepDraft, plan: TurnPlan): Llm
 /** Strip none and avoid-framing leakage on discriminant drafts. */
 export function normalizeM4DiscriminantDraft(draft: LlmStepDraft, plan: TurnPlan): LlmStepDraft {
     if (plan.questionMode !== 'PositiveDiscriminant') return draft;
-    const filtered = draft.options.filter((o) => o.id !== 'none');
-    return { ...draft, options: filtered };
+    let options = draft.options.filter((o) => o.id !== 'none');
+
+    const plannedEscape = (plan.plannedOptionIds ?? []).find((id) =>
+        DISCRIMINANT_ESCAPE_IDS.has(id)
+    );
+    if (plannedEscape && !options.some((o) => DISCRIMINANT_ESCAPE_IDS.has(o.id))) {
+        options = [
+            ...options,
+            {
+                ...DISCRIMINANT_ESCAPE_OPTION,
+                id: plannedEscape === 'no-constraints' ? 'no-constraints' : DISCRIMINANT_ESCAPE_OPTION.id
+            }
+        ];
+    }
+
+    return { ...draft, options };
 }
 
 export function normalizeM4Draft(
     draft: LlmStepDraft,
     stepId: string,
-    plan: TurnPlan
+    plan: TurnPlan,
+    ctx: M4NormalizeContext = {}
 ): LlmStepDraft {
     let next = normalizeDraftM4Ids(draft, stepId);
     if (stepId !== 'm4') return next;
     if (plan.questionMode === 'PositiveDiscriminant') {
         return normalizeM4DiscriminantDraft(next, plan);
     }
+    next = repairM4AvoidEligibleTraps(next, plan, ctx);
     return normalizeM4AvoidLabels(next, plan);
 }
 

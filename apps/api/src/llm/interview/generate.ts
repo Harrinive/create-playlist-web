@@ -10,6 +10,7 @@ import {
     resolveInterviewStep,
     stepMetaForId
 } from './resolve-step.js';
+import type { InterviewAnswers } from '../../types/interview.js';
 import type { InterviewPlannerState } from '../../types/interview-planner.js';
 import { emptyPlannerState } from '../../types/interview-planner.js';
 import {
@@ -20,7 +21,7 @@ import {
     type TurnPlan
 } from './shared.js';
 import { verifyDeterministic } from './verify-deterministic.js';
-import { fitDraftOptionCount, fitPlanOptionIds, normalizeM4Draft } from './normalize-draft.js';
+import { fitDraftOptionCount, fitPlanOptionIds, normalizeM4Draft, trimSceneOptionLabels, type M4NormalizeContext } from './normalize-draft.js';
 import {
     classifyReviseKind,
     verifyCopyInterviewStep,
@@ -250,6 +251,17 @@ function shouldRunCopyVerify(stepId: string): boolean {
     return stepId === 'm4' || stepId === 'm_clarify';
 }
 
+function m4NormalizeCtx(
+    stepId: string,
+    priorAnswers: Partial<InterviewAnswers>,
+    planner: InterviewPlannerState,
+    optionMin: number,
+    optionMax: number
+): M4NormalizeContext | undefined {
+    if (stepId !== 'm4') return undefined;
+    return { priorAnswers, planner, optionMin, optionMax };
+}
+
 function stripSceneStemGloss(draft: LlmStepDraft, stepId: string): LlmStepDraft {
     if (!['m1', 'm2', 'm3', 'm_clarify'].includes(stepId)) return draft;
     return {
@@ -337,10 +349,14 @@ async function generateInterviewStepFull(
     }
 
     let draft = fitDraftOptionCount(
-        normalizeM4Draft(
-            await draftInterviewStep(env, ctxWithStep, fittedPlan, model),
-            stepId,
-            fittedPlan
+        trimSceneOptionLabels(
+            normalizeM4Draft(
+                await draftInterviewStep(env, ctxWithStep, fittedPlan, model),
+                stepId,
+                fittedPlan,
+                m4NormalizeCtx(stepId, input.priorAnswers, plannerState, meta.optionMin, meta.optionMax)
+            ),
+            stepId
         ),
         fittedPlan,
         stepId,
@@ -355,7 +371,7 @@ async function generateInterviewStepFull(
 
     for (let attempt = 0; attempt < verifyAttempts; attempt += 1) {
         draft = stripSceneStemGloss(
-            fitDraftOptionCount(draft, fittedPlan, stepId, meta.optionMax),
+            fitDraftOptionCount(trimSceneOptionLabels(draft, stepId), fittedPlan, stepId, meta.optionMax),
             stepId
         );
 
@@ -410,18 +426,22 @@ async function generateInterviewStepFull(
 
         const kind = classifyReviseKind(deterministicFailures, logicFailures, copyFailures);
         draft = fitDraftOptionCount(
-            normalizeM4Draft(
-                await reviseInterviewStep(
-                    env,
-                    ctxWithStep,
+            trimSceneOptionLabels(
+                normalizeM4Draft(
+                    await reviseInterviewStep(
+                        env,
+                        ctxWithStep,
+                        fittedPlan,
+                        draft,
+                        allFailures,
+                        model,
+                        kind
+                    ),
+                    stepId,
                     fittedPlan,
-                    draft,
-                    allFailures,
-                    model,
-                    kind
+                    m4NormalizeCtx(stepId, input.priorAnswers, plannerState, meta.optionMin, meta.optionMax)
                 ),
-                stepId,
-                fittedPlan
+                stepId
             ),
             fittedPlan,
             stepId,

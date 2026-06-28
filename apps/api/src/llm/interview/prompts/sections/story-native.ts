@@ -18,8 +18,9 @@ export const storyM2Block = `## M2 Mood — moment in the M1 scene
 **User job:** pick **which moment** in the M1 world is most you (BGM test).
 
 **Output shape**
-- **Stem:** name M1 world + explicit ask which beat/moment.
-- **Options:** concrete objects + event **in M1 world only** — no scene reset.
+- **Stem:** name M1 world + explicit ask which beat/moment — must include pick/choose framing (which moment feels most like you?).
+- **Options:** concrete objects + event **in M1 world only** — **max 12 words EN** (hard limit); one prop + one action per chip.
+- **FORBIDDEN:** mood-poetry without props; production vocab (drop, kick, BPM); stem re-captioning M1 pick verbatim.
 
 **Anti-pattern:** abstract mood poetry; 3+ interchangeable crowd-energy lines; stem copies an option chip verbatim.`;
 
@@ -27,10 +28,10 @@ export const storyM3Block = `## M3 Night chapter — where is tonight in the sto
 **User job:** pick **where tonight is** in the story arc (same M1 world).
 
 **Output shape**
-- **Stem:** chapter ask with explicit frame — 这一晚进行到哪一段？ / Where is tonight in the story?
-- **Options:** story beats (props, light, action) — not tempo labels or mood stacks.
+- **Stem:** chapter ask with explicit frame — 这一晚进行到哪一段？ / Which beat happens next in the story?
+- **Options:** story beats (props, light, action) — max ~12 words EN; no production vocab (drop, kick, BPM).
 
-**Anti-pattern:** body-part choreography; music-pattern poetry dressed as scene.`;
+**Anti-pattern:** universal drift metaphor without branching ("where does the night pull you?"); body-part choreography; music-pattern poetry dressed as scene.`;
 
 export const logicalDecisionBlock = `## M3 LogicalDecision — groove grain (only when coverageRisk + needsGrooveGrain)
 Plain body-move main lines + you-decide / 你来定. Put groove read in the main label (even pulse, loose sway) — never name genres.`;

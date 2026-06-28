@@ -576,3 +576,52 @@ test('allows scene-only M1 stem with plain task hint', () => {
     });
     assert.ok(!result.failures.some((f) => f.includes('hint paraphrases stem ask')));
 });
+
+test('allows physical drop on M2 without music-pattern fail', () => {
+    const draft: LlmStepDraft = {
+        ...baseDraft,
+        options: [
+            {
+                id: 'settling',
+                labelEn: 'Shoulders drop. The room settles with you.',
+                labelZh: '肩膀松下来，房间跟着静下来'
+            },
+            ...baseDraft.options.slice(1)
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm2',
+        plan: basePlan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.ok(!result.failures.some((f) => f.includes('music-pattern')));
+});
+
+test('fails M4 discriminant negative option framing', () => {
+    const plan: TurnPlan = {
+        ...basePlan,
+        questionMode: 'PositiveDiscriminant',
+        plannedOptionIds: ['a', 'b', 'c', 'd']
+    };
+    const draft: LlmStepDraft = {
+        stemEn: 'Still in bed — how close should the sound feel?',
+        stemZh: '还躺在床上——声音该有多近？',
+        options: [
+            { id: 'a', labelEn: 'No bright energy', labelZh: '贴身低语' },
+            { id: 'b', labelEn: 'Close whisper grain', labelZh: '细颗粒贴近' },
+            { id: 'c', labelEn: 'Wide distant hum', labelZh: '远处空旷嗡鸣' },
+            { id: 'd', labelEn: 'Suspended drift', labelZh: '悬浮慢漂' }
+        ]
+    };
+    const result = verifyDeterministic({
+        stepId: 'm4',
+        plan,
+        draft,
+        optionMin: 2,
+        optionMax: 6
+    });
+    assert.equal(result.passed, false);
+    assert.ok(result.failures.some((f) => f.includes('negative framing')));
+});

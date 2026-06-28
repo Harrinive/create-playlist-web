@@ -11,6 +11,7 @@ import { M4_TRAP_LEXICON, verifyGlossAndConcreteness } from './gloss-verify.js';
 import { verifyOptionOverlap } from './option-overlap.js';
 import { verifySceneContinuity } from './scene-continuity.js';
 import { verifyStemDistinctFromOptions } from './verify-stem-distinct.js';
+import { verifyM1PlacePartition } from './verify-m1-frame.js';
 import { stemHasExplicitAsk, turnHasExplicitAsk, verifyStemHintOverlap } from './verify-stem-hint.js';
 
 export type DeterministicVerifyInput = {
@@ -32,8 +33,23 @@ export type DeterministicVerifyResult = {
 const ABSTRACT_MOOD_BAN =
     /\b(calm|restless|hold me here|low energy|upbeat|hold me|numb mood)\b/i;
 
-const MUSIC_PATTERN_BAN =
-    /\b(kick|drop|BPM|bpm|grid|four-on-the-floor|beat switch|nod on the|nodding|thigh keeping|tempo label)\b/i;
+/** Production/tempo vocabulary — not physical verbs like "shoulders drop". */
+function labelHasMusicPattern(labelEn: string): boolean {
+    if (
+        /\b(kick\b|kick drum|four-on-the-floor|beat switch|BPM|bpm|grid|nod on the|nodding|thigh keeping|tempo label)\b/i.test(
+            labelEn
+        )
+    ) {
+        return true;
+    }
+    if (/\b(kick|drop)\b/i.test(labelEn)) {
+        return /\b(bass|edm|beat|track|club|floor|kick drum|the drop)\b/i.test(labelEn);
+    }
+    return false;
+}
+
+const DISCRIMINANT_NEG_LABEL =
+    /^(No |Not |Without )|\b(no |not |without |never |must not)\b|—no |, no /i;
 
 const SURVEY_STEM_BAN =
     /what kind of place|how does the track|what does the room take|which scene steps forward|choose the scene/i;
@@ -111,6 +127,10 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
     failures.push(...verifyStemHintOverlap(stepId, draft));
     failures.push(...verifySceneContinuity(stepId, draft, priorLabels ?? []));
 
+    if (stepId === 'm1') {
+        failures.push(...verifyM1PlacePartition(draft, plan));
+    }
+
     if (['m1', 'm2', 'm3', 'm_clarify'].includes(stepId)) {
         if (!turnHasExplicitAsk(draft)) {
             failures.push(
@@ -130,7 +150,7 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
                     `abstract mood/tempo chip on ${stepId} option "${opt.id}": ${opt.labelEn}`
                 );
             }
-            if (MUSIC_PATTERN_BAN.test(opt.labelEn)) {
+            if (labelHasMusicPattern(opt.labelEn)) {
                 failures.push(
                     `music-pattern word on ${stepId} option "${opt.id}": ${opt.labelEn}`
                 );
@@ -154,7 +174,7 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
                 );
             }
             for (const opt of options) {
-                if (MUSIC_PATTERN_BAN.test(opt.labelEn)) {
+                if (labelHasMusicPattern(opt.labelEn)) {
                     failures.push(
                         `music-pattern word on M4 discriminant option "${opt.id}": ${opt.labelEn}`
                     );
@@ -162,6 +182,16 @@ export function verifyDeterministic(input: DeterministicVerifyInput): Determinis
                 if (/^(Skip|Avoid)\s+/i.test(opt.labelEn.trim())) {
                     failures.push(
                         `M4 discriminant option "${opt.id}" uses avoid label — use positive felt groove/space language`
+                    );
+                }
+                if (DISCRIMINANT_NEG_LABEL.test(opt.labelEn.trim())) {
+                    failures.push(
+                        `M4 discriminant option "${opt.id}" uses negative framing — positive felt label only: ${opt.labelEn.slice(0, 60)}`
+                    );
+                }
+                if (/^(不要|别|不该|没有|无)/.test(opt.labelZh.trim())) {
+                    failures.push(
+                        `M4 discriminant option "${opt.id}" labelZh uses reject framing — positive felt chip only`
                     );
                 }
                 if (trapClusterById(opt.id)) {

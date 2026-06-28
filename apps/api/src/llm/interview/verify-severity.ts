@@ -37,6 +37,8 @@ function isHardDeterministicFailure(failure: string): boolean {
         /M4 discriminant must not include id "none"/i.test(failure) ||
         /M4 discriminant stem uses avoid/i.test(failure) ||
         /M4 discriminant option .* uses avoid label/i.test(failure) ||
+        /M4 discriminant option .* uses negative framing/i.test(failure) ||
+        /M4 discriminant option .* labelZh uses reject framing/i.test(failure) ||
         /M4 discriminant option .* reuses trap-cluster id/i.test(failure) ||
         /M4 option .* matches dropped trap cluster/i.test(failure) ||
         /M4 avoid needs >=3 non-none options/i.test(failure) ||
@@ -46,7 +48,15 @@ function isHardDeterministicFailure(failure: string): boolean {
         /M4 avoid stemZh uses forbidden 变成/i.test(failure) ||
         /M4 discriminant labelZh: too many parallel/i.test(failure) ||
         /hint paraphrases stem ask/i.test(failure) ||
-        /M4 hint restates sonic-reject ask/i.test(failure);
+        /M4 hint restates sonic-reject ask/i.test(failure) ||
+        /M1 stem locks one place/i.test(failure) ||
+        /M1 options span worlds not framed/i.test(failure) ||
+        /M1 optionRole must be place-partition/i.test(failure) ||
+        /music-pattern word on m2 option/i.test(failure) ||
+        /music-pattern word on m3 option/i.test(failure) ||
+        /labelEn >12 words on option/i.test(failure) ||
+        /abstract mood\/tempo chip on m2/i.test(failure) ||
+        /abstract mood\/tempo chip on m3/i.test(failure);
 
     return hard;
 }

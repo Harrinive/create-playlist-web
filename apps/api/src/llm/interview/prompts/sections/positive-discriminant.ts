@@ -30,9 +30,15 @@ export const discriminant1bBlock = `## Discriminant 1b — sonic groove / timbre
 **Map:** primary M5 sonic seed — user pick becomes felt sonic floor.`;
 
 export const discriminant1cBlock = `## Discriminant 1c — latent axis (space / density / grain)
-**Stem:** one M3 prop + spatial or textural question in scene metaphor.
-**Options:** space (close vs hallway), density (one lamp vs many), grain (behind beat vs on grid).
-Examples: "Close breath, or from the hallway?" · "One lamp or many candles?"
+**User job:** pick one felt **space/density/grain** fit — not a scene still.
+
+**Stem:** one M3 prop + name the axis in scene language (close vs far / one vs many / behind-beat vs on-grid).
+**FORBIDDEN:** generic "which texture fits best" without naming the axis; scene-poetry option labels.
+
+**Options:** partition ONE axis only — e.g. all spatial distance, or all density, or all grain.
+**Shape:** plain felt chips (~3–9 words EN) — not mini scene paragraphs; NO Skip/Avoid/no/not wording.
+**Escape hatch:** when plan includes id \`open-any\` or \`no-constraints\`, add one positive open chip (e.g. "Let it breathe — follow the moment" / 「随它去——跟着当下走」).
+
 **Map:** M5 + latent axis tag for curate.`;
 
 export function discriminantBlockForMode(

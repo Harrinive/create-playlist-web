@@ -22,6 +22,7 @@ export function logicVerifySystemPrompt(): string {
         '## Checks (same principles as draft)',
         `1. **Stem-option coherence** — stem sets the scene/question; every option belongs in that frame (no orphan beats or mismatched register)
 1a. **Explicit ask (M1–M3)** — stemEn/stemZh must include a pick/choose ask; M1 stem must be threshold-invite (not one-place caption); M1 options = distinct places/worlds
+1a2. **M1 place-partition** — threshold stem when options span worlds; fail locked-caption + cross-world options
 1b. **Stem ≠ chip** — stemEn/stemZh must not duplicate any option label verbatim (stem frames/asks; options are the picks)
 2. **Advance scene** — stem does not caption user's last pick
 3. **Story/BGM test** — each option feels like different background music (M2/M3)
@@ -32,7 +33,7 @@ export function logicVerifySystemPrompt(): string {
 7. **Q1** — 4–6 options; distinct scenes; span social heat AND setting type; stem rotates setting family (cozy-weather default anti-pattern); no overlapping beats
 8. **M2 register spread** — when kinetic genres survive, options partition distinct moments across social heat — not 3+ crowd-mood variants
 9. **M4 avoid only** — includes "none"; non-none labels use plain trap language; distinct trap clusters; drop already-implied avoids
-9b. **M4 discriminant only** — NO "none"; positive felt pace/groove/space labels; NO Skip/Avoid trap wording; stem asks what fits
+9b. **M4 discriminant only** — NO "none"; positive felt pace/groove/space labels; NO Skip/Avoid/no/not trap wording; stem asks what fits; optional open-any escape when planned
 10. **Filter drops** — no option matches filterDrops`,
         noGlossOutputBlock,
         concreteStoryRules,
