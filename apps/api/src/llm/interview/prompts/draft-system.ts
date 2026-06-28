@@ -22,6 +22,8 @@ import type { M4Mode } from '../m4-eligibility.js';
 export type DraftPromptContext = {
     stepId?: string;
     m4Mode?: M4Mode;
+    m1StemMode?: 'threshold-invite';
+    optionRole?: 'place-partition' | 'moment-in-scene';
 };
 
 function bilingualBarForStep(ctx?: DraftPromptContext): string {
@@ -67,13 +69,23 @@ export function draftSystemPrompt(ctx?: DraftPromptContext): string {
               ? '- Options: concrete objects + events in main labels'
               : '- Options: follow turn plan shape for this step';
 
-    const m1StemLines =
-        ctx?.stepId === 'm1'
-            ? joinSections(
-                  '- M1 user job: pick which world — stem = threshold invite + explicit ask',
-                  '- M1 stem must NOT lock one option world (no single-place caption without ask)'
-              )
-            : '';
+    const m1ThresholdRequired =
+        ctx?.stepId === 'm1' &&
+        (ctx?.m1StemMode === 'threshold-invite' || ctx?.optionRole === 'place-partition');
+
+    const m1StemLines = m1ThresholdRequired
+        ? joinSections(
+              '- M1 (plan): m1StemMode=threshold-invite + optionRole=place-partition — stem MUST be pick-a-still ask',
+              '- REQUIRED shape: "Pick a still — where are you right now?" / "选一处画面——你此刻在哪里？"',
+              '- FORBIDDEN: stem that locks one option world (workbench-only caption, single kitchen/car/platform scene without ask)',
+              '- Light sensory prefix OK only before the explicit pick-a-still ask — never instead of it'
+          )
+        : ctx?.stepId === 'm1'
+          ? joinSections(
+                '- M1 user job: pick which world — stem = threshold invite + explicit ask',
+                '- M1 stem must NOT lock one option world (no single-place caption without ask)'
+            )
+          : '';
 
     return joinSections(
         'You draft music mood interview questions (v4 story-native).',

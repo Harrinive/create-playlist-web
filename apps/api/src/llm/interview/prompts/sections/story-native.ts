@@ -5,6 +5,8 @@ Never genre menus, mood adjective stacks, or meta explanations of the question t
 export const storyM1Block = `## M1 Scene — pick a place
 **User job:** pick **which world** I'm in (coverage partition — 4–6 distinct places).
 
+**When plan sets m1StemMode=threshold-invite or optionRole=place-partition:** threshold stem is mandatory — never a locked single-world caption.
+
 **Output shape**
 - **Stem:** threshold invite + explicit ask — light sensory anchor, then pick-a-still question. Stem must NOT describe one specific option world (no workbench-only caption, no locked kitchen/car/platform scene).
 - **Options:** each chip = one **place/world** (transit, venue, home, outdoors, workplace, …) — not a moment inside the stem scene.

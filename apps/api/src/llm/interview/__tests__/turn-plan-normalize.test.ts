@@ -34,6 +34,23 @@ test('turn plan drops invalid m1StemMode prose values', () => {
     assert.equal(parsed.optionRole, 'moment-in-scene');
 });
 
+test('turn plan defaults m1StemMode and optionRole when omitted', () => {
+    const parsed = turnPlanSchema.parse({
+        ...base,
+        axis: 'm1'
+    });
+    assert.equal(parsed.m1StemMode, 'threshold-invite');
+    assert.equal(parsed.optionRole, 'place-partition');
+});
+
+test('turn plan coerces null q1RegionsToCover to undefined', () => {
+    const parsed = turnPlanSchema.parse({
+        ...base,
+        q1RegionsToCover: null
+    });
+    assert.equal(parsed.q1RegionsToCover, undefined);
+});
+
 test('turn plan fills missing required planner fields', () => {
     const parsed = turnPlanSchema.parse({
         gaps: [],

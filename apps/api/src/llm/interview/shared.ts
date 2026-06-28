@@ -129,8 +129,13 @@ function preprocessTurnPlan(val: unknown): unknown {
             typeof o.optionGuidance === 'string' && o.optionGuidance.trim()
                 ? o.optionGuidance
                 : 'distinct story options per plan',
-        m1StemMode: normalizeM1StemMode(o.m1StemMode),
-        optionRole: normalizeOptionRole(o.optionRole)
+        m1StemMode:
+            normalizeM1StemMode(o.m1StemMode) ??
+            (o.m1StemMode === undefined ? 'threshold-invite' : undefined),
+        optionRole:
+            normalizeOptionRole(o.optionRole) ??
+            (o.optionRole === undefined ? 'place-partition' : undefined),
+        q1RegionsToCover: Array.isArray(o.q1RegionsToCover) ? o.q1RegionsToCover : undefined
     };
 }
 

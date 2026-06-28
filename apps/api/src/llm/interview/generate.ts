@@ -21,7 +21,14 @@ import {
     type TurnPlan
 } from './shared.js';
 import { verifyDeterministic } from './verify-deterministic.js';
-import { fitDraftOptionCount, fitPlanOptionIds, normalizeM4Draft, trimSceneOptionLabels, type M4NormalizeContext } from './normalize-draft.js';
+import {
+    fitDraftOptionCount,
+    fitPlanOptionIds,
+    normalizeM1Draft,
+    normalizeM4Draft,
+    trimSceneOptionLabels,
+    type M4NormalizeContext
+} from './normalize-draft.js';
 import {
     classifyReviseKind,
     verifyCopyInterviewStep,
@@ -193,7 +200,7 @@ async function generateInterviewStepFast(
         }
 
         draft = fitDraftOptionCount(
-            stripSceneStemGloss(normalizeM4Draft(parsed.data, stepId, emptyPlan), stepId),
+            stripSceneStemGloss(normalizeInterviewDraft(parsed.data, stepId, emptyPlan), stepId),
             emptyPlan,
             stepId,
             meta.optionMax
@@ -271,6 +278,49 @@ function stripSceneStemGloss(draft: LlmStepDraft, stepId: string): LlmStepDraft 
     };
 }
 
+const JSON_RETRY_ATTEMPTS = 3;
+
+function isJsonExtractFailure(err: unknown): boolean {
+    if (err instanceof SyntaxError) return true;
+    const message = err instanceof Error ? err.message : String(err);
+    return /invalid JSON|JSON\.parse|Unexpected token|not valid JSON/i.test(message);
+}
+
+function isPlanSchemaRetryable(err: unknown): boolean {
+    if (isJsonExtractFailure(err)) return true;
+    const message = err instanceof Error ? err.message : String(err);
+    return /Interview plan returned invalid JSON|invalid_type|Expected array, received null/i.test(
+        message
+    );
+}
+
+async function withJsonRetry<T>(
+    label: string,
+    fn: () => Promise<T>,
+    retryable: (err: unknown) => boolean = isJsonExtractFailure
+): Promise<T> {
+    let lastError: Error | undefined;
+    for (let attempt = 0; attempt < JSON_RETRY_ATTEMPTS; attempt += 1) {
+        try {
+            return await fn();
+        } catch (err) {
+            if (!retryable(err)) throw err;
+            lastError = err instanceof Error ? err : new Error(String(err));
+            if (attempt === JSON_RETRY_ATTEMPTS - 1) break;
+        }
+    }
+    throw lastError ?? new Error(`${label} failed after ${JSON_RETRY_ATTEMPTS} retries`);
+}
+
+function normalizeInterviewDraft(
+    draft: LlmStepDraft,
+    stepId: string,
+    plan: TurnPlan,
+    ctx?: M4NormalizeContext
+): LlmStepDraft {
+    return normalizeM1Draft(normalizeM4Draft(draft, stepId, plan, ctx), stepId, plan);
+}
+
 async function generateInterviewStepFull(
     env: Env,
     input: GenerateInterviewStepInput,
@@ -317,7 +367,11 @@ async function generateInterviewStepFull(
         plannerState = applyM4GateToPlanner(plannerState, input.priorAnswers);
     }
 
-    const plan = await planInterviewTurn(env, { ...ctxWithStep, plannerState }, model);
+    const plan = await withJsonRetry(
+        'plan',
+        () => planInterviewTurn(env, { ...ctxWithStep, plannerState }, model),
+        isPlanSchemaRetryable
+    );
     const meta = stepMetaForId(stepId, plannerState);
     const fittedPlan = fitPlanOptionIds(plan, stepId, meta.optionMax);
 
@@ -350,8 +404,10 @@ async function generateInterviewStepFull(
 
     let draft = fitDraftOptionCount(
         trimSceneOptionLabels(
-            normalizeM4Draft(
-                await draftInterviewStep(env, ctxWithStep, fittedPlan, model),
+            normalizeInterviewDraft(
+                await withJsonRetry('draft', () =>
+                    draftInterviewStep(env, ctxWithStep, fittedPlan, model)
+                ),
                 stepId,
                 fittedPlan,
                 m4NormalizeCtx(stepId, input.priorAnswers, plannerState, meta.optionMin, meta.optionMax)
@@ -427,15 +483,17 @@ async function generateInterviewStepFull(
         const kind = classifyReviseKind(deterministicFailures, logicFailures, copyFailures);
         draft = fitDraftOptionCount(
             trimSceneOptionLabels(
-                normalizeM4Draft(
-                    await reviseInterviewStep(
-                        env,
-                        ctxWithStep,
-                        fittedPlan,
-                        draft,
-                        allFailures,
-                        model,
-                        kind
+                normalizeInterviewDraft(
+                    await withJsonRetry('revise', () =>
+                        reviseInterviewStep(
+                            env,
+                            ctxWithStep,
+                            fittedPlan,
+                            draft,
+                            allFailures,
+                            model,
+                            kind
+                        )
                     ),
                     stepId,
                     fittedPlan,

@@ -7,6 +7,13 @@ import {
     trapClusterById,
     type TrapCluster
 } from './m4-eligibility.js';
+import { verifyM1PlacePartition } from './verify-m1-frame.js';
+
+const M1_THRESHOLD_STEM_EN = 'Pick a still — where are you right now?';
+const M1_THRESHOLD_STEM_ZH = '选一处画面——你此刻在哪里？';
+
+const M1_ASK_RE =
+    /\b(pick|choose|where|which|what|step into|选|哪|你此刻|走进)\b/i;
 
 function trimLabelEn(text: string, maxWords = 12): string {
     const trimmed = text.trim();
@@ -237,6 +244,48 @@ export function normalizeM4Draft(
     }
     next = repairM4AvoidEligibleTraps(next, plan, ctx);
     return normalizeM4AvoidLabels(next, plan);
+}
+
+function extractM1SensoryPrefix(text: string, maxWords = 14): string | undefined {
+    const trimmed = text.trim();
+    if (!trimmed || M1_ASK_RE.test(trimmed)) return undefined;
+
+    const dashParts = trimmed.split(/\s*[—–]\s*/);
+    if (dashParts.length >= 2) {
+        const first = dashParts[0]!.trim();
+        if (first.split(/\s+/).filter(Boolean).length <= maxWords) return first;
+    }
+
+    const sentence = trimmed.split(/(?<=[.!?])\s+/)[0]?.trim().replace(/[.!?]$/, '');
+    if (sentence && sentence.split(/\s+/).filter(Boolean).length <= maxWords) {
+        return sentence;
+    }
+    return undefined;
+}
+
+/** Rewrite locked-caption M1 stems to threshold-invite before verify (deterministic repair). */
+export function repairM1ThresholdStem(draft: LlmStepDraft, plan: TurnPlan): LlmStepDraft {
+    const failures = verifyM1PlacePartition(draft, plan);
+    const stemFailures = failures.filter((f) => !f.includes('optionRole must be place-partition'));
+    if (stemFailures.length === 0) return draft;
+
+    const prefixEn = extractM1SensoryPrefix(draft.stemEn);
+    const prefixZh = extractM1SensoryPrefix(draft.stemZh);
+
+    return {
+        ...draft,
+        stemEn: prefixEn ? `${prefixEn} — ${M1_THRESHOLD_STEM_EN}` : M1_THRESHOLD_STEM_EN,
+        stemZh: prefixZh ? `${prefixZh}——${M1_THRESHOLD_STEM_ZH}` : M1_THRESHOLD_STEM_ZH
+    };
+}
+
+export function normalizeM1Draft(
+    draft: LlmStepDraft,
+    stepId: string,
+    plan: TurnPlan
+): LlmStepDraft {
+    if (stepId !== 'm1') return draft;
+    return repairM1ThresholdStem(draft, plan);
 }
 
 /** Cap planner output so verify does not inherit oversized option lists. */

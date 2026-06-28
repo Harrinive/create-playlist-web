@@ -17,8 +17,17 @@ import {
     type TurnPlan
 } from './shared.js';
 
-function draftPromptContext(ctx: InterviewTurnContext, stepId: string): DraftPromptContext {
-    return { stepId, m4Mode: ctx.plannerState?.m4Mode };
+function draftPromptContext(
+    ctx: InterviewTurnContext,
+    stepId: string,
+    plan?: TurnPlan
+): DraftPromptContext {
+    return {
+        stepId,
+        m4Mode: ctx.plannerState?.m4Mode,
+        m1StemMode: plan?.m1StemMode,
+        optionRole: plan?.optionRole
+    };
 }
 
 export async function draftInterviewStep(
@@ -42,7 +51,7 @@ export async function draftInterviewStep(
             : `${meta.optionMin}–${meta.optionMax}`;
     const turnConfig = resolveTurnConfig(stepId, plan, ctx.priorAnswers, ctx.plannerState);
     const totalSteps = ctx.plannerState?.stepIds?.length ?? resolved.totalSteps;
-    const draftCtx = draftPromptContext(ctx, stepId);
+    const draftCtx = draftPromptContext(ctx, stepId, plan);
 
     const userPrompt = buildDraftUserPrompt(
         ctx.stepIndex,
@@ -85,7 +94,7 @@ export async function reviseInterviewStep(
     kind: 'all' | 'logic' | 'copy' = 'all'
 ): Promise<LlmStepDraft> {
     const stepId = ctx.stepId ?? 'm1';
-    const draftCtx = draftPromptContext(ctx, stepId);
+    const draftCtx = draftPromptContext(ctx, stepId, plan);
     const userPrompt = buildReviseUserPrompt(
         ctx.priorAnswers,
         ctx.rejectedStems,
