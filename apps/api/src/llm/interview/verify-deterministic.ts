@@ -49,7 +49,7 @@ function labelHasMusicPattern(labelEn: string): boolean {
 }
 
 const DISCRIMINANT_NEG_LABEL =
-    /^(No |Not |Without )|\b(no |not |without |never |must not)\b|—no |, no /i;
+    /^(No |Not |Without )|\b(must not|never |without )\b|^(Skip|Avoid)\s/i;
 
 const SURVEY_STEM_BAN =
     /what kind of place|how does the track|what does the room take|which scene steps forward|choose the scene/i;

@@ -8,15 +8,34 @@ import {
     type TrapCluster
 } from './m4-eligibility.js';
 
+function trimLabelEn(text: string, maxWords = 12): string {
+    const trimmed = text.trim();
+    const words = trimmed.split(/\s+/).filter(Boolean);
+    if (words.length <= maxWords) return trimmed;
+
+    const sentences = trimmed.split(/(?<=[.!?])\s+/);
+    let acc = '';
+    for (const sentence of sentences) {
+        const candidate = acc ? `${acc} ${sentence}` : sentence;
+        if (candidate.split(/\s+/).filter(Boolean).length <= maxWords) {
+            acc = candidate;
+        } else {
+            break;
+        }
+    }
+    if (acc.split(/\s+/).filter(Boolean).length >= 4) return acc.trim();
+
+    return words.slice(0, maxWords).join(' ');
+}
+
 /** Cap EN chip length — verify hard-fails >12 words; trim before verify as structural repair. */
 export function trimSceneOptionLabels(draft: LlmStepDraft, stepId: string, maxWords = 12): LlmStepDraft {
     if (!['m2', 'm3', 'm4'].includes(stepId)) return draft;
     return {
         ...draft,
         options: draft.options.map((opt) => {
-            const words = opt.labelEn.trim().split(/\s+/).filter(Boolean);
-            if (words.length <= maxWords) return opt;
-            return { ...opt, labelEn: words.slice(0, maxWords).join(' ') };
+            const next = trimLabelEn(opt.labelEn, maxWords);
+            return next === opt.labelEn ? opt : { ...opt, labelEn: next };
         })
     };
 }

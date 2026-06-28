@@ -1,7 +1,7 @@
 import type { LlmStepDraft } from './shared.js';
 
 const STEM_ASK_EN =
-    /\b(which|where|what|pick|choose|step into|most like|feels like you|feel most like|holds you|where are you|pick a still|which (?:place|world|still|scene|moment|beat|groove|fit|chapter|one))\b/i;
+    /\b(which|where|what|pick|choose|step into|most like|feels like you|feel most like|holds you|where are you|pick a still|which (?:place|world|still|scene|moment|beat|groove|fit|chapter|one)|are you in|right now)\b/i;
 const STEM_ASK_ZH =
     /[选哪]|最像|走进|进到|哪一处|哪一幕|像在的地方|你此刻|在哪里|哪一段|进行到哪|哪一下|最对路|最贴近|最不该像|不要像|哪一个|哪一刻|哪一章/;
 
