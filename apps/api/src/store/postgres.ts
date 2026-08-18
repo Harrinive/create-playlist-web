@@ -4,6 +4,35 @@ import type { PlaylistMemoryEntry } from './playlist-memory.js';
 import { prunePlaylistMemory } from './playlist-memory.js';
 import type { OAuthStateRecord, SessionRecord, TokenStore, UserRecord } from './types.js';
 
+/**
+ * Lock app tables against Supabase PostgREST (anon / authenticated).
+ * Fly `DATABASE_URL` uses a BYPASSRLS role, so the API is unaffected.
+ * No policies on purpose: default-deny for the Data API.
+ */
+export const LOCK_PUBLIC_TABLES_SQL = `
+            ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.oauth_states ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.playlist_memory ENABLE ROW LEVEL SECURITY;
+
+            REVOKE ALL ON TABLE public.users, public.sessions, public.oauth_states, public.playlist_memory FROM PUBLIC;
+
+            DO $$
+            DECLARE
+                r text;
+            BEGIN
+                FOREACH r IN ARRAY ARRAY['anon', 'authenticated']
+                LOOP
+                    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
+                        EXECUTE format(
+                            'REVOKE ALL ON TABLE public.users, public.sessions, public.oauth_states, public.playlist_memory FROM %I',
+                            r
+                        );
+                    END IF;
+                END LOOP;
+            END $$;
+        `;
+
 export class PostgresTokenStore implements TokenStore {
     constructor(
         private readonly pool: Pool,
@@ -44,6 +73,7 @@ export class PostgresTokenStore implements TokenStore {
                 tracks JSONB NOT NULL
             );
         `);
+        await this.pool.query(LOCK_PUBLIC_TABLES_SQL);
     }
 
     async saveOAuthState(state: string, ttlMs: number): Promise<void> {
