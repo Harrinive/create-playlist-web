@@ -32,14 +32,14 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
         curationLabelZh: '用 Composer 2.5 生成曲目列表'
     },
     {
-        id: 'openai:gpt-5.4-mini',
+        id: 'openai:gpt-6-luna',
         provider: 'openai',
         interview: true,
         curation: true,
-        labelEn: 'GPT-5.4 mini',
-        labelZh: 'GPT-5.4 mini',
-        curationLabelEn: 'Generate tracklist by GPT-5.4 mini',
-        curationLabelZh: '用 GPT-5.4 mini 生成曲目列表'
+        labelEn: 'GPT-6 Luna',
+        labelZh: 'GPT-6 Luna',
+        curationLabelEn: 'Generate tracklist by GPT-6 Luna',
+        curationLabelZh: '用 GPT-6 Luna 生成曲目列表'
     },
     {
         id: 'anthropic:claude-haiku-4-5',
@@ -52,32 +52,32 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
         curationLabelZh: '用 Claude Haiku 4.5 生成曲目列表'
     },
     {
-        id: 'anthropic:claude-sonnet-4-6',
+        id: 'anthropic:claude-sonnet-5-5',
         provider: 'anthropic',
         interview: true,
         curation: true,
-        labelEn: 'Claude Sonnet 4.6',
-        labelZh: 'Claude Sonnet 4.6',
-        curationLabelEn: 'Generate tracklist by Claude Sonnet 4.6',
-        curationLabelZh: '用 Claude Sonnet 4.6 生成曲目列表'
+        labelEn: 'Claude Sonnet 5.5',
+        labelZh: 'Claude Sonnet 5.5',
+        curationLabelEn: 'Generate tracklist by Claude Sonnet 5.5',
+        curationLabelZh: '用 Claude Sonnet 5.5 生成曲目列表'
     },
     {
-        id: 'anthropic:claude-opus-4-8',
+        id: 'anthropic:claude-opus-5-5',
         provider: 'anthropic',
         interview: false,
         curation: true,
-        labelEn: 'Claude Opus 4.8',
-        labelZh: 'Claude Opus 4.8',
-        curationLabelEn: 'Generate tracklist by Claude Opus 4.8',
-        curationLabelZh: '用 Claude Opus 4.8 生成曲目列表'
+        labelEn: 'Claude Opus 5.5',
+        labelZh: 'Claude Opus 5.5',
+        curationLabelEn: 'Generate tracklist by Claude Opus 5.5',
+        curationLabelZh: '用 Claude Opus 5.5 生成曲目列表'
     }
 ];
 
 /** Server default when `CURATE_LLM_MODEL` is unset (must be in catalog with `curation: true`). */
-export const DEFAULT_CURATE_MODEL_ID = 'anthropic:claude-sonnet-4-6';
+export const DEFAULT_CURATE_MODEL_ID = 'anthropic:claude-sonnet-5-5';
 
 /** Server default when `INTERVIEW_LLM_MODEL` is unset. */
-export const DEFAULT_INTERVIEW_MODEL_ID = 'openai:gpt-5.4-mini';
+export const DEFAULT_INTERVIEW_MODEL_ID = 'openai:gpt-6-luna';
 
 export function interviewCatalogEntries(): ModelCatalogEntry[] {
     return MODEL_CATALOG.filter((entry) => entry.interview);

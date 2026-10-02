@@ -49,7 +49,7 @@ Mechanical validators (code, not prompt prose):
 
 ```bash
 cd apps/api && npx tsx scripts/run-interview-path-matrix.ts
-cd apps/api && npx tsx scripts/run-interview-path-matrix.ts openai:gpt-5.4-mini
+cd apps/api && npx tsx scripts/run-interview-path-matrix.ts openai:gpt-6-luna
 cd apps/api && npx tsx scripts/run-interview-path-matrix.ts anthropic:claude-haiku-4-5
 cd apps/api && npx tsx scripts/orchestrate-path.ts deep-prog-house
 cd apps/api && npx tsx scripts/test-m4-scenarios.ts

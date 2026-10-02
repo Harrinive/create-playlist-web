@@ -19,10 +19,10 @@ Same as Python — see [toolbox `packages/llm-router/README.md`](https://github.
 
 ```text
 cursor:composer-2.5
-openai:gpt-5.4-mini
+openai:gpt-6-luna
 anthropic:claude-haiku-4-5
-anthropic:claude-sonnet-4-6
-anthropic:claude-opus-4-8
+anthropic:claude-sonnet-5-5
+anthropic:claude-opus-5-5
 composer-2.5              # auto-detect cursor
 ```
 

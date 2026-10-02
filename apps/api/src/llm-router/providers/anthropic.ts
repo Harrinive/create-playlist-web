@@ -10,6 +10,28 @@ export async function anthropicChat(
         .filter((m) => m.role !== 'system')
         .map((m) => ({ role: m.role, content: m.content }));
 
+    const body: {
+        model: string;
+        max_tokens: number;
+        system: string | undefined;
+        messages: Array<{ role: ChatMessage['role']; content: string }>;
+        thinking?: { type: 'between_tools' };
+    } = {
+        model,
+        max_tokens: 4096,
+        system,
+        messages: chatMessages
+    };
+    // Sonnet 5.5 thinks by default and bills that as output. between_tools skips
+    // up-front thinking on a request with no tools, which is how Sonnet 4.6 ran.
+    if (model === 'claude-sonnet-5-5' || model.startsWith('claude-sonnet-5-5-')) {
+        body.thinking = { type: 'between_tools' };
+    }
+    // Opus 5.5 always thinks, and max_tokens covers thinking plus the reply.
+    if (model === 'claude-opus-5-5' || model.startsWith('claude-opus-5-5-')) {
+        body.max_tokens = 16000;
+    }
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -17,12 +39,7 @@ export async function anthropicChat(
             'anthropic-version': '2023-06-01',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            model,
-            max_tokens: 4096,
-            system,
-            messages: chatMessages
-        })
+        body: JSON.stringify(body)
     });
 
     if (!response.ok) {

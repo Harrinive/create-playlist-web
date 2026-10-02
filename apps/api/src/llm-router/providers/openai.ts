@@ -5,17 +5,30 @@ export async function openAiChat(
     model: string,
     messages: readonly ChatMessage[]
 ): Promise<string> {
+    const body: {
+        model: string;
+        messages: readonly ChatMessage[];
+        temperature: number;
+        reasoning_effort?: 'none';
+    } = {
+        model,
+        messages,
+        temperature: 1
+    };
+    // Luna defaults reasoning to medium, and Chat Completions rejects temperature
+    // unless effort is none. none keeps the cheap path (no reasoning tokens) and
+    // allows this temperature. 1.0 is the creative setting; the API allows up to 2.
+    if (model === 'gpt-6-luna' || model.startsWith('gpt-6-luna-')) {
+        body.reasoning_effort = 'none';
+    }
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            model,
-            messages,
-            temperature: 0.7
-        })
+        body: JSON.stringify(body)
     });
 
     if (!response.ok) {
